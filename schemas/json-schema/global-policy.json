@@ -36,6 +36,21 @@
           "description": "List of CSS selectors that must be forcibly blocked from the LLM input.",
           "items": { "type": "string" }
         },
+        "category-rules": {
+          "type": "object",
+          "description": "Maps 'llm-intent-category' values to policy constraints. These rules override defaults but can be overridden by specific local policy attributes if not strictly enforced.",
+          "patternProperties": {
+            "^.*$": {
+              "type": "object",
+              "properties": {
+                "llm-policy-input": { "enum": ["allow", "block", "mask", "summary"] },
+                "llm-policy-output": { "enum": ["readonly", "mutable", "append-only", "style-only", "content-only"] },
+                "llm-policy-memory": { "enum": ["no-store", "persist"] }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
         "dependencies": {
           "type": "array",
           "description": "Rules enforcing co-occurrence of elements in the LLM context. If the 'trigger' element is included, the 'requires' element MUST also be included.",

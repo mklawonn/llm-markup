@@ -66,6 +66,10 @@ The global policy is defined as a JSON object. This schema enforces site-wide de
   },
   "constraints": {
     "block-selectors": ["css-selector", "..."],
+    "category-rules": {
+      "advertisement": { "llm-policy-input": "block" },
+      "quote": { "llm-policy-output": "readonly" }
+    },
     "dependencies": [
       {
         "trigger": ".pull-quote",
@@ -78,8 +82,10 @@ The global policy is defined as a JSON object. This schema enforces site-wide de
 }
 ```
 
-### Dependency Constraints
-The `dependencies` list allows a publisher to enforce contextual integrity. If an element matching the `trigger` selector is selected for the LLM context, the User Agent MUST also include the element matching the `requires` selector. If the required element cannot be included (e.g., due to length limits or redaction), the `failure-mode` determines the action (defaulting to `omit-trigger`).
+### Constraint Types
+*   **`block-selectors`:** Forcibly removes elements matching the CSS selector from the LLM's view.
+*   **`category-rules`:** Maps an `llm-intent-category` value (e.g., `advertisement`) to specific policy enforcements (e.g., `block`). This allows semantic control over policy without relying on brittle CSS classes.
+*   **`dependencies`:** Enforces co-occurrence of elements to maintain context (e.g., requiring a citation for a quote).
 
 ## Precedence and Inheritance
 
