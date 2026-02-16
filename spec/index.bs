@@ -12,6 +12,16 @@ Markup Shorthands: markdown yes
 
 # Namespaces and Attributes
 
+## The LLM-Intent Namespace
+
+The `llm-intent` namespace defines soft constraints and semantic signals that help the User Agent construct a deterministic context for the LLM. Unlike policy attributes, these do not strictly enforce visibility or mutability by default, but provide metadata that can be targeted by policies.
+
+### The llm-intent-category attribute
+Assigns a semantic category to a node, allowing it to be targeted by Global Policy rules or specific LLM instructions.
+
+*   **Syntax:** `llm-intent-category="<string>"`
+*   **Purpose:** Provides a stable, semantic label (e.g., "quote", "advertisement", "navigation") independent of CSS classes or visual presentation.
+
 ## The LLM-Policy Namespace
 
 The `llm-policy` namespace defines hard constraints that a conforming User Agent MUST enforce. These are split into three primary attributes to govern the flow of information and mutations.
