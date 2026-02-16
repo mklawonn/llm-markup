@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/llm-markup/schemas/global-policy.json",
+  "title": "LLM Markup Global Policy Header",
+  "description": "Schema for the LLM Markup Global Policy Header defining site-wide constraints and defaults.",
+  "type": "object",
+  "properties": {
+    "defaults": {
+      "type": "object",
+      "description": "Default attribute values applied to the entire document unless overridden locally.",
+      "properties": {
+        "llm-policy-input": {
+          "type": "string",
+          "enum": ["allow", "block", "mask", "summary"],
+          "default": "allow"
+        },
+        "llm-policy-output": {
+          "type": "string",
+          "enum": ["readonly", "mutable", "append-only", "style-only", "content-only"],
+          "default": "readonly"
+        },
+        "llm-policy-memory": {
+          "type": "string",
+          "enum": ["no-store", "persist"],
+          "default": "no-store"
+        }
+      },
+      "additionalProperties": false
+    },
+    "constraints": {
+      "type": "object",
+      "description": "Hard constraints that cannot be overridden by local attributes.",
+      "properties": {
+        "block-selectors": {
+          "type": "array",
+          "description": "List of CSS selectors that must be forcibly blocked from the LLM input.",
+          "items": { "type": "string" }
+        },
+        "dependencies": {
+          "type": "array",
+          "description": "Rules enforcing co-occurrence of elements in the LLM context. If the 'trigger' element is included, the 'requires' element MUST also be included.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "trigger": {
+                "type": "string",
+                "description": "CSS selector for the element that triggers this dependency."
+              },
+              "requires": {
+                "type": "string",
+                "description": "CSS selector for the element that MUST accompany the trigger."
+              },
+              "scope": {
+                "type": "string",
+                "enum": ["input", "output", "both"],
+                "default": "input",
+                "description": "Whether this applies to what the LLM sees (input) or what it generates (output)."
+              },
+              "failure-mode": {
+                "type": "string",
+                "enum": ["omit-trigger", "error"],
+                "default": "omit-trigger",
+                "description": "Action to take if the requirement is not met. 'omit-trigger' removes the triggering element from context; 'error' halts processing."
+              }
+            },
+            "required": ["trigger", "requires"]
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "required": ["defaults"]
+}
