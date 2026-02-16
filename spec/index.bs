@@ -65,6 +65,7 @@ Governs the flow of mutations from the Language Model to the DOM (Enforcement). 
 *   **`layout`:** Grants permission to reorder child nodes (formerly `reorder-only`).
 *   **`annotation`:** Grants permission to wrap text nodes without changing content.
 *   **`content`:** Grants permission to modify the Content Layer (Text).
+*   **`data`:** Grants permission to modify Machine-Readable Payloads (Values, Data Attributes).
 *   **`append`:** Grants permission to append new children.
 *   **`mutable`:** Shorthand for all permissions.
 
@@ -149,7 +150,8 @@ The User Agent MUST allow a mutation if and only if it is authorized by at least
     *   Modification of Event Handlers (`on*`) and ARIA states (`aria-*`).
     *   Modification of global interaction attributes (`tabindex`, `hidden`, `contenteditable`, `draggable`, `spellcheck`).
     *   Insertion of `<script>` and `<style>` elements.
-*   **Blocked:** Modification of Text Nodes or Payload Attributes (`src`, `href`, `id`).
+    *   Modification of Form State (`checked`, `selected`, `disabled`, `readonly`, `open`).
+*   **Blocked:** Modification of Text Nodes, Payload Attributes (`src`, `href`, `id`), and Data Values (`value`, `data-*`).
 
 ### `layout` (Structural Reordering)
 *   **Allowed:** Reordering (permuting) of direct child nodes.
@@ -163,6 +165,14 @@ The User Agent MUST allow a mutation if and only if it is authorized by at least
 ### `content` (Text Layer)
 *   **Allowed:** Modification of Text Nodes.
 *   **Blocked:** Changing the DOM structure or attributes of container elements.
+
+### `data` (Machine-Readable Payload)
+*   **Allowed:**
+    *   **Form Values:** Modification of the `value` attribute on form controls.
+    *   **Data Attributes:** Modification of custom `data-*` attributes.
+    *   **Meta Content:** Modification of the `content` attribute on `<meta>` tags.
+    *   **Data Blocks:** Modification of text content within `<script>` tags that have a data MIME type (e.g., `application/ld+json`, `application/json`) but NOT executable scripts (`text/javascript`).
+*   **Blocked:** Modification of Rendered Text Nodes or Document Structure.
 
 ### `append` (Additive Structure)
 *   **Allowed:** Insertion of new child nodes (elements or text) at the end of the child list.

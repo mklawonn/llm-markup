@@ -16,7 +16,7 @@
         },
         "llm-policy-output": {
           "type": "array",
-          "items": { "enum": ["readonly", "mutable", "style", "interaction", "layout", "annotation", "content", "append"] },
+          "items": { "enum": ["readonly", "mutable", "style", "interaction", "layout", "annotation", "content", "data", "append"] },
           "default": ["readonly"]
         },
         "llm-policy-memory": {
@@ -49,7 +49,7 @@
                 },
                 "llm-policy-output": {
                   "type": "array",
-                  "items": { "enum": ["readonly", "mutable", "style", "interaction", "layout", "annotation", "content", "append"] }
+                  "items": { "enum": ["readonly", "mutable", "style", "interaction", "layout", "annotation", "content", "data", "append"] }
                 },
                 "llm-policy-memory": {
                   "type": "array",
