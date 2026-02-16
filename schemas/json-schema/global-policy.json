@@ -5,6 +5,16 @@
   "description": "Schema for the LLM Markup Global Policy Header defining site-wide constraints and defaults.",
   "type": "object",
   "properties": {
+    "report-to": {
+      "type": "string",
+      "format": "uri",
+      "description": "The URL where the User Agent should send policy violation reports."
+    },
+    "report-only": {
+      "type": "boolean",
+      "default": false,
+      "description": "If true, the User Agent will report violations to 'report-to' but will NOT block the actions."
+    },
     "defaults": {
       "type": "object",
       "description": "Default attribute values applied to the entire document unless overridden locally.",

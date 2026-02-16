@@ -91,16 +91,18 @@ The global policy is defined as a JSON object. This schema enforces site-wide de
 
 ```json
 {
+  "report-to": "https://api.example.com/llm-reports",
+  "report-only": true,
   "defaults": {
-    "llm-policy-input": "allow|block|mask|summary",
-    "llm-policy-output": "readonly|mutable|...",
-    "llm-policy-memory": "no-store|persist"
+    "llm-policy-input": ["structure", "text", "attributes", "media"],
+    "llm-policy-output": ["readonly"],
+    "llm-policy-memory": ["none"]
   },
   "constraints": {
     "block-selectors": ["css-selector", "..."],
     "category-rules": {
-      "advertisement": { "llm-policy-input": "block" },
-      "quote": { "llm-policy-output": "readonly" }
+      "advertisement": { "llm-policy-input": ["none"] },
+      "quote": { "llm-policy-output": ["readonly"] }
     },
     "dependencies": [
       {
@@ -118,6 +120,13 @@ The global policy is defined as a JSON object. This schema enforces site-wide de
 *   **`block-selectors`:** Forcibly removes elements matching the CSS selector from the LLM's view.
 *   **`category-rules`:** Maps an `llm-intent-category` value (e.g., `advertisement`) to specific policy enforcements (e.g., `block`). This allows semantic control over policy without relying on brittle CSS classes.
 *   **`dependencies`:** Enforces co-occurrence of elements to maintain context (e.g., requiring a citation for a quote).
+
+### Policy Reporting
+
+The Global Policy Header supports a reporting mechanism to help developers audit compliance and debug policy configurations without breaking functionality.
+
+*   **`report-to` (URI):** Specifies the endpoint where the User Agent SHOULD send violation reports. The reports are sent as JSON payloads containing details about the attempted mutation, the violated policy, and the target element.
+*   **`report-only` (Boolean):** If `true`, the User Agent MUST enforce policies in **Audit Mode**. Violations are reported to the `report-to` endpoint, but the mutations themselves are **allowed** to proceed. This is critical for safely rolling out restrictive policies on live sites.
 
 ## Precedence and Inheritance
 
