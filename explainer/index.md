@@ -48,8 +48,12 @@ These constraints MUST be mechanistically enforced by the User Agent. The UA act
 - `require-attribution`
 - `require-diff`
 
-### 2. LLM-Intent (Soft Constraints - LLM Context)
-These constraints guide optimization. The User Agent's responsibility is to parse these values and faithfully inject them into the LLM's context window or system prompt. Interpretation is up to the specific Model.
+### 2. LLM-Intent (Soft Constraints - Deterministic Context Construction)
+These constraints guide optimization. The User Agent's responsibility is to **deterministically parse** these attributes and construct a predictable context or system prompt for the LLM.
+- **Deterministic Parsing:** The UA MUST map `<div llm-intent="summarize">` to a standardized context object (e.g., `{"role": "summary_target", "id": "..."}`) in a predictable way.
+- **Probabilistic Execution:** While the input signal provided by the UA is deterministic, the LLM's generation based on that signal remains probabilistic.
+
+Common Intents:
 - `type`
 - `audience`
 - `rhetorical-role`

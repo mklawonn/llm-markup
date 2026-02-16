@@ -6,7 +6,7 @@ LLM Markup (LLMPM) is a proposal for a declarative transformation contract betwe
 
 **Key Distinction:** This standard places conformance requirements on the **Browser (User Agent)**, not the underlying Language Model.
 - **Policies (Hard Constraints):** The Browser MUST mechanistically enforce these rules (e.g., preventing modification of `immutable` text).
-- **Intent (Soft Guidance):** The Browser parses these and provides them as context to the LLM, but the LLM's adherence is probabilistic.
+- **Intent (Deterministic Context):** The Browser MUST parse these tags deterministically to construct a predictable context object or system prompt (e.g., mapping `<div llm-intent="summarize">` to a standard signal). The *LLM's subsequent generation* remains probabilistic, but the *Browser's input* to it is standardized.
 
 ## Repository Structure
 
