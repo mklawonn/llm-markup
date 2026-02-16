@@ -16,25 +16,31 @@ Markup Shorthands: markdown yes
 
 The `llm-intent` namespace defines soft constraints and semantic signals that help the User Agent construct a deterministic context for the LLM. Unlike policy attributes, these do not strictly enforce visibility or mutability by default, but provide metadata that can be targeted by policies.
 
+### The llm-policy-license attribute
+Specifies the usage license for the content, acting as a policy macro that enforces rights and restrictions.
+
+*   **Syntax:** `llm-policy-license="<SPDX-Identifier>"`
+*   **Purpose:** Machine-readable declaration of rights (e.g., `CC-BY-4.0`, `MIT`, `GPL-3.0`). The User Agent MUST enforce the terms associated with the license (e.g., restricting commercial use, requiring attribution, or enforcing copyleft on output).
+
+## The LLM-Provenance Namespace
+
+The `llm-provenance` namespace provides metadata about the origin and history of the content, facilitating audit trails and attribution.
+
+### The llm-provenance-attribution attribute
+Specifies the required attribution text for the content.
+
+*   **Syntax:** `llm-provenance-attribution="<string>"`
+*   **Purpose:** Defines the text that MUST accompany the content if it is used or transformed by the LLM (e.g., "Source: The New York Times"). This acts as the data payload for any attribution requirements enforced by `llm-policy-license`.
+
+## The LLM-Intent Namespace
+
+The `llm-intent` namespace defines soft constraints and semantic signals that help the User Agent construct a deterministic context for the LLM. Unlike policy attributes, these do not strictly enforce visibility or mutability by default, but provide metadata that can be targeted by policies.
+
 ### The llm-intent-category attribute
 Assigns a semantic category to a node, allowing it to be targeted by Global Policy rules or specific LLM instructions.
 
 *   **Syntax:** `llm-intent-category="<string>"`
 *   **Purpose:** Provides a stable, semantic label (e.g., "quote", "advertisement", "navigation") independent of CSS classes or visual presentation.
-
-### The llm-intent-license attribute
-Specifies the usage license for the content within the element.
-
-*   **Syntax:** `llm-intent-license="<SPDX-Identifier>"`
-*   **Purpose:** Machine-readable declaration of rights (e.g., `CC-BY-4.0`, `MIT`, `Copyright-All-Rights-Reserved`). The User Agent MUST respect these terms when processing content for the LLM.
-
-### The llm-intent-attribution attribute
-Specifies the required attribution text for the content.
-
-*   **Syntax:** `llm-intent-attribution="<string>"`
-*   **Purpose:** Defines the text that MUST accompany the content if it is used or transformed by the LLM (e.g., "Source: The New York Times"). This acts as a semantic link to the `llm-policy-input` or `output` behavior, potentially triggering `mask` or `block` if attribution cannot be preserved.
-
-## The LLM-Policy Namespace
 
 The `llm-policy` namespace defines hard constraints that a conforming User Agent MUST enforce. These are split into three primary attributes to govern the flow of information and mutations.
 
