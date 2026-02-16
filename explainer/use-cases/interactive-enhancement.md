@@ -9,12 +9,12 @@ However, the agency wants users to be able to ask their browser agent to "make t
 If the policy is `mutable`, an LLM might accidentally simplify the complex SVG paths while adding the interactivity, rendering the map legally inaccurate.
 If the policy is `readonly`, the LLM cannot add the necessary event listeners or script tags.
 
-## The Solution: Interaction-Only Policy
-The agency tags the SVG container with `llm-policy-output="interaction-only"`.
+## The Solution: Interaction Policy
+The agency tags the SVG container with `llm-policy-output="interaction"`.
 
 ### Policy Definition
 *   **Target:** `<svg id="election-map">`
-*   **Policy:** `interaction-only`
+*   **Policy:** `interaction`
 
 ### Outcome
 The user asks: *"Add a hover effect that shows the district name."*

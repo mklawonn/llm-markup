@@ -8,12 +8,12 @@ Crucially, the legal text itself **must not be altered by even a single characte
 If the policy is `mutable`, an LLM attempting to "highlight" a phrase might rewrite the surrounding sentence to improve flow or grammar, inadvertently changing the legal meaning.
 If the policy is `readonly`, the LLM cannot inject the `<mark>` or `<span>` elements needed for highlighting.
 
-## The Solution: Annotation-Only Policy
-The database tags the contract body with `llm-policy-output="annotation-only"`.
+## The Solution: Annotation Policy
+The database tags the contract body with `llm-policy-output="annotation"`.
 
 ### Policy Definition
 *   **Target:** `<div class="contract-clause">`
-*   **Policy:** `annotation-only`
+*   **Policy:** `annotation`
 
 ### Outcome
 The user asks: *"Highlight all mentions of 'Force Majeure' in yellow."*

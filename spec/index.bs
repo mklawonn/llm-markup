@@ -45,54 +45,40 @@ Assigns a semantic category to a node, allowing it to be targeted by Global Poli
 The `llm-policy` namespace defines hard constraints that a conforming User Agent MUST enforce. These are split into three primary attributes to govern the flow of information and mutations.
 
 ### The llm-policy-input attribute
-Governs the flow of data from the DOM to the Language Model (Redaction and Visibility).
+Governs the flow of data from the DOM to the Language Model (Visibility). This attribute accepts a **space-separated list** of allowed information channels. The User Agent MUST construct the context using the union of these channels.
 
-*   **`allow` (Initial):** The User Agent MUST include the node and its descendants in the LLM context.
-*   **`block`:** The User Agent MUST omit the node and its descendants from the context.
-*   **`mask`:** The User Agent MUST preserve the structure but replace text content with placeholders.
-*   **`summary`:** The User Agent MUST replace the node's content with a summary before transmission.
+*   **`none` (Default):** The node is completely hidden from the LLM.
+*   **`structure`:** The LLM may see the element and its attributes (subject to filtering), but not its text content or children.
+*   **`text`:** The LLM may see the text content of the node.
+*   **`attributes`:** The LLM may see the attributes of the node.
+*   **`media`:** The LLM may see media content (images, audio, video).
+*   **`all`:** Shorthand for `structure text attributes media`.
+
+**Example:** `llm-policy-input="structure text"` creates a "Masked" view where the structure and text are visible, but attributes (like PII in `data-user-id`) are hidden.
 
 ### The llm-policy-output attribute
-Governs the flow of mutations from the Language Model to the DOM (Enforcement).
+Governs the flow of mutations from the Language Model to the DOM (Enforcement). This attribute accepts a **space-separated list** of permission tokens. The User Agent MUST grant the union of all permissions specified.
 
-*   **`readonly` (Initial):** The User Agent MUST reject all mutations targeting this node.
-*   **`mutable`:** The User Agent MAY accept mutations across all layers.
-*   **`append-only`:** The User Agent MUST allow insertion of children but reject modification of existing content.
-*   **`style-only`:** The User Agent MUST allow modifications to the Presentation Layer (CSS/Classes) only.
-*   **`interaction-only`:** The User Agent MUST allow modifications to the Interaction Layer (Scripts/Event Handlers) but reject changes to existing text content or structure.
-*   **`reorder-only`:** The User Agent MUST allow reordering of child nodes but reject any modification, addition, or removal of the nodes themselves.
-*   **`annotation-only`:** The User Agent MUST allow wrapping of text nodes (e.g., with `<span>`, `<mark>`) provided the concatenated text content remains identical.
-*   **`content-only`:** The User Agent MUST allow modifications to the Content Layer (Text) only.
+*   **`readonly` (Default):** No mutations are permitted.
+*   **`style`:** Grants permission to modify the Presentation Layer (CSS/Classes).
+*   **`interaction`:** Grants permission to modify the Interaction Layer (Scripts/Event Handlers/State).
+*   **`layout`:** Grants permission to reorder child nodes (formerly `reorder-only`).
+*   **`annotation`:** Grants permission to wrap text nodes without changing content.
+*   **`content`:** Grants permission to modify the Content Layer (Text).
+*   **`append`:** Grants permission to append new children.
+*   **`mutable`:** Shorthand for all permissions.
 
-## Enforcement of `reorder-only` (Structural Permutation)
-
-The User Agent MUST allow the permutation of direct child nodes while strictly preserving their identity and content.
-
-*   **Allowed Operations:**
-    *   **Reordering:** Changing the index of existing child nodes within the parent container.
-*   **Blocked Operations:**
-    *   **Modification:** Changing attributes or content of any child node.
-    *   **Insertion/Removal:** Adding new nodes or deleting existing ones.
-
-## Enforcement of `annotation-only` (Non-Destructive Wrapping)
-
-The User Agent MUST allow the insertion of inline wrapper elements while strictly enforcing that the textual content remains unchanged.
-
-*   **Allowed Operations:**
-    *   **Splitting:** Text nodes may be split.
-    *   **Wrapping:** Text nodes (or parts thereof) may be wrapped in inline elements (e.g., `<span>`, `<mark>`, `<a>`, `<b>`, `<i>`).
-    *   **Attributes:** The wrapper elements MAY have attributes (e.g., `class`, `href`, `style`).
-*   **Invariant Constraint:**
-    *   The `textContent` of the parent element (concatenated text of all descendants) MUST remain byte-identical to the original state.
-*   **Blocked Operations:**
-    *   **Text Mutation:** Changing any character of the text content.
-    *   **Reordering:** Changing the sequence of text segments.
+**Example:** `llm-policy-output="style annotation"` allows highlighting and styling but prevents text alteration.
 
 ### The llm-policy-memory attribute
-Governs the persistence of interaction data (Privacy).
+Governs the persistence of interaction data (Retention). This attribute accepts a **space-separated list** of allowed storage scopes.
 
-*   **`no-store` (Initial):** The User Agent MUST signal that the content is ephemeral and MUST NOT be used for training or long-term recall.
-*   **`persist`:** The User Agent MAY allow long-term retention of the interaction data.
+*   **`none` (Default):** Ephemeral processing only.
+*   **`session`:** Data may be retained for the duration of the current browsing session.
+*   **`user`:** Data may be stored in the user's long-term profile (e.g., "Remember I like dark mode").
+*   **`training`:** Data may be used to train or fine-tune the global model.
+
+**Example:** `llm-policy-memory="session user"` allows personalization but prohibits using the data for model training.
 
 # Global Policy Header
 
@@ -140,57 +126,47 @@ The global policy is defined as a JSON object. This schema enforces site-wide de
 
 # Processing Model
 
-This section defines the normative requirements for User Agents when enforcing mutation policies.
+This section defines the normative requirements for User Agents when enforcing mutation policies. The User Agent MUST calculate the **Effective Permission Set** as the union of all tokens present in the `llm-policy-output` attribute.
 
-## Enforcement of `interaction-only`
+## 1. The Semantic Payload Principle (Core Constraint)
 
-The User Agent MUST determine the mutability of a node or attribute based on the **Semantic Payload Principle**. This principle separates the document into **Immutable Payload** (Content/Identity) and **Mutable State** (Presentation/Interaction).
+Regardless of the permission set, the User Agent MUST determine the mutability of any specific attribute or node based on its semantic role.
 
-### 1. Immutable Payload (Identity & Reference)
-Attributes and nodes that define the identity, data source, or semantic value of information are strictly **Read-Only**.
+*   **Immutable Payload (Identity & Reference):** Attributes defining identity (`id`, `name`), structure (`for`, `headers`), or data source/destination (`src`, `href`, `action`, `data`) are **strictly readonly** unless the `mutable` token is explicitly present.
+*   **Mutable State (Presentation & Interaction):** Attributes defining visual style (`class`, `style`) or transient state (`aria-*`, `checked`, `open`) are subject to specific permission tokens.
 
-*   **Text Nodes:** The text content of existing nodes MUST NOT be altered.
-*   **Referential Integrity (Pointers):** Attributes that establish identity or structural relationships (e.g., `id`, `name`, `for`, `headers`) define the document topology and MUST NOT be mutated.
-*   **Resource Identifiers (URIs):** Attributes that define the *source* or *destination* of data (e.g., `src`, `href`, `data`, `action`, `cite`) define the content payload and MUST NOT be mutated.
-*   **Semantic Metadata:** Attributes that provide non-visual data essential to the meaning (e.g., `alt`, `value` (unless user-editable), `datetime`) MUST NOT be mutated.
+## 2. Token-Based Enforcement
 
-### 2. Mutable State (Presentation & Interaction)
-Attributes and nodes that define the visual presentation, transient state, or behavioral logic are **Mutable**.
+The User Agent MUST allow a mutation if and only if it is authorized by at least one token in the Effective Permission Set.
 
-*   **Visual Presentation:** Attributes governing visual rendering (e.g., `style`, `class`, `hidden`) belong to the Presentation Layer and MAY be mutated.
-*   **Interaction State:** Attributes reflecting user interface state (e.g., `open`, `checked`, `selected`, `disabled`, `tabindex`, `aria-*`) belong to the Interaction Layer and MAY be mutated.
-*   **Behavioral Logic:** Event handlers (e.g., `onclick`) and the insertion of purely functional elements (e.g., `<script>`, `<style>`) MAY be mutated or added.
+### `style` (Presentation Layer)
+*   **Allowed:** Modification of `class` and `style` attributes.
+*   **Blocked:** Everything else.
 
-### 3. Conflict Resolution
-If an attribute's category is ambiguous (e.g., a custom `data-*` attribute), the User Agent SHOULD default to **Immutable** unless the attribute is explicitly whitelisted by a higher-level policy or heuristics confirm it is purely presentational.
+### `interaction` (Behavioral Layer)
+*   **Allowed:**
+    *   Modification of `class`, `style`.
+    *   Modification of Event Handlers (`on*`) and ARIA states (`aria-*`).
+    *   Modification of global interaction attributes (`tabindex`, `hidden`, `contenteditable`, `draggable`, `spellcheck`).
+    *   Insertion of `<script>` and `<style>` elements.
+*   **Blocked:** Modification of Text Nodes or Payload Attributes (`src`, `href`, `id`).
 
-## Enforcement of `style-only` (Presentation Layer)
+### `layout` (Structural Reordering)
+*   **Allowed:** Reordering (permuting) of direct child nodes.
+*   **Blocked:** Modification, addition, or removal of child nodes.
 
-The User Agent MUST strictly limit mutations to attributes defined as **Presentation Attributes**.
+### `annotation` (Non-Destructive Wrapping)
+*   **Allowed:** Splitting text nodes and wrapping them in inline elements (e.g., `<span>`, `<mark>`, `<a>`).
+*   **Constraint:** The concatenated `textContent` of the parent element MUST remain identical.
+*   **Blocked:** Changing the text characters themselves.
 
-*   **Allowed Attributes:**
-    *   `class`: The primary mechanism for CSS selection.
-    *   `style`: Inline CSS properties.
-*   **Blocked Attributes:**
-    *   **Identity:** `id`, `name`.
-    *   **Interaction/State:** `aria-*`, `tabindex`, `hidden`, `checked`, `selected`, `disabled`, `open`.
-    *   **Behavior:** Event handlers (e.g., `onclick`).
-    *   **Content:** Text nodes and resource attributes (`src`, `href`).
+### `content` (Text Layer)
+*   **Allowed:** Modification of Text Nodes.
+*   **Blocked:** Changing the DOM structure or attributes of container elements.
 
-## Enforcement of `interaction-only` (Behavioral Layer)
+### `append` (Additive Structure)
+*   **Allowed:** Insertion of new child nodes (elements or text) at the end of the child list.
+*   **Blocked:** Modification or removal of existing siblings.
 
-The User Agent MUST allow mutations to the **Presentation Layer** and the **Interaction Layer**, but strictly forbid changes to the **Content Layer**.
-
-*   **Allowed Attributes (Additive):**
-    *   **Presentation:** `class`, `style`.
-    *   **ARIA States & Properties:** All attributes matching `aria-*`.
-    *   **Global Interaction Attributes:** `tabindex`, `accesskey`, `contenteditable`, `draggable`, `spellcheck`, `hidden`.
-    *   **Form Control State:** `checked`, `selected`, `disabled`, `readonly`, `required`, `open`.
-    *   **Event Handlers:** All attributes matching `on*` (e.g., `onclick`, `onmouseover`).
-*   **Blocked Attributes (Immutable):**
-    *   **Identity:** `id`, `name`, `for`.
-    *   **Content/Source:** `src`, `href`, `data`, `action`, `cite`, `value` (unless user-editable), `alt`, `datetime`.
-*   **Allowed Element Insertions:**
-    *   Scripts: `<script>` tags may be inserted.
-    *   Styles: `<style>` tags may be inserted.
-    *   UI Elements: New elements may be inserted as long as they do not replace existing content nodes.
+### `mutable` (Full Access)
+*   **Allowed:** All operations. The User Agent removes all restrictions for this node.

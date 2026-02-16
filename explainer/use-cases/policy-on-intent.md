@@ -26,10 +26,10 @@ The server sends a Global Policy Header that maps the `historical-quote` categor
   "constraints": {
     "category-rules": {
       "historical-quote": {
-        "llm-policy-output": "readonly"
+        "llm-policy-output": ["readonly"]
       },
       "commentary": {
-        "llm-policy-output": "mutable"
+        "llm-policy-output": ["mutable"]
       }
     }
   }

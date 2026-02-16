@@ -8,12 +8,12 @@ The server sends the initial list in a static order, but allows client-side reor
 If the policy is `mutable`, an LLM might attempt to rewrite the job descriptions while sorting them, potentially hallucinating salary figures or altering the job requirements.
 If the policy is `readonly`, the LLM cannot change the order of the `<li>` elements.
 
-## The Solution: Reorder-Only Policy
-The website tags the list container with `llm-policy-output="reorder-only"`.
+## The Solution: Layout Policy
+The website tags the list container with `llm-policy-output="layout"`.
 
 ### Policy Definition
 *   **Target:** `<ul id="job-list">`
-*   **Policy:** `reorder-only`
+*   **Policy:** `layout`
 
 ### Outcome
 The user asks: *"Sort these jobs by highest salary first."*

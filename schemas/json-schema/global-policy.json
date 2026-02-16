@@ -10,19 +10,19 @@
       "description": "Default attribute values applied to the entire document unless overridden locally.",
       "properties": {
         "llm-policy-input": {
-          "type": "string",
-          "enum": ["allow", "block", "mask", "summary"],
-          "default": "allow"
+          "type": "array",
+          "items": { "enum": ["structure", "text", "attributes", "media", "all", "none"] },
+          "default": ["structure", "text", "attributes", "media"]
         },
         "llm-policy-output": {
-          "type": "string",
-          "enum": ["readonly", "mutable", "append-only", "style-only", "interaction-only", "reorder-only", "annotation-only", "content-only"],
-          "default": "readonly"
+          "type": "array",
+          "items": { "enum": ["readonly", "mutable", "style", "interaction", "layout", "annotation", "content", "append"] },
+          "default": ["readonly"]
         },
         "llm-policy-memory": {
-          "type": "string",
-          "enum": ["no-store", "persist"],
-          "default": "no-store"
+          "type": "array",
+          "items": { "enum": ["none", "session", "user", "training"] },
+          "default": ["none"]
         }
       },
       "additionalProperties": false
@@ -43,9 +43,18 @@
             "^.*$": {
               "type": "object",
               "properties": {
-                "llm-policy-input": { "enum": ["allow", "block", "mask", "summary"] },
-                "llm-policy-output": { "enum": ["readonly", "mutable", "append-only", "style-only", "interaction-only", "reorder-only", "annotation-only", "content-only"] },
-                "llm-policy-memory": { "enum": ["no-store", "persist"] }
+                "llm-policy-input": {
+                  "type": "array",
+                  "items": { "enum": ["structure", "text", "attributes", "media", "all", "none"] }
+                },
+                "llm-policy-output": {
+                  "type": "array",
+                  "items": { "enum": ["readonly", "mutable", "style", "interaction", "layout", "annotation", "content", "append"] }
+                },
+                "llm-policy-memory": {
+                  "type": "array",
+                  "items": { "enum": ["none", "session", "user", "training"] }
+                }
               },
               "additionalProperties": false
             }
