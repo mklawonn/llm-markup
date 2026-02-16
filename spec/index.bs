@@ -59,6 +59,7 @@ Governs the flow of mutations from the Language Model to the DOM (Enforcement).
 *   **`mutable`:** The User Agent MAY accept mutations across all layers.
 *   **`append-only`:** The User Agent MUST allow insertion of children but reject modification of existing content.
 *   **`style-only`:** The User Agent MUST allow modifications to the Presentation Layer (CSS/Classes) only.
+*   **`interaction-only`:** The User Agent MUST allow modifications to the Interaction Layer (Scripts/Event Handlers) but reject changes to existing text content or structure.
 *   **`content-only`:** The User Agent MUST allow modifications to the Content Layer (Text) only.
 
 ### The llm-policy-memory attribute
