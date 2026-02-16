@@ -111,3 +111,29 @@ The global policy is defined as a JSON object. This schema enforces site-wide de
 1.  **Constraints:** Constraints defined in the global policy header MUST NOT be overridden by local DOM attributes.
 2.  **Local Overrides:** Local attributes (e.g., `llm-policy-output="mutable"`) override the global `defaults` unless a constraint prevents it.
 3.  **Inheritance:** Attributes on a node apply to all its descendants unless a descendant specifies its own attribute.
+
+# Processing Model
+
+This section defines the normative requirements for User Agents when enforcing mutation policies.
+
+## Enforcement of `interaction-only`
+
+The User Agent MUST determine the mutability of a node or attribute based on the **Semantic Payload Principle**. This principle separates the document into **Immutable Payload** (Content/Identity) and **Mutable State** (Presentation/Interaction).
+
+### 1. Immutable Payload (Identity & Reference)
+Attributes and nodes that define the identity, data source, or semantic value of information are strictly **Read-Only**.
+
+*   **Text Nodes:** The text content of existing nodes MUST NOT be altered.
+*   **Referential Integrity (Pointers):** Attributes that establish identity or structural relationships (e.g., `id`, `name`, `for`, `headers`) define the document topology and MUST NOT be mutated.
+*   **Resource Identifiers (URIs):** Attributes that define the *source* or *destination* of data (e.g., `src`, `href`, `data`, `action`, `cite`) define the content payload and MUST NOT be mutated.
+*   **Semantic Metadata:** Attributes that provide non-visual data essential to the meaning (e.g., `alt`, `value` (unless user-editable), `datetime`) MUST NOT be mutated.
+
+### 2. Mutable State (Presentation & Interaction)
+Attributes and nodes that define the visual presentation, transient state, or behavioral logic are **Mutable**.
+
+*   **Visual Presentation:** Attributes governing visual rendering (e.g., `style`, `class`, `hidden`) belong to the Presentation Layer and MAY be mutated.
+*   **Interaction State:** Attributes reflecting user interface state (e.g., `open`, `checked`, `selected`, `disabled`, `tabindex`, `aria-*`) belong to the Interaction Layer and MAY be mutated.
+*   **Behavioral Logic:** Event handlers (e.g., `onclick`) and the insertion of purely functional elements (e.g., `<script>`, `<style>`) MAY be mutated or added.
+
+### 3. Conflict Resolution
+If an attribute's category is ambiguous (e.g., a custom `data-*` attribute), the User Agent SHOULD default to **Immutable** unless the attribute is explicitly whitelisted by a higher-level policy or heuristics confirm it is purely presentational.
