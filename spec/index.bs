@@ -136,7 +136,18 @@ Regardless of the permission set, the User Agent MUST determine the mutability o
 *   **Immutable Payload (Identity & Reference):** Attributes defining identity (`id`, `name`), structure (`for`, `headers`), or data source/destination (`src`, `href`, `action`, `data`) are **strictly readonly** unless the `mutable` token is explicitly present.
 *   **Mutable State (Presentation & Interaction):** Attributes defining visual style (`class`, `style`) or transient state (`aria-*`, `checked`, `open`) are subject to specific permission tokens.
 
-## 2. Token-Based Enforcement
+## 2. Global Policy Resolution (Category Conflicts)
+
+When multiple `llm-intent-category` values apply to a single node, and the Global Policy defines conflicting rules for these categories, the User Agent MUST resolve the conflict using **Intersection Logic** (Restrictive Priority).
+
+*   **Rule:** The effective permission set granted by the Global Policy is the **intersection** of the allowed tokens for each applicable category.
+*   **Implication:** If *any* active category rule forbids a specific action (by omitting the corresponding token), that action is forbidden, even if other categories would allow it.
+*   **Example:**
+    *   Category A (`user-content`) allows: `content`, `interaction`.
+    *   Category B (`archived`) allows: `readonly` (empty set).
+    *   **Result:** `content` AND `interaction` AND `(empty)` = `readonly`.
+
+## 3. Token-Based Enforcement
 
 The User Agent MUST allow a mutation if and only if it is authorized by at least one token in the Effective Permission Set.
 
