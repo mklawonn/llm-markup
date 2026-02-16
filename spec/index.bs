@@ -22,6 +22,18 @@ Assigns a semantic category to a node, allowing it to be targeted by Global Poli
 *   **Syntax:** `llm-intent-category="<string>"`
 *   **Purpose:** Provides a stable, semantic label (e.g., "quote", "advertisement", "navigation") independent of CSS classes or visual presentation.
 
+### The llm-intent-license attribute
+Specifies the usage license for the content within the element.
+
+*   **Syntax:** `llm-intent-license="<SPDX-Identifier>"`
+*   **Purpose:** Machine-readable declaration of rights (e.g., `CC-BY-4.0`, `MIT`, `Copyright-All-Rights-Reserved`). The User Agent MUST respect these terms when processing content for the LLM.
+
+### The llm-intent-attribution attribute
+Specifies the required attribution text for the content.
+
+*   **Syntax:** `llm-intent-attribution="<string>"`
+*   **Purpose:** Defines the text that MUST accompany the content if it is used or transformed by the LLM (e.g., "Source: The New York Times"). This acts as a semantic link to the `llm-policy-input` or `output` behavior, potentially triggering `mask` or `block` if attribution cannot be preserved.
+
 ## The LLM-Policy Namespace
 
 The `llm-policy` namespace defines hard constraints that a conforming User Agent MUST enforce. These are split into three primary attributes to govern the flow of information and mutations.

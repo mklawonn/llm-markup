@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Ads and Licenses Example</title>
+    <script type="application/llm-policy+json">
+    {
+        "constraints": {
+            "category-rules": {
+                "advertisement": {
+                    "llm-policy-input": "block"
+                }
+            }
+        }
+    }
+    </script>
+</head>
+<body>
+
+    <h1>Article with Ads and Licensed Content</h1>
+
+    <section>
+        <h2>The Main Content</h2>
+        <p>This is the primary text of the article. The LLM is allowed to read and summarize this.</p>
+    </section>
+
+    <!-- Ad Example: Blocked by Global Policy via Category -->
+    <div llm-intent-category="advertisement" class="ad-banner">
+        <h3>Buy Widget X!</h3>
+        <p>Best widget in the world. Click here.</p>
+    </div>
+
+    <!-- License Example: MIT Licensed Code -->
+    <section>
+        <h2>Code Sample</h2>
+        <p>You can use this code in your project:</p>
+        <pre llm-intent-license="MIT" llm-intent-category="code-sample">
+function add(a, b) {
+    return a + b;
+}
+        </pre>
+    </section>
+
+    <!-- Attribution Example: Quote -->
+    <blockquote llm-intent-category="quote" llm-intent-attribution="Dr. Jane Doe, Future Tech Institute">
+        "The future of AI is collaborative, not autonomous."
+    </blockquote>
+
+</body>
+</html>
