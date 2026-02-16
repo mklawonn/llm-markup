@@ -6,11 +6,14 @@
     <script type="application/llm-policy+json">
     {
         "constraints": {
-            "category-rules": {
-                "advertisement": {
-                    "llm-policy-input": "block"
+            "dependencies": [
+                {
+                    "trigger": "#main-article",
+                    "requires": ".sponsored-message",
+                    "scope": "input",
+                    "failure-mode": "omit-trigger"
                 }
-            }
+            ]
         }
     }
     </script>
@@ -19,14 +22,15 @@
 
     <h1>Article with Ads and Licensed Content</h1>
 
-    <section>
+    <!-- Dependency Example: The article requires the sponsorship to be processed -->
+    <section id="main-article">
         <h2>The Main Content</h2>
-        <p>This is the primary text of the article. The LLM is allowed to read and summarize this.</p>
+        <p>This is the primary text of the article. The publisher requires the LLM to also acknowledge the sponsor below.</p>
     </section>
 
-    <!-- Ad Example: Blocked by Global Policy via Category -->
-    <div llm-intent-category="advertisement" class="ad-banner">
-        <h3>Buy Widget X!</h3>
+    <!-- Ad Example: Must be included if the article is included -->
+    <div class="sponsored-message" llm-intent-category="advertisement">
+        <h3>Sponsored by Widget X</h3>
         <p>Best widget in the world. Click here.</p>
     </div>
 
