@@ -16,7 +16,7 @@
         },
         "llm-policy-output": {
           "type": "string",
-          "enum": ["readonly", "mutable", "append-only", "style-only", "interaction-only", "content-only"],
+          "enum": ["readonly", "mutable", "append-only", "style-only", "interaction-only", "reorder-only", "annotation-only", "content-only"],
           "default": "readonly"
         },
         "llm-policy-memory": {
@@ -44,7 +44,7 @@
               "type": "object",
               "properties": {
                 "llm-policy-input": { "enum": ["allow", "block", "mask", "summary"] },
-                "llm-policy-output": { "enum": ["readonly", "mutable", "append-only", "style-only", "interaction-only", "content-only"] },
+                "llm-policy-output": { "enum": ["readonly", "mutable", "append-only", "style-only", "interaction-only", "reorder-only", "annotation-only", "content-only"] },
                 "llm-policy-memory": { "enum": ["no-store", "persist"] }
               },
               "additionalProperties": false

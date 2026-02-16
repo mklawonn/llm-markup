@@ -60,7 +60,33 @@ Governs the flow of mutations from the Language Model to the DOM (Enforcement).
 *   **`append-only`:** The User Agent MUST allow insertion of children but reject modification of existing content.
 *   **`style-only`:** The User Agent MUST allow modifications to the Presentation Layer (CSS/Classes) only.
 *   **`interaction-only`:** The User Agent MUST allow modifications to the Interaction Layer (Scripts/Event Handlers) but reject changes to existing text content or structure.
+*   **`reorder-only`:** The User Agent MUST allow reordering of child nodes but reject any modification, addition, or removal of the nodes themselves.
+*   **`annotation-only`:** The User Agent MUST allow wrapping of text nodes (e.g., with `<span>`, `<mark>`) provided the concatenated text content remains identical.
 *   **`content-only`:** The User Agent MUST allow modifications to the Content Layer (Text) only.
+
+## Enforcement of `reorder-only` (Structural Permutation)
+
+The User Agent MUST allow the permutation of direct child nodes while strictly preserving their identity and content.
+
+*   **Allowed Operations:**
+    *   **Reordering:** Changing the index of existing child nodes within the parent container.
+*   **Blocked Operations:**
+    *   **Modification:** Changing attributes or content of any child node.
+    *   **Insertion/Removal:** Adding new nodes or deleting existing ones.
+
+## Enforcement of `annotation-only` (Non-Destructive Wrapping)
+
+The User Agent MUST allow the insertion of inline wrapper elements while strictly enforcing that the textual content remains unchanged.
+
+*   **Allowed Operations:**
+    *   **Splitting:** Text nodes may be split.
+    *   **Wrapping:** Text nodes (or parts thereof) may be wrapped in inline elements (e.g., `<span>`, `<mark>`, `<a>`, `<b>`, `<i>`).
+    *   **Attributes:** The wrapper elements MAY have attributes (e.g., `class`, `href`, `style`).
+*   **Invariant Constraint:**
+    *   The `textContent` of the parent element (concatenated text of all descendants) MUST remain byte-identical to the original state.
+*   **Blocked Operations:**
+    *   **Text Mutation:** Changing any character of the text content.
+    *   **Reordering:** Changing the sequence of text segments.
 
 ### The llm-policy-memory attribute
 Governs the persistence of interaction data (Privacy).
