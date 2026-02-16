@@ -137,3 +137,34 @@ Attributes and nodes that define the visual presentation, transient state, or be
 
 ### 3. Conflict Resolution
 If an attribute's category is ambiguous (e.g., a custom `data-*` attribute), the User Agent SHOULD default to **Immutable** unless the attribute is explicitly whitelisted by a higher-level policy or heuristics confirm it is purely presentational.
+
+## Enforcement of `style-only` (Presentation Layer)
+
+The User Agent MUST strictly limit mutations to attributes defined as **Presentation Attributes**.
+
+*   **Allowed Attributes:**
+    *   `class`: The primary mechanism for CSS selection.
+    *   `style`: Inline CSS properties.
+*   **Blocked Attributes:**
+    *   **Identity:** `id`, `name`.
+    *   **Interaction/State:** `aria-*`, `tabindex`, `hidden`, `checked`, `selected`, `disabled`, `open`.
+    *   **Behavior:** Event handlers (e.g., `onclick`).
+    *   **Content:** Text nodes and resource attributes (`src`, `href`).
+
+## Enforcement of `interaction-only` (Behavioral Layer)
+
+The User Agent MUST allow mutations to the **Presentation Layer** and the **Interaction Layer**, but strictly forbid changes to the **Content Layer**.
+
+*   **Allowed Attributes (Additive):**
+    *   **Presentation:** `class`, `style`.
+    *   **ARIA States & Properties:** All attributes matching `aria-*`.
+    *   **Global Interaction Attributes:** `tabindex`, `accesskey`, `contenteditable`, `draggable`, `spellcheck`, `hidden`.
+    *   **Form Control State:** `checked`, `selected`, `disabled`, `readonly`, `required`, `open`.
+    *   **Event Handlers:** All attributes matching `on*` (e.g., `onclick`, `onmouseover`).
+*   **Blocked Attributes (Immutable):**
+    *   **Identity:** `id`, `name`, `for`.
+    *   **Content/Source:** `src`, `href`, `data`, `action`, `cite`, `value` (unless user-editable), `alt`, `datetime`.
+*   **Allowed Element Insertions:**
+    *   Scripts: `<script>` tags may be inserted.
+    *   Styles: `<style>` tags may be inserted.
+    *   UI Elements: New elements may be inserted as long as they do not replace existing content nodes.
