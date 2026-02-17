@@ -9,55 +9,45 @@ This plan outlines the development of the alpha version of the Provenance Namesp
 ## Phase 1: Source Tracking (The "Where")
 *Focus: Identifying the origin of information chunks.*
 
-1.  **Introduce `llm-provenance-source` (Origin Layer):**
+1.  **Introduce `llm-provenance-source`:**
     *   **Goal:** Track the canonical source URI of a content block.
     *   **Value:** URI (e.g., `https://techradar.com`, `urn:internal:knowledge-base`).
     *   **Use Case:** Enabling citations and source-linking in the final UI.
 
-2.  **Introduce `llm-provenance-citation` (Presentation Layer):**
+2.  **Introduce `llm-provenance-citation`:**
     *   **Goal:** Provide a human-readable label for the source.
     *   **Value:** String (e.g., "[1]", "TechRadar", "User Knowledge").
     *   **Use Case:** Rendering citation badges next to generated text.
 
-## Phase 2: Synthesis Roles (The "How")
-*Focus: Defining how information is used in the synthesis.*
-
-1.  **Introduce `llm-provenance-role` (Semantic Layer):**
-    *   **Goal:** Define the function of a content block within the synthesized response.
-    *   **Proposed Taxonomy:**
-        *   `primary`: The main subject matter (e.g., the current page content).
-        *   `secondary`: Supporting evidence from external sources.
-        *   `context`: Background information or definitions.
-        *   `correction`: Agent-generated corrections or warnings (e.g., fact-checks).
-    *   **Use Case:** UI highlighting (e.g., blue for primary, green for secondary, yellow for corrections).
-
-## Phase 3: Reliability & Process (The "Trust" & "How")
-*Focus: Communicating uncertainty and transformation history.*
+## Phase 2: Synthesis & Reliability (The "How" & "Trust")
+*Focus: Tracking transformations and communicating uncertainty.*
 
 1.  **Introduce `llm-provenance-confidence` (Data Layer):**
     *   **Goal:** Express the agent's certainty in the accuracy of a specific chunk.
     *   **Value:** Float (0.0 - 1.0).
     *   **Use Case:** Graying out or flagging low-confidence information.
 
-2.  **Introduce `llm-provenance-operation` (Process Layer):**
-    *   **Goal:** Track the transformation applied to the source content.
-    *   **Proposed Taxonomy:**
-        *   **Content:** `summary`, `translation`, `verbatim`, `synthesis`.
-        *   **Presentation:** `restyle` (Style changes only).
-        *   **Structure:** `refactor` (Code/Logic), `reorder` (List permutation).
-        *   **Interaction:** `adaptation` (Adding interactive behaviors).
-        *   **Semantic:** `intent-match` (Classifying content based on user query/intent).
-    *   **Use Case:** User asks "Summarize this". Output is tagged `operation="summary"`. User asks "Find warnings". Output is tagged `operation="intent-match"`.
+2.  **Introduce `llm-provenance-operation` (Causal Ledger):**
+    *   **Goal:** A dynamic record of *why* and *how* the Agent modified the content across specific layers.
+    *   **Format:** Space-separated list of `layer:explanation` pairs.
+    *   **Layers:** `content`, `style`, `interaction`, `topology`, `data`, `intent`.
+    *   **Explanation:** A succinct, Agent-generated summary of the rationale (3-5 words).
+    *   **Example:** `llm-provenance-operation="content:summarized-article style:highlighted-warnings"`
+    *   **Use Case:** User inspects an element to see "content:translated-from-french" or "interaction:added-sort-button".
 
 ## Processing Model & Conformance (The "Rules")
 
-To ensure trust, the User Agent (UA) acts as the **Authority** on provenance, enforcing labeling independently of the LLM's text generation.
+To ensure trust, the User Agent (UA) acts as the **Authority** on provenance, maintaining the Causal Ledger.
 
-### 1. Deterministic Labeling
-The User Agent MUST wrap content in provenance containers based on the retrieval method and operation performed.
-*   **External Data:** If the UA fetches data from an external source (e.g., search result), it MUST wrap that content in a container with `llm-provenance-source` and `llm-provenance-role="secondary"` *before* rendering.
-*   **Operation Tracking:** When the UA delegates a task to the LLM (e.g., summarization), it MUST tag the output container with the corresponding `llm-provenance-operation` (e.g., `summary`).
-*   **LLM Confidence:** The UA MAY query the LLM for a confidence score, but the UA MUST parse and apply the `llm-provenance-confidence` attribute to the container itself. The LLM provides the signal; the UA applies the label.
+### 1. Deterministic Labeling & Causal Tracking
+*   **External Data:** If the UA fetches data from an external source, it MUST tag it with `llm-provenance-source`.
+*   **Causal Logging:** Whenever the Agent modifies a node (based on Policy permissions), it MUST append a corresponding entry to `llm-provenance-operation`.
+    *   *Example:* If the Agent changes the CSS class, it must add `style:rationale`.
+    *   *Constraint:* The Agent MUST NOT fabricate operations it did not perform.
+*   **LLM Confidence:** The UA MAY query the LLM for a confidence score, but the UA MUST parse and apply the `llm-provenance-confidence` attribute to the container itself.
+
+### 2. Rendering Requirements (Conspicuous Disclosure)
+
 
 ### 2. Rendering Requirements (Conspicuous Disclosure)
 Provenance metadata MUST be accessible to the user.
