@@ -27,10 +27,12 @@ This plan outlines the development of standard vocabulary and mechanisms for the
     *   **Prompt Effect:** "This mentions 'Apple (Fruit)', not 'Apple (Tech Company)'."
 
 4.  **Introduce `llm-intent-instruction` (Direct Prompting):**
-    *   **Goal:** Allow developers to provide explicit, free-form instructions to the LLM for specific nodes, bypassing the taxonomy.
+    *   **Goal:** Allow developers to provide explicit, free-form instructions to the LLM for specific nodes, bypassing the standard templates.
     *   **Value:** Free-form string.
-    *   **Prompt Effect:** The User Agent injects this string directly into the context.
-    *   **Example:** `<div llm-intent-instruction="Summarize this in the style of a pirate">...</div>`
+    *   **Prompt Effect:** The User Agent uses this string *instead of* the default templates for `llm-intent-category`, `llm-intent-function`, and `llm-intent-tone`.
+    *   **Policy Interaction:** This attribute **does not erase** the underlying category or function. The semantic identity (e.g., `category="advertisement"`) is preserved for Global Policy routing. If a policy blocks the node, the instruction is ignored.
+    *   **Constraint:** This attribute operates strictly at the *Prompt Construction* layer and cannot bypass *Policy Enforcement* (which happens upstream).
+    *   **Example:** `<div llm-intent-category="advertisement" llm-intent-instruction="Summarize this product">...</div>` (If policy allows ads, this custom instruction is used).
 
 ## Phase 2: Interaction & Workflow (The "How")
 *Focus: Guiding the agent through tasks and user interactions.*
