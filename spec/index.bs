@@ -20,17 +20,39 @@ The `llm-intent` namespace defines soft constraints and semantic signals that he
 Specifies the usage license for the content, acting as a policy macro that enforces rights and restrictions.
 
 *   **Syntax:** `llm-policy-license="<SPDX-Identifier>"`
-*   **Purpose:** Machine-readable declaration of rights (e.g., `CC-BY-4.0`, `MIT`, `GPL-3.0`). The User Agent MUST enforce the terms associated with the license (e.g., restricting commercial use, requiring attribution, or enforcing copyleft on output).
+*   **Purpose:** Machine-readable declaration of rights (e.g., `CC-BY-4.0`, `MIT`, `GPL-3.0`). The User Agent MUST enforce the terms associated with the license (e.g., restricting commercial use, requiring `llm-provenance-citation`, or enforcing copyleft on output).
 
 ## The LLM-Provenance Namespace
 
-The `llm-provenance` namespace provides metadata about the origin and history of the content, facilitating audit trails and attribution.
+The `llm-provenance` namespace functions as an **Internal Ledger** or **Interchange Format** for the User Agent, tracking the origin, reliability, and synthesis role of information. While publishers MAY provide these attributes, they are primarily used by User Agents and intermediate services to track context during multi-source synthesis.
 
-### The llm-provenance-attribution attribute
-Specifies the required attribution text for the content.
+### The llm-provenance-source attribute
+Specifies the canonical origin URI of the content chunk.
 
-*   **Syntax:** `llm-provenance-attribution="<string>"`
-*   **Purpose:** Defines the text that MUST accompany the content if it is used or transformed by the LLM (e.g., "Source: The New York Times"). This acts as the data payload for any attribution requirements enforced by `llm-policy-license`.
+*   **Syntax:** `llm-provenance-source="<URI>"`
+*   **Purpose:** Tracks where the information came from (e.g., `https://wikipedia.org`, `urn:internal:knowledge-base`). Used for linking citations.
+
+### The llm-provenance-role attribute
+Defines the function of the content within the synthesized response.
+
+*   **Syntax:** `llm-provenance-role="primary|secondary|context|correction"`
+*   **Purpose:**
+    *   **`primary`:** The main subject matter or source.
+    *   **`secondary`:** Supporting evidence or external references.
+    *   **`context`:** Background definitions or setup.
+    *   **`correction`:** Agent-generated warnings or fact-checks.
+
+### The llm-provenance-confidence attribute
+Expresses the agent's certainty in the accuracy of the content.
+
+*   **Syntax:** `llm-provenance-confidence="<0.0-1.0>"`
+*   **Purpose:** Allows the User Agent to flag low-confidence information (e.g., hallucination warnings) or high-confidence facts in the UI.
+
+### The llm-provenance-citation attribute
+Specifies the human-readable label for the source.
+
+*   **Syntax:** `llm-provenance-citation="<string>"`
+*   **Purpose:** Defines the text to display for attribution (e.g., "[1]", "TechRadar", "Jane Doe"). Replaces the legacy `llm-provenance-attribution` attribute.
 
 ## The LLM-Intent Namespace
 

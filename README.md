@@ -5,8 +5,10 @@
 LLM Markup (LLMPM) is a proposal for a declarative transformation contract between servers and **LLM-Infused User Agents (Browsers)**. It provides a machine-readable layer to specify transformation constraints, semantic intent, and governance rules without altering the primary content layer.
 
 **Key Distinction:** This standard places conformance requirements on the **Browser (User Agent)**, not the underlying Language Model.
-- **Policies (Hard Constraints):** The Browser MUST mechanistically enforce these rules (e.g., preventing modification of `immutable` text).
-- **Intent (Deterministic Context):** The Browser MUST parse these tags deterministically to construct a predictable context object or system prompt (e.g., mapping `<div llm-intent="summarize">` to a standard signal). The *LLM's subsequent generation* remains probabilistic, but the *Browser's input* to it is standardized.
+- **Policies (Hard Constraints):** The Browser MUST mechanistically enforce these rules using attributes like `llm-policy-input` (what is seen), `llm-policy-output` (what can be changed), and `llm-policy-memory` (what is remembered).
+- **Intent (Deterministic Context):** The Browser MUST parse these tags deterministically to construct a predictable context object or system prompt (e.g., mapping `<div llm-intent="summarize">` to a standard signal).
+
+A **Global Policy Header (JSON)** can also be used to enforce site-wide constraints and defaults that local attributes cannot override.
 
 ## Repository Structure
 
@@ -29,7 +31,7 @@ LLM Markup (LLMPM) is a proposal for a declarative transformation contract betwe
 ├── namespaces/             # Formal Namespace Definitions
 │   ├── policy/             # llm-policy: (Hard Constraints)
 │   ├── intent/             # llm-intent: (Soft Constraints)
-│   └── provenance/         # llm-provenance: (Audit Metadata)
+│   └── provenance/         # llm-provenance: (Context Tracking)
 │
 ├── schemas/                # Machine-readable definitions
 │   ├── json-schema/        # JSON schemas for Header Payloads

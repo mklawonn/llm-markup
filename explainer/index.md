@@ -21,7 +21,6 @@ Our markup is:
 - **Non-rendering**
 - **Orthogonal to content**
 - **Machine-enforceable (by the Browser)**
-- **Cryptographically signable**
 - **Composable with HTML5**
 - **Ignorable by legacy browsers**
 
@@ -35,40 +34,48 @@ However, it is specialized specifically for LLM transformation control.
 
 ## III. The LLMPM Namespaces
 
-The markup is composed of exactly three orthogonal namespaces, each treated differently by the User Agent:
+The markup is composed of three orthogonal namespaces, with the `LLM-Policy` namespace providing granular control over how the User Agent manages the interaction between the DOM and the LLM.
 
 ### 1. LLM-Policy (Hard Constraints - Browser Enforced)
-These constraints MUST be mechanistically enforced by the User Agent. The UA acts as a guardrail, physically preventing the LLM from violating these rules (e.g., by withholding data, blocking write access, or discarding non-compliant generations).
-- `immutable`
-- `allowed-actions`
-- `forbidden-actions`
-- `license`
-- `regulatory`
-- `integrity-hash`
-- `require-attribution`
-- `require-diff`
+
+The Policy namespace is divided into three functional attributes that govern the flow of information across the document layers:
+
+- **`llm-policy-input` (Read Control):** Defines what the LLM is allowed to see.
+    - `allow`: Full visibility.
+    - `block`: Complete redaction from the LLM context.
+    - `mask`: Structural visibility but content-masked.
+    - `summary`: Abstracted view.
+- **`llm-policy-output` (Write Control):** Defines what the LLM is allowed to modify.
+    - `readonly`: No mutations permitted.
+    - `mutable`: Full modification permitted.
+    - `append-only`: Only additions are allowed.
+    - `style-only`: Restricts mutations to the Presentation Layer.
+    - `content-only`: Restricts mutations to the Content Layer.
+- **`llm-policy-memory` (Retention Control):** Defines data privacy and storage rules.
+    - `no-store`: Ephemeral processing; no training or retention.
+    - `persist`: Long-term memory allowed.
 
 ### 2. LLM-Intent (Soft Constraints - Deterministic Context Construction)
+
 These constraints guide optimization. The User Agent's responsibility is to **deterministically parse** these attributes and construct a predictable context or system prompt for the LLM.
-- **Deterministic Parsing:** The UA MUST map `<div llm-intent="summarize">` to a standardized context object (e.g., `{"role": "summary_target", "id": "..."}`) in a predictable way.
-- **Probabilistic Execution:** While the input signal provided by the UA is deterministic, the LLM's generation based on that signal remains probabilistic.
 
-Common Intents:
-- `type`
-- `audience`
-- `rhetorical-role`
-- `domain`
-- `priority`
-- `tone`
-- `reading-level`
+...
 
-### 3. LLM-Provenance (Audit Metadata)
-This metadata is used for tracking and audit purposes.
-- `author`
-- `signature`
-- `model-origin`
-- `transformation-history`
-- `timestamp`
+## IV. Global Policy and Precedence
+
+In addition to HTML attributes (local markup), a system can define a **Global Policy Header** via a JSON payload.
+
+### Precedence Logic
+1. **Constraints (Global):** Defined in the header, these are immutable and cannot be overridden by local attributes (e.g., a site-wide block on PII).
+2. **Local Attributes:** Define specific overrides for nodes (e.g., making a specific section `mutable` when the site default is `readonly`).
+3. **Defaults (Global):** The fallback behavior when no local attribute is present.
+
+### 3. LLM-Provenance (Context Tracking)
+This namespace functions as an internal ledger for the User Agent, tracking the origin and reliability of information as it is synthesized from multiple sources.
+- `source` (URI Origin)
+- `role` (Synthesis Function: primary, secondary, correction)
+- `confidence` (Agent Certainty Score)
+- `citation` (Display Label)
 
 ## IV. Contract Mechanics and Scope
 
@@ -101,5 +108,5 @@ These contracts operate across a number of distinct layers within the document m
 6. **Semantic / Intent Layer (Meaning Annotations)**
    - Communicative Role, Domain Context, Audience Targeting, Epistemic Status, Rhetorical Function.
 
-7. **Provenance Layer (Authorship & Authority)**
-   - Authorship, Licensing, Integrity, Regulatory Classification.
+7. **Provenance Layer (Source Tracking & Synthesis)**
+   - Origin Tracking, Reliability Scoring, Citation Management, Synthesis Roles.
