@@ -46,10 +46,12 @@ To ensure trust, the User Agent (UA) acts as the **Authority** on provenance, ma
     *   *Constraint:* The Agent MUST NOT fabricate operations it did not perform.
 *   **LLM Confidence:** The UA MAY query the LLM for a confidence score, but the UA MUST parse and apply the `llm-provenance-confidence` attribute to the container itself.
 
-### 2. Rendering Requirements (Conspicuous Disclosure)
+### 2. Diff Tracking & Validation (Integrity Check)
+The User Agent MUST maintain a **Diff** between the Original Served DOM and the Current Rendered DOM to validate the Causal Ledger.
+*   **Validation Rule:** For every detected mutation in a specific layer (Content, Style, etc.), there MUST be a corresponding entry in the `llm-provenance-operation` attribute.
+*   **Integrity Violation:** If a layer is modified (e.g., text changed) but the ledger lacks a corresponding entry (e.g., no `content:...` tag), the UA MUST flag this as an Integrity Violation and MAY revert the change or warn the user.
 
-
-### 2. Rendering Requirements (Conspicuous Disclosure)
+### 3. Rendering Requirements (Conspicuous Disclosure)
 Provenance metadata MUST be accessible to the user.
 
 *   **Mandatory Inspection:** The User Agent MUST provide a mechanism for the user to inspect the raw provenance data (Source, Role, Operation, Confidence) for any element. This MAY be implemented as a context menu item (e.g., "Inspect Provenance"), a dedicated panel, or a developer tool interface similar to "View Source".
