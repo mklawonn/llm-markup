@@ -31,21 +31,32 @@ This plan outlines the development of the alpha version of the Provenance Namesp
         *   `correction`: Agent-generated corrections or warnings (e.g., fact-checks).
     *   **Use Case:** UI highlighting (e.g., blue for primary, green for secondary, yellow for corrections).
 
-## Phase 3: Reliability & Confidence (The "Trust")
-*Focus: Communicating uncertainty.*
+## Phase 3: Reliability & Process (The "Trust" & "How")
+*Focus: Communicating uncertainty and transformation history.*
 
 1.  **Introduce `llm-provenance-confidence` (Data Layer):**
     *   **Goal:** Express the agent's certainty in the accuracy of a specific chunk.
     *   **Value:** Float (0.0 - 1.0).
     *   **Use Case:** Graying out or flagging low-confidence information.
 
+2.  **Introduce `llm-provenance-operation` (Process Layer):**
+    *   **Goal:** Track the transformation applied to the source content.
+    *   **Proposed Taxonomy:**
+        *   **Content:** `summary`, `translation`, `verbatim`, `synthesis`.
+        *   **Presentation:** `restyle` (Style changes only).
+        *   **Structure:** `refactor` (Code/Logic), `reorder` (List permutation).
+        *   **Interaction:** `adaptation` (Adding interactive behaviors).
+        *   **Semantic:** `intent-match` (Classifying content based on user query/intent).
+    *   **Use Case:** User asks "Summarize this". Output is tagged `operation="summary"`. User asks "Find warnings". Output is tagged `operation="intent-match"`.
+
 ## Processing Model & Conformance (The "Rules")
 
 To ensure trust, the User Agent (UA) acts as the **Authority** on provenance, enforcing labeling independently of the LLM's text generation.
 
 ### 1. Deterministic Labeling
-The User Agent MUST wrap content in provenance containers based on the retrieval method, not the LLM's output.
+The User Agent MUST wrap content in provenance containers based on the retrieval method and operation performed.
 *   **External Data:** If the UA fetches data from an external source (e.g., search result), it MUST wrap that content in a container with `llm-provenance-source` and `llm-provenance-role="secondary"` *before* rendering.
+*   **Operation Tracking:** When the UA delegates a task to the LLM (e.g., summarization), it MUST tag the output container with the corresponding `llm-provenance-operation` (e.g., `summary`).
 *   **LLM Confidence:** The UA MAY query the LLM for a confidence score, but the UA MUST parse and apply the `llm-provenance-confidence` attribute to the container itself. The LLM provides the signal; the UA applies the label.
 
 ### 2. Rendering Requirements (Conspicuous Disclosure)
