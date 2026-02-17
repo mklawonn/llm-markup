@@ -42,15 +42,26 @@ This plan outlines the development of standard vocabulary and mechanisms for the
 ## Phase 2: Interaction & Workflow (The "How")
 *Focus: Guiding the agent through tasks and user interactions.*
 
-1.  **Introduce `llm-intent-function` (Interaction Layer):**
-    *   **Goal:** Define the purpose of interactive elements beyond their accessible name.
-    *   **Proposed Values:** `search`, `submit`, `cancel`, `navigation`, `purchase`, `login`.
-    *   **Prompt Effect:** "The user's goal with this button is to Search."
+1.  **Standardize `llm-intent-function` (Interaction Layer):**
+    *   **Goal:** Define the purpose of interactive elements beyond their accessible name, allowing for open taxonomy.
+    *   **Mechanism:**
+        *   **Standardized Lexicon:** (`search`, `submit`, `cancel`, `navigation`, `purchase`, `login`).
+        *   **Custom Functions:** Arbitrary strings are wrapped in a template: `(Function: [Function])` or `Use this to [Function].`
+    *   **Prompt Effect:**
+        *   *Standard:* `search` -> "Use this control to perform a search query."
+        *   *Custom:* `filter-by-price` -> "Use this to filter-by-price."
 
-2.  **Introduce `llm-intent-workflow` (Structure Layer):**
-    *   **Goal:** Define sequences and dependencies for multi-step processes.
-    *   **Proposed Values:** `step`, `prerequisite`, `result`, `error-state`.
-    *   **Prompt Effect:** "This is Step 1 of 3. Do not proceed to Step 2 until Step 1 is complete."
+2.  **Standardize `llm-intent-workflow` (Structure Layer):**
+    *   **Goal:** Define sequences and dependencies for multi-step processes, allowing for open taxonomy.
+    *   **Mechanism:**
+        *   **Standardized Lexicon:** (`step`, `prerequisite`, `result`, `error-state`).
+        *   **Custom Workflows:** Arbitrary strings are wrapped in a template: `(Workflow: [Workflow])`.
+    *   **Prompt Effect:**
+        *   *Standard:* `step` -> "This is a required step in the workflow."
+        *   *Custom:* `approval-stage` -> "(Workflow: approval-stage)"
+
+**Note on Instruction Override:**
+The `llm-intent-instruction` attribute (Phase 1, Item 4) applies here as well. If present, it **overrides the prompt generation** for both `llm-intent-function` and `llm-intent-workflow` (e.g., providing a custom explanation of a complex step), but strictly **preserves the semantic label** for any Policy enforcement.
 
 ## Phase 3: Output Shaping & Persona (The "Response")
 *Focus: Controlling the style, format, and tone of the LLM's response.*
