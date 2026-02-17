@@ -18,13 +18,18 @@ This plan outlines the development of standard vocabulary and mechanisms for the
 
 2.  **Introduce `llm-intent-importance` (Topology Layer):**
     *   **Goal:** Provide a weighting mechanism for content prioritization.
-    *   **Proposed Values:** `critical`, `high`, `normal`, `low`, `background`.
-    *   **Prompt Effect:** "Prioritize this section. You may ignore background sections if context is limited."
+    *   **Prompt Effects (Deterministic Mapping):**
+        *   `critical`: "Pay maximum attention to the following content. It is essential for the user's task."
+        *   `high`: "Prioritize this content."
+        *   `normal`: (No instruction added).
+        *   `low`: "This content is supplementary. You may ignore it if context is limited."
+        *   `background`: "This is background information only. Do not focus on it unless explicitly asked."
 
 3.  **Introduce `llm-intent-entity` (Data Layer):**
     *   **Goal:** Link content to specific real-world entities for disambiguation.
     *   **Value:** URI (e.g., Wikidata ID, Schema.org URL).
-    *   **Prompt Effect:** "This mentions 'Apple (Fruit)', not 'Apple (Tech Company)'."
+    *   **Prompt Template:** `[Content] (Entity Reference: [URI])`
+    *   **Example:** `Apple (Entity Reference: https://www.wikidata.org/wiki/Q312)` anchors the text to "Apple Inc." without ambiguity.
 
 4.  **Introduce `llm-intent-instruction` (Direct Prompting):**
     *   **Goal:** Allow developers to provide explicit, free-form instructions to the LLM for specific nodes, bypassing the standard templates.
