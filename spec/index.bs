@@ -42,6 +42,48 @@ Assigns a semantic category to a node, allowing it to be targeted by Global Poli
 *   **Syntax:** `llm-intent-category="<string>"`
 *   **Purpose:** Provides a stable, semantic label (e.g., "quote", "advertisement", "navigation") independent of CSS classes or visual presentation.
 
+### The llm-intent-importance attribute
+Specifies the relative priority of the content within the document topology.
+
+*   **Syntax:** `llm-intent-importance="critical|high|normal|low|background"`
+*   **Purpose:** Guides the User Agent in prioritizing content for the LLM context. `critical` content MUST be preserved if token limits are reached, while `background` content MAY be discarded.
+
+### The llm-intent-entity attribute
+Links the content to a specific real-world entity for disambiguation.
+
+*   **Syntax:** `llm-intent-entity="<URI>"`
+*   **Purpose:** Provides a canonical reference (e.g., Wikidata ID, Schema.org URL) to ground the LLM's understanding of named entities.
+
+### The llm-intent-instruction attribute
+Provides explicit, free-form instructions to the LLM for processing the specific node.
+
+*   **Syntax:** `llm-intent-instruction="<string>"`
+*   **Purpose:** Allows developers to bypass standard templates and inject custom prompts. This attribute **overrides** the default prompt generation for Category, Function, and Tone, but preserves semantic identity for Policy enforcement.
+
+### The llm-intent-function attribute
+Defines the interactive purpose of an element (Phase 2).
+
+*   **Syntax:** `llm-intent-function="<string>"`
+*   **Purpose:** Semantic label for interactive controls (e.g., "search", "submit"). See the Standardized Lexicon for normative terms. Custom values are accepted.
+
+### The llm-intent-workflow attribute
+Defines the role of an element within a multi-step process (Phase 2).
+
+*   **Syntax:** `llm-intent-workflow="<string>"`
+*   **Purpose:** Semantic label for workflow states (e.g., "step", "prerequisite"). See the Standardized Lexicon for normative terms. Custom values are accepted.
+
+### The llm-intent-output attribute
+Specifies the desired format for the LLM's response (Phase 3).
+
+*   **Syntax:** `llm-intent-output="<string>"`
+*   **Purpose:** Instructions for response shaping (e.g., "json", "concise"). See the Standardized Lexicon for normative terms. Custom values are accepted.
+
+### The llm-intent-tone attribute
+Specifies the desired persona or tone for the LLM's response (Phase 3).
+
+*   **Syntax:** `llm-intent-tone="<string>"`
+*   **Purpose:** Instructions for stylistic adaptation (e.g., "formal", "empathetic"). See the Standardized Lexicon for normative terms. Custom values are accepted.
+
 The `llm-policy` namespace defines hard constraints that a conforming User Agent MUST enforce. These are split into three primary attributes to govern the flow of information and mutations.
 
 ### The llm-policy-input attribute
@@ -270,4 +312,39 @@ When constructing the LLM context, the User Agent MUST enforce dependency constr
     *   If the Requirement Verification fails, the User Agent applies the `failure-mode`:
         *   **`omit-trigger` (Default):** The triggering node is **removed** from the Candidate Set. The User Agent then re-evaluates dependency constraints recursively.
         *   **`error`:** The context construction process is halted, and the User Agent reports a dependency violation error.
+
+## 8. Intent Processing Model (Prompt Construction)
+
+This section defines how the User Agent translates `llm-intent` attributes into the system prompt or context object provided to the LLM.
+
+### 8.1. Hierarchy of Instruction
+The User Agent MUST determine the final instruction for a node based on the following precedence:
+
+1.  **`llm-intent-instruction` (Highest):** If present, the value of this attribute is used directly as the instruction. It overrides any instructions derived from Category, Function, Workflow, Output, or Tone attributes.
+    *   *Note:* The semantic values of overridden attributes (e.g., `llm-intent-category`) are preserved for **Policy Routing** but ignored for **Prompt Construction**.
+2.  **Standardized Lexicon (Optimized):** If an attribute value matches a term in the **Standardized Intent Lexicon**, the User Agent MUST use the corresponding **Optimized System Prompt** defined in the lexicon.
+3.  **Custom Value (Fallback):** If an attribute value is not found in the lexicon, the User Agent MUST construct the instruction using the **Fallback Template** for that attribute type.
+
+### 8.2. Fallback Templates
+
+For custom values not in the Standardized Lexicon, the User Agent MUST use the following templates:
+
+*   **Category:** `"Treat the following content as a(n) [value]."`
+*   **Function:** `"Use this control to [value]."`
+*   **Workflow:** `"(Workflow Stage: [value])"`
+*   **Output:** `"Format your response as [value]."`
+*   **Tone:** `"Adopt a(n) [value] tone."`
+
+### 8.3. Entity & Importance (Independent Layers)
+
+These attributes operate independently of the Instruction/Category hierarchy and are appended to the context.
+
+*   **`llm-intent-entity`:** Appends an entity reference anchor.
+    *   **Template:** `[Content] (Entity Reference: [URI])`
+*   **`llm-intent-importance`:** Maps to specific prioritization instructions.
+    *   **`critical`:** `"Pay maximum attention to the following content. It is essential for the user's task."`
+    *   **`high`:** `"Prioritize this content."`
+    *   **`normal`:** (No instruction).
+    *   **`low`:** `"This content is supplementary. You may ignore it if context is limited."`
+    *   **`background`:** `"This is background information only. Do not focus on it unless explicitly asked."`
 
