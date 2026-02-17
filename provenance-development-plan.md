@@ -38,3 +38,18 @@ This plan outlines the development of the alpha version of the Provenance Namesp
     *   **Goal:** Express the agent's certainty in the accuracy of a specific chunk.
     *   **Value:** Float (0.0 - 1.0).
     *   **Use Case:** Graying out or flagging low-confidence information.
+
+## Processing Model & Conformance (The "Rules")
+
+To ensure trust, the User Agent (UA) acts as the **Authority** on provenance, enforcing labeling independently of the LLM's text generation.
+
+### 1. Deterministic Labeling
+The User Agent MUST wrap content in provenance containers based on the retrieval method, not the LLM's output.
+*   **External Data:** If the UA fetches data from an external source (e.g., search result), it MUST wrap that content in a container with `llm-provenance-source` and `llm-provenance-role="secondary"` *before* rendering.
+*   **LLM Confidence:** The UA MAY query the LLM for a confidence score, but the UA MUST parse and apply the `llm-provenance-confidence` attribute to the container itself. The LLM provides the signal; the UA applies the label.
+
+### 2. Rendering Requirements (Conspicuous Disclosure)
+Provenance metadata MUST be **perceptible** to the user. It cannot be hidden metadata.
+*   **Distinguishability:** Content with different `llm-provenance-role` values MUST be visually or semantically distinguishable from each other and from the `primary` content.
+*   **Mechanisms:** Acceptable implementations include colored borders, background highlights, source icons, distinct typography, or interactive tooltips.
+*   **Non-Compliance:** Rendering all sources as identical plain text without indicators is non-compliant.
