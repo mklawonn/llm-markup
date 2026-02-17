@@ -66,12 +66,23 @@ The `llm-intent-instruction` attribute (Phase 1, Item 4) applies here as well. I
 ## Phase 3: Output Shaping & Persona (The "Response")
 *Focus: Controlling the style, format, and tone of the LLM's response.*
 
-1.  **Introduce `llm-intent-output` (Presentation/Data Layer):**
-    *   **Goal:** Specify the desired format of the LLM's generation.
-    *   **Proposed Values:** `concise`, `detailed`, `json`, `markdown`, `table`, `code`.
-    *   **Prompt Effect:** "Format your response as JSON."
+1.  **Standardize `llm-intent-output` (Presentation/Data Layer):**
+    *   **Goal:** Specify the desired format of the LLM's generation, allowing for open taxonomy.
+    *   **Mechanism:**
+        *   **Standardized Lexicon:** (`concise`, `detailed`, `json`, `markdown`, `table`, `code`).
+        *   **Custom Formats:** Arbitrary strings are wrapped in a template: `(Format Output: [Format])` or `Respond in [Format].`
+    *   **Prompt Effect:**
+        *   *Standard:* `json` -> "Format your response as a valid JSON object."
+        *   *Custom:* `mermaid-diagram` -> "Respond in mermaid-diagram."
 
-2.  **Introduce `llm-intent-tone` (Semantic Layer):**
-    *   **Goal:** Define the persona or tone the LLM should adopt.
-    *   **Proposed Values:** `formal`, `casual`, `educational`, `empathetic`, `neutral`.
-    *   **Prompt Effect:** "Adopt an educational tone."
+2.  **Standardize `llm-intent-tone` (Semantic Layer):**
+    *   **Goal:** Define the persona or tone the LLM should adopt, allowing for open taxonomy.
+    *   **Mechanism:**
+        *   **Standardized Lexicon:** (`formal`, `casual`, `educational`, `empathetic`, `neutral`).
+        *   **Custom Tones:** Arbitrary strings are wrapped in a template: `(Tone: [Tone])` or `Adopt a(n) [Tone] tone.`
+    *   **Prompt Effect:**
+        *   *Standard:* `formal` -> "Adopt a formal and professional tone."
+        *   *Custom:* `eccentric-inventor` -> "Adopt a(n) eccentric-inventor tone."
+
+**Note on Instruction Override:**
+The `llm-intent-instruction` attribute (Phase 1, Item 4) applies here as well. If present, it **overrides the prompt generation** for both `llm-intent-output` and `llm-intent-tone`. This allows for highly specific personas or formatting requirements that cannot be captured by simple keywords.
