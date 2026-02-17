@@ -60,7 +60,10 @@ The User Agent MUST wrap content in provenance containers based on the retrieval
 *   **LLM Confidence:** The UA MAY query the LLM for a confidence score, but the UA MUST parse and apply the `llm-provenance-confidence` attribute to the container itself. The LLM provides the signal; the UA applies the label.
 
 ### 2. Rendering Requirements (Conspicuous Disclosure)
-Provenance metadata MUST be **perceptible** to the user. It cannot be hidden metadata.
-*   **Distinguishability:** Content with different `llm-provenance-role` values MUST be visually or semantically distinguishable from each other and from the `primary` content.
-*   **Mechanisms:** Acceptable implementations include colored borders, background highlights, source icons, distinct typography, or interactive tooltips.
-*   **Non-Compliance:** Rendering all sources as identical plain text without indicators is non-compliant.
+Provenance metadata MUST be accessible to the user.
+
+*   **Mandatory Inspection:** The User Agent MUST provide a mechanism for the user to inspect the raw provenance data (Source, Role, Operation, Confidence) for any element. This MAY be implemented as a context menu item (e.g., "Inspect Provenance"), a dedicated panel, or a developer tool interface similar to "View Source".
+*   **Recommended Practices:** To ensure conspicuous disclosure, the User Agent SHOULD visually distinguish content based on its `llm-provenance-role`.
+    *   *Examples:* Colored borders for secondary sources, background highlights for corrections, or icons for AI-generated content.
+    *   *Goal:* Users should be able to intuitively distinguish between primary content and synthesized/external content without needing to inspect every element.
+*   **Non-Compliance:** Completely hiding provenance data with no way to access it is non-compliant.
