@@ -228,7 +228,7 @@ A: No. LLM Markup governs how an LLM-infused UA interacts with content the user 
 
 **Q: What if the LLM ignores the policies?**
 
-A: The LLM cannot ignore policies because the User Agent enforces them before the LLM sees the content. The LLM only receives pre-filtered context.
+A: In a compliant User Agent, the LLM cannot ignore policies because the UA enforces them mechanistically before the LLM sees the content. However, like `robots.txt`, this is a cooperative standard and does not provide cryptographic or legal enforcement. While compliant agents will strictly adhere to the contract, a "rogue" or non-compliant agent could theoretically ignore the attributes.
 
 **Q: Can malicious content use this to attack the LLM?**
 
