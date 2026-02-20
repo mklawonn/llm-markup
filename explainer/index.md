@@ -1,112 +1,226 @@
-# Explainer: LLM Markup Sketch
+# Explainer: LLM Markup (LLMPM)
 
-This document serves as the initial explainer for the LLM Markup Sketch proposal.
+## Status
 
-## I. Introduction and Proposal
+This document is the non-normative explainer for the LLM Markup specification. For the formal standard, see [spec/index.bs](../spec/index.bs).
 
-The LLM Markup Sketch is a proposal for a declarative transformation contract, a markup layer that acts as a Policy & Intent Overlay on top of HTML. Its purpose is to enable the construction of contracts between a server and an LLM-infused browser.
+## Problem Statement
 
-Crucially, this is not a new document language; it is a declarative transformation contract embedded in existing HTML.
+As LLMs become integrated into web browsers and user agents, there is no standardized way for content authors to:
 
-## II. Formal Definition and Core Properties
+1. **Control visibility**: Specify what content an LLM can "see" in its context window
+2. **Control mutations**: Define what changes an LLM is permitted to make
+3. **Control retention**: Declare data privacy and storage rules
+4. **Provide semantics**: Guide how content should be interpreted
+5. **Track provenance**: Maintain accountability for AI-generated modifications
 
-### Formal Definition
-An LLM Policy Markup (LLMPM) is a namespaced, machine-readable annotation layer over the Document Object Model (DOM). It defines a standard for **LLM-Infused User Agents (Browsers)** to strictly enforce transformation constraints (Policy) and convey semantic guidance (Intent) to an attached Language Model.
+Without such standards, LLM-infused browsers face a dilemma:
+- **Too permissive**: LLMs might expose sensitive data or make unauthorized changes
+- **Too restrictive**: LLMs cannot provide useful assistance with web content
+- **Inconsistent**: Different implementations handle the same content differently
 
-**Crucial Distinction:** The *User Agent* is the conforming entity, not the LLM. The User Agent uses deterministic logic to enforce policies and manage the interaction between the content and the probabilistic LLM.
+## Solution: A Declarative Contract
 
-### Core Properties
-Our markup is:
-- **Declarative**
-- **Non-rendering**
-- **Orthogonal to content**
-- **Machine-enforceable (by the Browser)**
-- **Composable with HTML5**
-- **Ignorable by legacy browsers**
+LLM Markup provides a declarative contract layer that sits on top of existing HTML. It uses three orthogonal namespaces to address different concerns:
 
-### Behavioral Analogies
-It behaves like:
-- **ARIA (semantic overlay):** Provides a semantic layer.
-- **CSP (policy declaration):** Declares governance rules.
-- **RDFa (metadata layer):** Functions as a metadata layer.
+### 1. LLM-Policy (Hard Constraints)
 
-However, it is specialized specifically for LLM transformation control.
+Policy attributes are **mechanistically enforced by the User Agent**. The LLM never gets a chance to violate them because the UA filters content before it reaches the LLM.
 
-## III. The LLMPM Namespaces
+```html
+<!-- Visibility Control -->
+<div llm-policy-input="none">         <!-- Hidden entirely -->
+<div llm-policy-input="structure">    <!-- Tags visible, text redacted -->
+<div llm-policy-input="structure text"> <!-- Tags and text, no custom attributes -->
+<div llm-policy-input="all">          <!-- Everything visible (default) -->
 
-The markup is composed of three orthogonal namespaces, with the `LLM-Policy` namespace providing granular control over how the User Agent manages the interaction between the DOM and the LLM.
+<!-- Mutation Control -->
+<div llm-policy-output="readonly">    <!-- No changes allowed (default) -->
+<div llm-policy-output="style">       <!-- Can change class/style only -->
+<div llm-policy-output="annotation">  <!-- Can wrap text, not change it -->
+<div llm-policy-output="content">     <!-- Can edit text content -->
+<div llm-policy-output="mutable">     <!-- Full modification allowed -->
 
-### 1. LLM-Policy (Hard Constraints - Browser Enforced)
+<!-- Retention Control -->
+<div llm-policy-memory="none">        <!-- Ephemeral only (default) -->
+<div llm-policy-memory="session">     <!-- Session-scoped retention -->
+<div llm-policy-memory="user">        <!-- User profile storage -->
+<div llm-policy-memory="training">    <!-- Training data authorized -->
+```
 
-The Policy namespace is divided into three functional attributes that govern the flow of information across the document layers:
+### 2. LLM-Intent (Semantic Guidance)
 
-- **`llm-policy-input` (Read Control):** Defines what the LLM is allowed to see.
-    - `allow`: Full visibility.
-    - `block`: Complete redaction from the LLM context.
-    - `mask`: Structural visibility but content-masked.
-    - `summary`: Abstracted view.
-- **`llm-policy-output` (Write Control):** Defines what the LLM is allowed to modify.
-    - `readonly`: No mutations permitted.
-    - `mutable`: Full modification permitted.
-    - `append-only`: Only additions are allowed.
-    - `style-only`: Restricts mutations to the Presentation Layer.
-    - `content-only`: Restricts mutations to the Content Layer.
-- **`llm-policy-memory` (Retention Control):** Defines data privacy and storage rules.
-    - `no-store`: Ephemeral processing; no training or retention.
-    - `persist`: Long-term memory allowed.
+Intent attributes guide the LLM's interpretation but are not hard constraints. The User Agent deterministically constructs prompts from these attributes.
 
-### 2. LLM-Intent (Soft Constraints - Deterministic Context Construction)
+```html
+<!-- Semantic Categories -->
+<div llm-intent-category="summary">       <!-- Condensed content -->
+<div llm-intent-category="legal-disclaimer"> <!-- Do not paraphrase -->
+<div llm-intent-category="code-block">    <!-- Preserve formatting -->
+<div llm-intent-category="satire">        <!-- Do not interpret literally -->
 
-These constraints guide optimization. The User Agent's responsibility is to **deterministically parse** these attributes and construct a predictable context or system prompt for the LLM.
+<!-- Importance Levels -->
+<div llm-intent-importance="critical">    <!-- Must preserve if truncating -->
+<div llm-intent-importance="background">  <!-- Ignore unless asked -->
 
-...
+<!-- Entity References -->
+<span llm-intent-entity="https://wikidata.org/wiki/Q5">Albert Einstein</span>
 
-## IV. Global Policy and Precedence
+<!-- Custom Instructions -->
+<div llm-intent-instruction="Translate to plain English">
+```
 
-In addition to HTML attributes (local markup), a system can define a **Global Policy Header** via a JSON payload.
+### 3. LLM-Provenance (Audit Trail)
+
+Provenance attributes track the source and history of content, enabling accountability and trust.
+
+```html
+<!-- Source Attribution -->
+<p llm-provenance-source="https://example.com/article"
+   llm-provenance-citation="Smith, 2024">
+
+<!-- Confidence Levels -->
+<p llm-provenance-confidence="0.95">High-confidence fact</p>
+<p llm-provenance-confidence="0.3">Speculative interpretation</p>
+
+<!-- Modification History -->
+<p llm-provenance-operation="content:summarized style:highlighted">
+```
+
+## Key Design Principles
+
+### 1. User Agent as Authority
+
+The conforming entity is the **User Agent (browser)**, not the LLM. This is crucial because:
+
+- LLMs are probabilistic and may not follow instructions reliably
+- Security cannot depend on LLM compliance
+- Deterministic enforcement is auditable and testable
+
+The UA intercepts all LLM interactions and enforces policies mechanistically.
+
+### 2. Secure Defaults
+
+- **Input**: `all` (visible by default, authors opt-out)
+- **Output**: `readonly` (immutable by default, authors opt-in to mutations)
+- **Memory**: `none` (ephemeral by default, authors opt-in to retention)
+
+This follows the principle of least privilege for mutations and data retention.
+
+### 3. Intersection Semantics
+
+When multiple policies apply (inheritance, Shadow DOM, licenses), the effective policy is the **intersection** of all applicable constraints. Both parties must agree for a permission to be granted.
+
+### 4. Graceful Degradation
+
+LLM Markup attributes are ignored by browsers that don't support them. Content remains functional and accessible without LLM features.
+
+## Global Policy
+
+In addition to element-level attributes, authors can define document-wide policies via HTTP headers or meta tags:
+
+```http
+LLM-Policy: {
+  "defaults": {
+    "llm-policy-input": ["structure", "text"],
+    "llm-policy-output": ["readonly"],
+    "llm-policy-memory": ["none"]
+  },
+  "constraints": {
+    "block-selectors": [".pii", "[data-sensitive]"],
+    "category-rules": {
+      "advertisement": {"llm-policy-input": ["none"]}
+    }
+  },
+  "report-to": "https://api.example.com/llm-reports"
+}
+```
+
+**Precedence**: HTTP Header > Meta Tag > Element Attributes > Defaults
 
 ### Precedence Logic
-1. **Constraints (Global):** Defined in the header, these are immutable and cannot be overridden by local attributes (e.g., a site-wide block on PII).
-2. **Local Attributes:** Define specific overrides for nodes (e.g., making a specific section `mutable` when the site default is `readonly`).
-3. **Defaults (Global):** The fallback behavior when no local attribute is present.
 
-### 3. LLM-Provenance (Context Tracking)
-This namespace functions as an internal ledger for the User Agent, tracking the origin and reliability of information as it is synthesized from multiple sources.
-- `source` (URI Origin)
-- `role` (Synthesis Function: primary, secondary, correction)
-- `confidence` (Agent Certainty Score)
-- `citation` (Display Label)
+The Global Policy supports two distinct mechanisms with different precedence rules:
 
-## IV. Contract Mechanics and Scope
+1.  **Constraints (Intersection Semantics):** Rules defined in `constraints` (e.g., `block-selectors`, `category-rules`) form a hard ceiling. They **cannot be overridden** by local attributes. The effective policy is the intersection of the constraint and the local attribute.
+    *   *Example:* If a global constraint blocks PII, a local `llm-policy-input="all"` attribute is ignored.
 
-### Contract Formation
-Markup from these namespaces can be used to form contracts in two ways:
-- **HTML Attributes:** Use HTML attributes when annotating what a specific DOM node is or permits (local markup).
-- **Header JSON Payloads:** Use JSON when defining how the system as a whole must behave (global constraints and considerations).
+2.  **Defaults (Override Semantics):** Rules defined in `defaults` act as fallbacks for elements without explicit attributes. They **can be overridden** by local attributes.
+    *   *Example:* If the global default is `readonly`, a local `llm-policy-output="mutable"` attribute takes precedence.
 
-### Operational Layers
-These contracts operate across a number of distinct layers within the document model:
+**Hierarchy:** Global Constraints > Local Attributes > Global Defaults > Specification Defaults.
 
-1. **Content Layer (Payload Objects)**
-   - Textual Units: Raw text nodes, paragraphs, headings, etc.
-   - Media Units: Images, audio, video, etc.
-   - Structured Content: Tables, figures, JSON blobs, etc.
-   - Derived Content Objects: Summaries, translations, etc.
+## Shadow DOM Boundaries
 
-2. **Presentation Layer (Rendering & Visual Form)**
-   - CSS Constructs, Layout Systems, Visual Properties, Viewport Behavior.
+Web components with Shadow DOM create **policy boundaries**:
 
-3. **Structure Layer (Document Topology)**
-   - Structural Objects, Hierarchical Semantics, Cross-References.
+- By default, policies do NOT cross shadow boundaries (opt-out)
+- Component authors can opt-in to inheritance
+- Intersection semantics ensure mutual agreement
+- Component authors have precedence within their shadow trees
 
-4. **Interaction Layer (Behavioral Semantics)**
-   - Event System, Input Systems, Dynamic Behavior, LLM-Specific Behaviors.
+```javascript
+this.attachShadow({
+  mode: 'open',
+  llmPolicyInherit: true,  // Opt-in to page policies
+  llmProvenanceTransparent: true  // Report full provenance to document
+});
+```
 
-5. **Data Layer (Machine-Readable Information)**
-   - Embedded Data (JSON-LD, etc.), API Bindings, State Objects, Analytics.
+## License Enforcement
 
-6. **Semantic / Intent Layer (Meaning Annotations)**
-   - Communicative Role, Domain Context, Audience Targeting, Epistemic Status, Rhetorical Function.
+Content licenses are enforced via the License Compatibility Matrix:
 
-7. **Provenance Layer (Source Tracking & Synthesis)**
-   - Origin Tracking, Reliability Scoring, Citation Management, Synthesis Roles.
+```html
+<!-- CC-BY-ND restricts to readonly + annotation -->
+<article llm-policy-license="CC-BY-ND-4.0">
+  <!-- Even with llm-policy-output="mutable", effective is readonly -->
+</article>
+```
+
+Supported licenses include Creative Commons family, open source licenses (MIT, Apache, GPL), and proprietary markers.
+
+## Use Cases
+
+See the [use-cases/](./use-cases/) directory for detailed scenarios:
+
+- **News Article**: Protecting quotes, allowing summaries
+- **E-commerce**: Product data editable, prices readonly
+- **Legal Document**: Highlighting allowed, text immutable
+- **Educational**: Interactive examples, explanations appendable
+- **Medical**: Strict readonly for safety-critical information
+- **User-Generated Content**: Moderation policies
+
+## Relationship to Other Standards
+
+| Standard | Relationship |
+|----------|--------------|
+| ARIA | Complementary - ARIA for accessibility, LLMPM for AI |
+| CSP | Orthogonal - CSP for script security, LLMPM for AI permissions |
+| robots.txt | Different scope - robots.txt for crawlers, LLMPM for in-page AI |
+| RDFa/JSON-LD | Complementary - structured data + AI policies |
+
+## FAQ
+
+**Q: Does this give LLMs permission to scrape my content?**
+
+A: No. LLM Markup governs how an LLM-infused UA interacts with content the user is already viewing. It does not affect crawling or training data collection, which are separate concerns.
+
+**Q: What if the LLM ignores the policies?**
+
+A: The LLM cannot ignore policies because the User Agent enforces them before the LLM sees the content. The LLM only receives pre-filtered context.
+
+**Q: Can malicious content use this to attack the LLM?**
+
+A: Policies are parsed deterministically by the UA, not interpreted by the LLM. The LLM never sees policy attributes, only filtered content.
+
+**Q: Is this backward compatible?**
+
+A: Yes. Browsers that don't support LLM Markup ignore the attributes. Content remains functional.
+
+## Next Steps
+
+1. Review the [formal specification](../spec/index.bs)
+2. Explore the [examples](../examples/)
+3. Run the [conformance tests](../tests/web-platform-tests/)
+4. Review the [Security & Privacy questionnaire](./security-privacy.md)
