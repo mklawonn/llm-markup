@@ -127,7 +127,9 @@ This follows the principle of least privilege for mutations and data retention.
 
 ### 3. Intersection Semantics
 
-When multiple policies apply (inheritance, Shadow DOM, licenses), the effective policy is the **intersection** of all applicable constraints. Both parties must agree for a permission to be granted.
+When multiple authoritative policies apply (e.g., global constraints, licenses, or explicit inheritance), the effective policy is the **intersection** of all applicable rules. Both parties must agree for a permission to be granted.
+
+*Note: This differs from Global Defaults, which act as fallbacks and follow override semantics. For a full breakdown, see [Precedence Logic](#precedence-logic).*
 
 ### 4. Graceful Degradation
 
