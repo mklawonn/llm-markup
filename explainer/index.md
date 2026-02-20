@@ -19,6 +19,8 @@ Without such standards, LLM-infused browsers face a dilemma:
 - **Too restrictive**: LLMs cannot provide useful assistance with web content
 - **Inconsistent**: Different implementations handle the same content differently
 
+**Note on Enforcement:** Like `robots.txt`, LLM Markup is a cooperative standard that relies on **User Agent compliance**. It is not a cryptographic security measure or a legal enforcement tool. While a conforming User Agent (like a major browser) will strictly and mechanistically enforce these policies, a non-compliant or "rogue" agent could theoretically ignore them. This standard is designed to govern interactions within trusted, compliant software environments.
+
 ## Solution: A Declarative Contract
 
 LLM Markup provides a declarative contract layer that sits on top of existing HTML. It uses three orthogonal namespaces to address different concerns:
