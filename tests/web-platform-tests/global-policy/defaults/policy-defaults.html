@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>LLM Global Policy Defaults</title>
+<link rel="help" href="https://example.org/llm-markup#global-policy-header">
+<script src="/resources/testharness.js"></script>
+<script src="/resources/testharnessreport.js"></script>
+<script src="../../resources/llm-markup-helpers.js"></script>
+
+<div id="test-container"></div>
+
+<script>
+'use strict';
+
+// =============================================================================
+// LLMGlobalPolicy Interface
+// =============================================================================
+
+test(() => {
+  assert_true('llmGlobalPolicy' in document);
+}, 'document.llmGlobalPolicy exists');
+
+// Note: llmGlobalPolicy may be null if no global policy is defined
+// These tests assume a global policy is configured for the test document
+
+test(() => {
+  const policy = document.llmGlobalPolicy;
+  if (policy !== null) {
+    assert_true('reportTo' in policy);
+    assert_true('reportOnly' in policy);
+    assert_true('defaults' in policy);
+    assert_true('constraints' in policy);
+  }
+}, 'LLMGlobalPolicy has required properties when defined');
+
+// =============================================================================
+// Default Policy Values
+// =============================================================================
+
+test(() => {
+  const policy = document.llmGlobalPolicy;
+  if (policy !== null && policy.defaults) {
+    assert_true('input' in policy.defaults);
+    assert_true('output' in policy.defaults);
+    assert_true('memory' in policy.defaults);
+  }
+}, 'LLMPolicyDefaults has input, output, and memory');
+
+test(() => {
+  const policy = document.llmGlobalPolicy;
+  if (policy !== null && policy.defaults) {
+    assert_true(Array.isArray(policy.defaults.input));
+    assert_true(Array.isArray(policy.defaults.output));
+    assert_true(Array.isArray(policy.defaults.memory));
+  }
+}, 'Default policy values are arrays');
+
+// =============================================================================
+// Default Input Policy
+// =============================================================================
+
+test(() => {
+  const container = document.getElementById('test-container');
+  container.innerHTML = '<div id="no-attr">Content</div>';
+  const el = document.getElementById('no-attr');
+
+  // Element should inherit from global defaults
+  const effective = el.llmPolicy.effectiveInputTokens;
+  assert_true(Array.isArray(effective));
+
+  container.innerHTML = '';
+}, 'Elements without llm-policy-input inherit from defaults');
+
+// =============================================================================
+// Default Output Policy
+// =============================================================================
+
+test(() => {
+  const container = document.getElementById('test-container');
+  container.innerHTML = '<div id="no-output">Content</div>';
+  const el = document.getElementById('no-output');
+
+  // Should inherit default output (typically readonly)
+  const effective = el.llmPolicy.effectiveOutputTokens;
+  assert_true(Array.isArray(effective));
+
+  container.innerHTML = '';
+}, 'Elements without llm-policy-output inherit from defaults');
+
+// =============================================================================
+// Default Memory Policy
+// =============================================================================
+
+test(() => {
+  const container = document.getElementById('test-container');
+  container.innerHTML = '<div id="no-memory">Content</div>';
+  const el = document.getElementById('no-memory');
+
+  // Should inherit default memory (typically none)
+  const effective = el.llmPolicy.effectiveMemoryTokens;
+  assert_true(Array.isArray(effective));
+
+  container.innerHTML = '';
+}, 'Elements without llm-policy-memory inherit from defaults');
+
+// =============================================================================
+// Local Override of Defaults
+// =============================================================================
+
+test(() => {
+  const container = document.getElementById('test-container');
+  container.innerHTML = '<div id="local-override" llm-policy-output="mutable">Content</div>';
+  const el = document.getElementById('local-override');
+
+  // Local attribute should override defaults
+  assert_true(el.llmPolicy.isMutable);
+
+  container.innerHTML = '';
+}, 'Local attributes override global defaults');
+
+// =============================================================================
+// Reporting Configuration
+// =============================================================================
+
+test(() => {
+  const policy = document.llmGlobalPolicy;
+  if (policy !== null) {
+    // reportTo should be a string (URI) or null
+    assert_true(policy.reportTo === null || typeof policy.reportTo === 'string');
+  }
+}, 'reportTo is a string or null');
+
+test(() => {
+  const policy = document.llmGlobalPolicy;
+  if (policy !== null) {
+    assert_true(typeof policy.reportOnly === 'boolean');
+  }
+}, 'reportOnly is a boolean');
+
+// =============================================================================
+// Report-Only Mode (Audit Mode)
+// =============================================================================
+
+test(() => {
+  const policy = document.llmGlobalPolicy;
+  if (policy !== null && policy.reportOnly) {
+    // In report-only mode, violations should be reported but allowed
+    const container = document.getElementById('test-container');
+    container.innerHTML = '<div id="audit-test" llm-policy-output="readonly">Content</div>';
+    const el = document.getElementById('audit-test');
+
+    // Mutation should be "allowed" in audit mode (even if violating)
+    const violation = el.checkMutationPermission('content');
+
+    // violation object exists but mutation proceeds
+    assert_not_equals(violation, null);
+
+    container.innerHTML = '';
+  }
+}, 'Report-only mode allows violations with reporting');
+
+// =============================================================================
+// Missing Global Policy
+// =============================================================================
+
+test(() => {
+  // When no global policy is defined, should fall back to spec defaults
+  const container = document.getElementById('test-container');
+  container.innerHTML = '<div id="no-global">Content</div>';
+  const el = document.getElementById('no-global');
+
+  // Should have some effective policy (spec defaults)
+  assert_true(el.llmPolicy.effectiveInputTokens.length > 0 ||
+              el.llmPolicy.effectiveOutputTokens.length > 0);
+
+  container.innerHTML = '';
+}, 'Spec defaults apply when no global policy is defined');
+
+// =============================================================================
+// validateMutation Method
+// =============================================================================
+
+test(() => {
+  const policy = document.llmGlobalPolicy;
+  if (policy !== null) {
+    assert_true(typeof policy.validateMutation === 'function');
+  }
+}, 'LLMGlobalPolicy has validateMutation method');
+
+test(() => {
+  const policy = document.llmGlobalPolicy;
+  if (policy !== null) {
+    const container = document.getElementById('test-container');
+    container.innerHTML = '<div id="validate-test">Content</div>';
+    const el = document.getElementById('validate-test');
+
+    const result = policy.validateMutation(el, 'content');
+    // Should return null (allowed) or violation object
+    assert_true(result === null || typeof result === 'object');
+
+    container.innerHTML = '';
+  }
+}, 'validateMutation returns null or violation object');
+
+// =============================================================================
+// resolveDependencies Method
+// =============================================================================
+
+test(() => {
+  const policy = document.llmGlobalPolicy;
+  if (policy !== null) {
+    assert_true(typeof policy.resolveDependencies === 'function');
+  }
+}, 'LLMGlobalPolicy has resolveDependencies method');
+
+test(() => {
+  const policy = document.llmGlobalPolicy;
+  if (policy !== null) {
+    const container = document.getElementById('test-container');
+    container.innerHTML = `
+      <div id="el1">Element 1</div>
+      <div id="el2">Element 2</div>
+    `;
+    const el1 = document.getElementById('el1');
+    const el2 = document.getElementById('el2');
+
+    const omitted = policy.resolveDependencies([el1, el2]);
+    assert_true(Array.isArray(omitted));
+
+    container.innerHTML = '';
+  }
+}, 'resolveDependencies returns array of omitted elements');
+</script>

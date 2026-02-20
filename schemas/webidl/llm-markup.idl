@@ -1,0 +1,782 @@
+// SPDX-License-Identifier: W3C-SOFTWARE-AND-DOCUMENT
+// LLM Markup (LLMPM) WebIDL Interface Definitions
+// Specification: https://example.org/llm-markup
+
+// =============================================================================
+// ENUMERATIONS
+// =============================================================================
+
+// Policy Input Tokens (Visibility Control)
+// Defines what information flows from the DOM to the LLM context.
+enum LLMPolicyInputToken {
+  "none",       // Node completely hidden from LLM
+  "structure",  // Element tag preserved, text replaced with placeholder
+  "text",       // Text nodes preserved
+  "attributes", // HTML attributes preserved
+  "media",      // Media-specific attributes preserved (src, alt, poster, srcset)
+  "all"         // Shorthand for structure + text + attributes + media
+};
+
+// Policy Output Tokens (Mutability Control)
+// Defines what mutations the LLM may perform on the DOM.
+enum LLMPolicyOutputToken {
+  "readonly",    // No mutations permitted (default)
+  "style",       // Modify class and style attributes only
+  "interaction", // Modify event handlers, ARIA states, form state, global attrs
+  "layout",      // Reorder direct child nodes
+  "annotation",  // Wrap text nodes in inline elements (non-destructive)
+  "content",     // Modify text nodes
+  "data",        // Modify form values, data attributes, meta content, JSON-LD
+  "append",      // Insert new child nodes at end
+  "mutable"      // All permissions (full access)
+};
+
+// Policy Memory Tokens (Retention Control)
+// Defines data persistence scopes.
+enum LLMPolicyMemoryToken {
+  "none",     // Ephemeral processing only (default)
+  "session",  // Retained for browsing session
+  "user",     // Long-term user profile storage
+  "training"  // Authorization for model training/fine-tuning
+};
+
+// Intent Importance Levels
+// Guides token allocation when context is limited.
+enum LLMIntentImportance {
+  "critical",   // MUST be preserved if token limits reached
+  "high",       // Prioritize for inclusion
+  "normal",     // Standard prioritization (default)
+  "low",        // Supplementary; may be ignored if context limited
+  "background"  // Background only; do not focus unless explicitly asked
+};
+
+// Provenance Operation Layers
+// Classifies the type of transformation applied.
+enum LLMProvenanceLayer {
+  "content",     // Text content modifications
+  "style",       // Presentation/class changes
+  "interaction", // Event handlers, ARIA, form state changes
+  "topology",    // Structural changes (reordering, appending)
+  "data",        // Machine-readable payload changes
+  "intent"       // Intent attribute modifications
+};
+
+// Dependency Failure Modes
+// Defines behavior when a dependency constraint is violated.
+enum LLMPolicyDependencyFailureMode {
+  "omit-trigger", // Remove triggering node from context (default)
+  "error"         // Halt context construction, report violation
+};
+
+// Dependency Scope
+// Defines which policy phase the dependency applies to.
+enum LLMPolicyDependencyScope {
+  "input",  // Applies during visibility/context construction
+  "output", // Applies during mutation enforcement
+  "both"    // Applies to both phases
+};
+
+// =============================================================================
+// PROVENANCE INTERFACES
+// =============================================================================
+
+// Represents a single operation entry in the provenance ledger.
+[Exposed=Window]
+interface LLMProvenanceOperationEntry {
+  readonly attribute LLMProvenanceLayer layer;
+  readonly attribute DOMString explanation;
+};
+
+// Provides read-only access to provenance attributes on an element.
+[Exposed=Window]
+interface LLMProvenance {
+  // The canonical origin URI of the content.
+  readonly attribute USVString? source;
+
+  // Human-readable label for source attribution.
+  readonly attribute DOMString? citation;
+
+  // Agent certainty in accuracy (0.0-1.0). Returns NaN if not specified.
+  readonly attribute unrestricted double confidence;
+
+  // Ordered list of transformation operations applied to this node.
+  sequence<LLMProvenanceOperationEntry> getOperations();
+
+  // Serializes the provenance data to the attribute format.
+  DOMString serializeOperations();
+};
+
+// Represents a single entry in the User Agent's internal provenance ledger.
+// This is the diff-tracking mechanism for integrity validation.
+[Exposed=Window]
+interface LLMProvenanceLedgerEntry {
+  // Unique identifier for this ledger entry.
+  readonly attribute DOMString id;
+
+  // The element that was modified.
+  readonly attribute Element target;
+
+  // The layer of modification.
+  readonly attribute LLMProvenanceLayer layer;
+
+  // The explanation/rationale for the modification.
+  readonly attribute DOMString explanation;
+
+  // Timestamp of the modification.
+  readonly attribute DOMHighResTimeStamp timestamp;
+
+  // Whether this modification has a corresponding llm-provenance-operation entry.
+  readonly attribute boolean hasAttributeEntry;
+
+  // Snapshot of original value before modification (for diff reconstruction).
+  readonly attribute any originalValue;
+
+  // Snapshot of new value after modification.
+  readonly attribute any newValue;
+
+  // Optional identifier of the LLM agent that made the change.
+  // May be null if the agent did not provide identification.
+  readonly attribute DOMString? agentId;
+};
+
+// The User Agent's internal provenance ledger for tracking all LLM mutations.
+// Provides read-only access for scripts to inspect (but not tamper with) history.
+[Exposed=Window]
+interface LLMProvenanceLedger {
+  // Total number of entries in the ledger.
+  readonly attribute unsigned long length;
+
+  // Retrieve entry by index.
+  getter LLMProvenanceLedgerEntry? item(unsigned long index);
+
+  // Get all entries for a specific element.
+  sequence<LLMProvenanceLedgerEntry> getEntriesForElement(Element target);
+
+  // Get all entries for a specific layer.
+  sequence<LLMProvenanceLedgerEntry> getEntriesForLayer(LLMProvenanceLayer layer);
+
+  // Get entries within a time range.
+  sequence<LLMProvenanceLedgerEntry> getEntriesInRange(
+    DOMHighResTimeStamp start,
+    DOMHighResTimeStamp end
+  );
+
+  // Check for integrity violations (mutations without corresponding ledger entries).
+  sequence<LLMProvenanceLedgerEntry> getIntegrityViolations();
+
+  // Returns true if the ledger has any integrity violations.
+  readonly attribute boolean hasIntegrityViolations;
+};
+
+// =============================================================================
+// POLICY INTERFACES
+// =============================================================================
+
+// Represents the computed policy state for an element.
+// Read-only; reflects the effective policy after inheritance and constraint resolution.
+[Exposed=Window]
+interface LLMPolicy {
+  // Raw attribute values (space-separated token strings).
+  readonly attribute DOMString inputAttribute;
+  readonly attribute DOMString outputAttribute;
+  readonly attribute DOMString memoryAttribute;
+  readonly attribute DOMString? licenseAttribute;
+
+  // Parsed token sets for the element's local attributes.
+  readonly attribute FrozenArray<LLMPolicyInputToken> inputTokens;
+  readonly attribute FrozenArray<LLMPolicyOutputToken> outputTokens;
+  readonly attribute FrozenArray<LLMPolicyMemoryToken> memoryTokens;
+
+  // Computed effective tokens after inheritance and constraint resolution.
+  readonly attribute FrozenArray<LLMPolicyInputToken> effectiveInputTokens;
+  readonly attribute FrozenArray<LLMPolicyOutputToken> effectiveOutputTokens;
+  readonly attribute FrozenArray<LLMPolicyMemoryToken> effectiveMemoryTokens;
+
+  // License profile derived from llm-policy-license, if any.
+  readonly attribute LLMLicenseProfile? licenseProfile;
+
+  // Check if a specific output permission is granted.
+  boolean hasOutputPermission(LLMPolicyOutputToken token);
+
+  // Check if a specific input channel is visible.
+  boolean hasInputChannel(LLMPolicyInputToken token);
+
+  // Check if a specific memory scope is allowed.
+  boolean hasMemoryScope(LLMPolicyMemoryToken token);
+
+  // Returns true if the node is completely hidden from LLM (input="none").
+  readonly attribute boolean isHidden;
+
+  // Returns true if no mutations are permitted (effective output is readonly only).
+  readonly attribute boolean isReadonly;
+
+  // Returns true if all permissions are granted (mutable).
+  readonly attribute boolean isMutable;
+};
+
+// License profile derived from SPDX identifier.
+[Exposed=Window]
+interface LLMLicenseProfile {
+  // The SPDX identifier string (may include expressions like "MIT OR Apache-2.0").
+  readonly attribute DOMString spdxIdentifier;
+
+  // Permissions allowed by this license.
+  readonly attribute FrozenArray<LLMPolicyOutputToken> allowedOutputTokens;
+
+  // Whether the license requires attribution (affects llm-provenance-citation).
+  readonly attribute boolean requiresAttribution;
+
+  // Whether the license has copyleft/viral requirements.
+  readonly attribute boolean isCopyleft;
+
+  // Whether commercial use is permitted.
+  readonly attribute boolean commercialUse;
+
+  // Whether derivatives must use the same license (ShareAlike).
+  readonly attribute boolean shareAlike;
+
+  // Human-readable name of the license.
+  readonly attribute DOMString? licenseName;
+
+  // Whether this is a compound expression (contains AND, OR, WITH).
+  readonly attribute boolean isCompoundExpression;
+
+  // For compound expressions, the individual license identifiers.
+  readonly attribute FrozenArray<DOMString> componentLicenses;
+
+  // Whether the license identifier was recognized by the User Agent.
+  readonly attribute boolean isRecognized;
+};
+
+// =============================================================================
+// INTENT INTERFACES
+// =============================================================================
+
+// Provides read-only access to intent attributes on an element.
+[Exposed=Window]
+interface LLMIntent {
+  // Semantic category label.
+  readonly attribute DOMString? category;
+
+  // Content prioritization level.
+  readonly attribute LLMIntentImportance importance;
+
+  // Canonical entity reference URI.
+  readonly attribute USVString? entity;
+
+  // Custom instruction (overrides templates).
+  readonly attribute DOMString? instruction;
+
+  // Interactive function label (Phase 2).
+  readonly attribute DOMString? function;
+
+  // Workflow stage label (Phase 2).
+  readonly attribute DOMString? workflow;
+
+  // Output format instruction (Phase 3).
+  readonly attribute DOMString? output;
+
+  // Tone/persona instruction (Phase 3).
+  readonly attribute DOMString? tone;
+
+  // Returns true if any intent attribute is set.
+  readonly attribute boolean hasIntent;
+
+  // Generates the system prompt fragment for this element based on the
+  // hierarchy of instruction (instruction > lexicon > template).
+  DOMString generatePrompt();
+
+  // Returns true if the category value is in the Standardized Lexicon.
+  boolean isLexiconCategory();
+
+  // Returns the optimized prompt for a lexicon term, or null if not found.
+  DOMString? getLexiconPrompt(DOMString term);
+};
+
+// =============================================================================
+// GLOBAL POLICY INTERFACES
+// =============================================================================
+
+// Default policy values for the document.
+[Exposed=Window]
+interface LLMPolicyDefaults {
+  readonly attribute FrozenArray<LLMPolicyInputToken> input;
+  readonly attribute FrozenArray<LLMPolicyOutputToken> output;
+  readonly attribute FrozenArray<LLMPolicyMemoryToken> memory;
+};
+
+// A dependency constraint definition.
+[Exposed=Window]
+interface LLMPolicyDependency {
+  // CSS selector that triggers the dependency check.
+  readonly attribute DOMString trigger;
+
+  // CSS selector that must be present when trigger matches.
+  readonly attribute DOMString requires;
+
+  // Which phase(s) the dependency applies to.
+  readonly attribute LLMPolicyDependencyScope scope;
+
+  // What happens when the dependency is violated.
+  readonly attribute LLMPolicyDependencyFailureMode failureMode;
+};
+
+// Category rule mapping (category name to policy constraints).
+[Exposed=Window]
+interface LLMPolicyCategoryRule {
+  readonly attribute DOMString categoryName;
+  readonly attribute FrozenArray<LLMPolicyInputToken>? inputTokens;
+  readonly attribute FrozenArray<LLMPolicyOutputToken>? outputTokens;
+  readonly attribute FrozenArray<LLMPolicyMemoryToken>? memoryTokens;
+};
+
+// Constraint definitions from the Global Policy Header.
+[Exposed=Window]
+interface LLMPolicyConstraints {
+  // CSS selectors for elements to forcibly block from LLM view.
+  readonly attribute FrozenArray<DOMString> blockSelectors;
+
+  // Category-based policy rules.
+  LLMPolicyCategoryRule? getCategoryRule(DOMString categoryName);
+  sequence<LLMPolicyCategoryRule> getAllCategoryRules();
+
+  // Dependency constraints.
+  readonly attribute FrozenArray<LLMPolicyDependency> dependencies;
+
+  // Check if an element matches any block selector.
+  boolean isBlocked(Element element);
+
+  // Get all category rules that apply to an element.
+  sequence<LLMPolicyCategoryRule> getApplicableRules(Element element);
+};
+
+// Source type for global policy delivery.
+enum LLMGlobalPolicySource {
+  "http-header",      // Delivered via LLM-Policy HTTP header
+  "http-header-src",  // Referenced via LLM-Policy-Src HTTP header
+  "meta-tag",         // Delivered via <meta name="llm-policy">
+  "meta-tag-src",     // Referenced via <meta name="llm-policy-src">
+  "none"              // No global policy (using spec defaults)
+};
+
+// Information about how a global policy layer was delivered.
+[Exposed=Window]
+interface LLMGlobalPolicySourceInfo {
+  // The delivery method for this policy layer.
+  readonly attribute LLMGlobalPolicySource source;
+
+  // The URL of the external policy file, if source is *-src.
+  readonly attribute USVString? sourceUrl;
+
+  // Whether this policy layer was successfully loaded.
+  readonly attribute boolean loaded;
+
+  // Error message if loading failed, null otherwise.
+  readonly attribute DOMString? error;
+
+  // The raw JSON string of the policy (for debugging).
+  readonly attribute DOMString? rawPolicy;
+};
+
+// The document-level Global Policy.
+[Exposed=Window]
+interface LLMGlobalPolicy {
+  // Reporting endpoint URI.
+  readonly attribute USVString? reportTo;
+
+  // Whether violations are report-only (audit mode).
+  readonly attribute boolean reportOnly;
+
+  // Default policy values (effective, after header ∩ meta intersection).
+  readonly attribute LLMPolicyDefaults defaults;
+
+  // Constraint definitions (union of header and meta constraints).
+  readonly attribute LLMPolicyConstraints constraints;
+
+  // Information about the HTTP header policy source.
+  readonly attribute LLMGlobalPolicySourceInfo headerSource;
+
+  // Information about the meta tag policy source.
+  readonly attribute LLMGlobalPolicySourceInfo metaSource;
+
+  // Whether the policy has been fully resolved and is immutable.
+  readonly attribute boolean resolved;
+
+  // The HTTP header policy before intersection (null if not present).
+  readonly attribute LLMGlobalPolicy? headerPolicy;
+
+  // The meta tag policy before intersection (null if not present).
+  readonly attribute LLMGlobalPolicy? metaPolicy;
+
+  // Validate a potential mutation against the global policy.
+  // Returns a violation report if blocked, null if allowed.
+  LLMPolicyViolation? validateMutation(Element target, LLMPolicyOutputToken permission);
+
+  // Resolve dependencies for a candidate set of elements.
+  // Returns elements that should be omitted due to dependency failures.
+  sequence<Element> resolveDependencies(sequence<Element> candidateSet);
+};
+
+// Event fired when global policy resolution is complete.
+[Exposed=Window]
+interface LLMGlobalPolicyResolvedEvent : Event {
+  constructor(DOMString type, LLMGlobalPolicyResolvedEventInit eventInitDict);
+  readonly attribute LLMGlobalPolicy policy;
+  readonly attribute boolean hadErrors;
+};
+
+dictionary LLMGlobalPolicyResolvedEventInit : EventInit {
+  required LLMGlobalPolicy policy;
+  boolean hadErrors = false;
+};
+
+// =============================================================================
+// VIOLATION REPORTING
+// =============================================================================
+
+// Represents a policy violation for reporting.
+[Exposed=Window]
+interface LLMPolicyViolation {
+  // The element that triggered the violation.
+  readonly attribute Element target;
+
+  // The type of violation.
+  readonly attribute LLMPolicyViolationType violationType;
+
+  // The permission token that was denied.
+  readonly attribute LLMPolicyOutputToken? deniedPermission;
+
+  // The constraint or rule that caused the denial.
+  readonly attribute DOMString? violatedRule;
+
+  // Human-readable description of the violation.
+  readonly attribute DOMString message;
+
+  // Timestamp of the violation.
+  readonly attribute DOMHighResTimeStamp timestamp;
+
+  // Serialize to JSON for reporting to the report-to endpoint.
+  object toJSON();
+};
+
+enum LLMPolicyViolationType {
+  "permission-denied",    // Output token not in effective permission set
+  "license-violation",    // Mutation conflicts with license profile
+  "dependency-failure",   // Required element not present
+  "block-selector",       // Element matched a block selector
+  "integrity-violation",  // Mutation without provenance entry
+  "category-conflict"     // Multiple category rules conflict
+};
+
+// =============================================================================
+// ELEMENT EXTENSION
+// =============================================================================
+
+// Extends Element with LLM Markup properties.
+partial interface Element {
+  // Read-only access to the computed policy state for this element.
+  [SameObject] readonly attribute LLMPolicy llmPolicy;
+
+  // Read-only access to the intent attributes for this element.
+  [SameObject] readonly attribute LLMIntent llmIntent;
+
+  // Read-only access to the provenance data for this element.
+  [SameObject] readonly attribute LLMProvenance llmProvenance;
+
+  // Check if a specific mutation would be allowed on this element.
+  // Returns null if allowed, or a violation object if denied.
+  LLMPolicyViolation? checkMutationPermission(LLMPolicyOutputToken permission);
+
+  // Get the effective visibility representation of this element for LLM context.
+  // Returns the filtered DOM representation based on llm-policy-input.
+  DOMString getLLMContextRepresentation();
+};
+
+// =============================================================================
+// DOCUMENT EXTENSION
+// =============================================================================
+
+// Extends Document with LLM Markup properties.
+partial interface Document {
+  // The Global Policy for this document (from header and/or meta tag).
+  // Returns the effective policy after intersection of all sources.
+  // May be null only before policy resolution completes.
+  [SameObject] readonly attribute LLMGlobalPolicy? llmGlobalPolicy;
+
+  // Whether the global policy has been fully resolved.
+  // LLM interaction MUST NOT begin until this is true.
+  readonly attribute boolean llmPolicyResolved;
+
+  // The User Agent's internal provenance ledger for this document.
+  [SameObject] readonly attribute LLMProvenanceLedger llmProvenanceLedger;
+
+  // Build the LLM context representation for the entire document.
+  // Applies visibility filtering, dependency resolution, and importance ranking.
+  // Throws InvalidStateError if called before llmPolicyResolved is true.
+  DOMString buildLLMContext(optional LLMContextOptions options = {});
+
+  // Get all elements with integrity violations (mutations without provenance).
+  sequence<Element> getIntegrityViolations();
+
+  // Event fired when global policy resolution is complete.
+  // This fires after HTTP headers are processed and any external policy files are fetched.
+  attribute EventHandler onllmpolicyresolved;
+
+  // Event fired when a policy violation occurs (in non-report-only mode).
+  attribute EventHandler onllmpolicyviolation;
+
+  // Event fired when a new entry is added to the Provenance Ledger.
+  // Allows pages to react to LLM mutations for custom logging, analytics, or UI.
+  attribute EventHandler onllmprovenancechange;
+
+  // Event fired when an integrity violation is detected.
+  attribute EventHandler onllmintegrityviolation;
+};
+
+// =============================================================================
+// CONFIGURATION DICTIONARIES
+// =============================================================================
+
+// Options for building the LLM context.
+dictionary LLMContextOptions {
+  // Custom root element (defaults to document.documentElement).
+  Element? root;
+
+  // Output format. HTML is the normative default.
+  LLMContextFormat format = "html";
+
+  // Whether to include elements with importance="background".
+  boolean includeBackground = false;
+
+  // Whether to apply dependency resolution.
+  boolean resolveDependencies = true;
+
+  // Whether to return metadata along with the context.
+  // If true, buildLLMContext returns LLMContextResult instead of DOMString.
+  boolean includeMetadata = false;
+};
+
+// Output format for context representation.
+// HTML is the normative format; others are implementation-defined.
+enum LLMContextFormat {
+  "html",       // Filtered HTML fragment (normative)
+  "text",       // Plain text extraction (implementation-defined)
+  "markdown",   // Markdown representation (implementation-defined)
+  "a11y-tree"   // Accessibility tree representation (implementation-defined)
+};
+
+// Result object when buildLLMContext is called with includeMetadata: true.
+[Exposed=Window]
+interface LLMContextResult {
+  // The context representation string.
+  readonly attribute DOMString content;
+
+  // The format of the content.
+  readonly attribute LLMContextFormat format;
+
+  // Whether any content was truncated due to token limits or importance.
+  readonly attribute boolean truncated;
+
+  // Number of elements included in the context.
+  readonly attribute unsigned long elementCount;
+
+  // Number of elements omitted due to visibility policies.
+  readonly attribute unsigned long omittedCount;
+
+  // Number of elements omitted due to dependency resolution failures.
+  readonly attribute unsigned long dependencyOmittedCount;
+
+  // Number of text nodes replaced with [REDACTED] placeholder.
+  readonly attribute unsigned long redactedTextNodes;
+
+  // Number of media elements with placeholder content.
+  readonly attribute unsigned long placeholderMediaCount;
+
+  // Elements marked as critical that were included.
+  sequence<Element> getCriticalElements();
+
+  // Elements that were omitted (for debugging).
+  sequence<Element> getOmittedElements();
+};
+
+// Placeholder strings used in context representation.
+// Exposed for consistency in testing and tooling.
+[Exposed=Window]
+namespace LLMContextPlaceholders {
+  readonly attribute DOMString redactedText;        // "[REDACTED]"
+  readonly attribute DOMString imageAlt;            // "[image]"
+  readonly attribute DOMString videoContent;        // "[video content]"
+  readonly attribute DOMString audioContent;        // "[audio content]"
+  readonly attribute DOMString canvasGraphic;       // "[canvas graphic]"
+  readonly attribute DOMString crossOriginContent;  // "[cross-origin content]"
+  readonly attribute DOMString truncatedDataUrl;    // "[truncated]"
+  readonly attribute DOMString javascriptUrl;       // "[javascript]"
+  readonly attribute DOMString contentTruncated;    // "[content truncated]"
+};
+
+// =============================================================================
+// EVENTS
+// =============================================================================
+
+// Event fired when a policy violation occurs.
+[Exposed=Window]
+interface LLMPolicyViolationEvent : Event {
+  constructor(DOMString type, LLMPolicyViolationEventInit eventInitDict);
+  readonly attribute LLMPolicyViolation violation;
+};
+
+dictionary LLMPolicyViolationEventInit : EventInit {
+  required LLMPolicyViolation violation;
+};
+
+// Event fired when a new entry is added to the Provenance Ledger.
+// Allows pages to react to LLM mutations for custom logging, analytics, or UI.
+[Exposed=Window]
+interface LLMProvenanceChangeEvent : Event {
+  constructor(DOMString type, LLMProvenanceChangeEventInit eventInitDict);
+
+  // The element that was modified.
+  readonly attribute Element target;
+
+  // The layer of modification (content, style, interaction, topology, data, intent).
+  readonly attribute LLMProvenanceLayer layer;
+
+  // The explanation/rationale provided by the LLM for this modification.
+  readonly attribute DOMString explanation;
+
+  // Timestamp of the modification (relative to page load).
+  readonly attribute DOMHighResTimeStamp timestamp;
+};
+
+dictionary LLMProvenanceChangeEventInit : EventInit {
+  required Element target;
+  required LLMProvenanceLayer layer;
+  DOMString explanation = "";
+  DOMHighResTimeStamp timestamp = 0;
+};
+
+// Event fired when an integrity violation is detected.
+// Integrity violations occur when a mutation is detected that does not have
+// a corresponding entry in the Provenance Ledger (unauthorized modification).
+[Exposed=Window]
+interface LLMIntegrityViolationEvent : Event {
+  constructor(DOMString type, LLMIntegrityViolationEventInit eventInitDict);
+
+  // The element that was modified without authorization.
+  readonly attribute Element target;
+
+  // The layer of the unauthorized modification.
+  readonly attribute LLMProvenanceLayer layer;
+
+  // The type of violation (e.g., "missing-ledger-entry", "layer-mismatch", "tampered-attribute").
+  readonly attribute DOMString violationType;
+
+  // The original value before the unauthorized modification.
+  readonly attribute any originalValue;
+
+  // The current (potentially unauthorized) value.
+  readonly attribute any currentValue;
+
+  // Whether the User Agent reverted the unauthorized change.
+  readonly attribute boolean reverted;
+};
+
+dictionary LLMIntegrityViolationEventInit : EventInit {
+  required Element target;
+  required LLMProvenanceLayer layer;
+  DOMString violationType = "missing-ledger-entry";
+  any originalValue;
+  any currentValue;
+  boolean reverted = false;
+};
+
+// =============================================================================
+// SHADOW DOM POLICY BOUNDARIES
+// =============================================================================
+
+// Policy namespaces that can be individually inherited across shadow boundaries.
+enum LLMPolicyNamespace {
+  "input",   // llm-policy-input visibility
+  "output",  // llm-policy-output mutability
+  "memory"   // llm-policy-memory retention
+};
+
+// Extension to ShadowRootInit for LLM Markup policy inheritance.
+// These options control how policies cross shadow DOM boundaries.
+partial dictionary ShadowRootInit {
+  // Whether to inherit LLM policies from the host element's context.
+  // - false (default): Shadow root is a policy boundary; no inheritance.
+  // - true: Inherit all policy namespaces (input, output, memory).
+  // - sequence<LLMPolicyNamespace>: Inherit only specified namespaces.
+  (boolean or sequence<LLMPolicyNamespace>) llmPolicyInherit = false;
+
+  // Whether to report full provenance details to the document ledger.
+  // - false (default): Report aggregated mutation counts per layer.
+  // - true: Report full mutation details (element, layer, explanation).
+  boolean llmProvenanceTransparent = false;
+};
+
+// Extension to ShadowRoot for accessing LLM policy inheritance state.
+partial interface ShadowRoot {
+  // Whether this shadow root inherits LLM policies from its host context.
+  readonly attribute boolean llmPolicyInherits;
+
+  // Which policy namespaces are inherited (empty if llmPolicyInherits is false).
+  readonly attribute FrozenArray<LLMPolicyNamespace> llmInheritedNamespaces;
+
+  // Whether full provenance details are reported to document ledger.
+  readonly attribute boolean llmProvenanceTransparent;
+
+  // The effective inherited policy from the host element's context.
+  // Returns null if llmPolicyInherits is false.
+  readonly attribute LLMPolicy? llmInheritedPolicy;
+
+  // Computes the effective policy for an element within this shadow tree,
+  // applying intersection semantics between inherited and local policies.
+  LLMPolicy getEffectivePolicy(Element element);
+};
+
+// Represents aggregated provenance information for a shadow root.
+// Used when llmProvenanceTransparent is false.
+[Exposed=Window]
+interface LLMShadowProvenanceSummary {
+  // The shadow root this summary describes.
+  readonly attribute ShadowRoot shadowRoot;
+
+  // Total number of mutations within this shadow tree.
+  readonly attribute unsigned long totalMutations;
+
+  // Mutation count per layer.
+  readonly attribute unsigned long contentMutations;
+  readonly attribute unsigned long styleMutations;
+  readonly attribute unsigned long interactionMutations;
+  readonly attribute unsigned long topologyMutations;
+  readonly attribute unsigned long dataMutations;
+
+  // Whether any nested shadow roots also have mutations.
+  readonly attribute boolean hasNestedShadowMutations;
+};
+
+// Extension to LLMProvenanceLedger for shadow DOM support.
+partial interface LLMProvenanceLedger {
+  // Get aggregated provenance summary for a shadow root.
+  // Returns null if the shadow root has llmProvenanceTransparent=true
+  // (in which case, use getEntriesForElement on shadow content directly).
+  LLMShadowProvenanceSummary? getShadowSummary(ShadowRoot shadowRoot);
+
+  // Get all shadow roots in the document that have recorded mutations.
+  sequence<ShadowRoot> getShadowRootsWithMutations();
+};
+
+// Extension to LLMPolicy for shadow DOM context.
+partial interface LLMPolicy {
+  // Whether this policy was computed with inherited values from a shadow host.
+  readonly attribute boolean hasInheritedPolicy;
+
+  // The shadow root boundary this element is within, if any.
+  readonly attribute ShadowRoot? containingShadowRoot;
+
+  // For slotted elements: the policy contribution from the slot's context.
+  // Returns null if the element is not slotted.
+  readonly attribute LLMPolicy? slotContextPolicy;
+};

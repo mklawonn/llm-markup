@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>LLM Markup: Visibility Control Example</title>
+  <meta name="description" content="Demonstrates llm-policy-input tokens for controlling what the LLM can see">
+</head>
+<body>
+
+<h1>Visibility Control with llm-policy-input</h1>
+
+<!--
+  DEFAULT BEHAVIOR (all)
+  When no llm-policy-input is specified, the LLM sees everything.
+-->
+<section>
+  <h2>Public Content (Default)</h2>
+  <p>This paragraph is fully visible to the LLM by default.</p>
+  <p data-analytics-id="12345">The LLM can see this text and all attributes.</p>
+</section>
+
+<!--
+  COMPLETE HIDING (none)
+  The element and all descendants are completely omitted from LLM context.
+-->
+<section llm-policy-input="none">
+  <h2>Admin Panel (Hidden)</h2>
+  <p>The LLM cannot see any of this content.</p>
+  <form>
+    <input type="password" name="admin-secret">
+    <button>Delete Everything</button>
+  </form>
+</section>
+
+<!--
+  STRUCTURE ONLY (structure)
+  Element tags are preserved, but text is replaced with [REDACTED].
+-->
+<section llm-policy-input="structure">
+  <h2>User Profile</h2>
+  <p>Name: John Doe</p>
+  <p>Email: john@example.com</p>
+  <p>SSN: 123-45-6789</p>
+  <!--
+    LLM sees:
+    <section><h2>[REDACTED]</h2><p>[REDACTED]</p><p>[REDACTED]</p><p>[REDACTED]</p></section>
+  -->
+</section>
+
+<!--
+  STRUCTURE + TEXT (structure text)
+  Text is visible but custom data attributes are hidden.
+-->
+<section llm-policy-input="structure text">
+  <h2>Product Listing</h2>
+  <div data-internal-sku="SKU-7890" data-margin="45%">
+    <p>Widget Pro - $99.99</p>
+    <p>Our best-selling widget!</p>
+  </div>
+  <!--
+    LLM sees text but NOT data-internal-sku or data-margin
+  -->
+</section>
+
+<!--
+  FULL VISIBILITY (all)
+  Explicit full visibility, including all attributes.
+-->
+<section llm-policy-input="all">
+  <h2>Open Source Documentation</h2>
+  <p data-version="2.0" data-author="Community">
+    This documentation is completely open to LLM analysis.
+  </p>
+</section>
+
+<!--
+  MEDIA CONTROL
+  Control whether media sources are visible.
+-->
+<section>
+  <h3>Media Examples</h3>
+
+  <!-- With media token: LLM sees src and alt -->
+  <img llm-policy-input="structure media"
+       src="public-photo.jpg"
+       alt="A scenic mountain view">
+
+  <!-- Without media token: LLM sees [image] placeholder -->
+  <img llm-policy-input="structure"
+       src="private-photo.jpg"
+       alt="Private family photo">
+</section>
+
+</body>
+</html>

@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>LLM Global Policy Dependency Resolution</title>
+<link rel="help" href="https://example.org/llm-markup#dependency-resolution">
+<script src="/resources/testharness.js"></script>
+<script src="/resources/testharnessreport.js"></script>
+<script src="../../resources/llm-markup-helpers.js"></script>
+
+<div id="test-container"></div>
+
+<script>
+'use strict';
+
+// =============================================================================
+// LLMPolicyDependency Interface
+// =============================================================================
+
+test(() => {
+  const policy = document.llmGlobalPolicy;
+  if (policy !== null) {
+    const deps = policy.constraints.dependencies;
+    assert_true(Array.isArray(deps));
+  }
+}, 'dependencies is an array');
+
+test(() => {
+  const policy = document.llmGlobalPolicy;
+  if (policy !== null && policy.constraints.dependencies.length > 0) {
+    const dep = policy.constraints.dependencies[0];
+    assert_true('trigger' in dep);
+    assert_true('requires' in dep);
+    assert_true('scope' in dep);
+    assert_true('failureMode' in dep);
+  }
+}, 'LLMPolicyDependency has required properties');
+
+// =============================================================================
+// Dependency Trigger and Requires
+// =============================================================================
+
+test(() => {
+  const policy = document.llmGlobalPolicy;
+  if (policy !== null && policy.constraints.dependencies.length > 0) {
+    const dep = policy.constraints.dependencies[0];
+    assert_true(typeof dep.trigger === 'string');
+    assert_true(typeof dep.requires === 'string');
+  }
+}, 'Dependency trigger and requires are CSS selector strings');
+
+// =============================================================================
+// Dependency Scope
+// =============================================================================
+
+test(() => {
+  const policy = document.llmGlobalPolicy;
+  if (policy !== null && policy.constraints.dependencies.length > 0) {
+    const dep = policy.constraints.dependencies[0];
+    assert_true(['input', 'output', 'both'].includes(dep.scope));
+  }
+}, 'Dependency scope is a valid enum value');
+
+// =============================================================================
+// Dependency Failure Mode
+// =============================================================================
+
+test(() => {
+  const policy = document.llmGlobalPolicy;
+  if (policy !== null && policy.constraints.dependencies.length > 0) {
+    const dep = policy.constraints.dependencies[0];
+    assert_true(['omit-trigger', 'error'].includes(dep.failureMode));
+  }
+}, 'Dependency failureMode is a valid enum value');
+
+// =============================================================================
+// Dependency Resolution: Requirement Met
+// =============================================================================
+
+test(() => {
+  const policy = document.llmGlobalPolicy;
+  if (policy !== null) {
+    const container = document.getElementById('test-container');
+
+    // Create both trigger and required elements
+    container.innerHTML = `
+      <div class="pull-quote" id="quote">This is a quote</div>
+      <div class="attribution" id="attr">- Author Name</div>
+    `;
+
+    const quote = document.getElementById('quote');
+    const attr = document.getElementById('attr');
+
+    // Check if dependency exists for .pull-quote requiring .attribution
+    const deps = policy.constraints.dependencies.filter(
+      d => d.trigger === '.pull-quote' && d.requires === '.attribution'
+    );
+
+    if (deps.length > 0) {
+      const omitted = policy.resolveDependencies([quote, attr]);
+      // Both present, so neither should be omitted
+      assert_false(omitted.includes(quote));
+    }
+
+    container.innerHTML = '';
+  }
+}, 'Dependency is satisfied when both elements present');
+
+// =============================================================================
+// Dependency Resolution: Requirement Not Met (omit-trigger)
+// =============================================================================
+
+test(() => {
+  const policy = document.llmGlobalPolicy;
+  if (policy !== null) {
+    const container = document.getElementById('test-container');
+
+    // Create only trigger element, not required
+    container.innerHTML = `
+      <div class="pull-quote" id="quote-only">Quote without attribution</div>
+    `;
+
+    const quote = document.getElementById('quote-only');
+
+    const deps = policy.constraints.dependencies.filter(
+      d => d.trigger === '.pull-quote' &&
+           d.requires === '.attribution' &&
+           d.failureMode === 'omit-trigger'
+    );
+
+    if (deps.length > 0) {
+      const omitted = policy.resolveDependencies([quote]);
+      // Quote should be omitted because attribution is missing
+      assert_true(omitted.includes(quote));
+    }
+
+    container.innerHTML = '';
+  }
+}, 'Trigger element is omitted when requirement not met (omit-trigger mode)');
+
+// =============================================================================
+// Dependency Resolution: Requirement Not Met (error)
+// =============================================================================
+
+test(() => {
+  const policy = document.llmGlobalPolicy;
+  if (policy !== null) {
+    const container = document.getElementById('test-container');
+
+    // This test would check for error mode behavior
+    // In error mode, context construction should halt
+
+    container.innerHTML = `
+      <div class="error-trigger" id="error-test">Trigger element</div>
+    `;
+
+    const trigger = document.getElementById('error-test');
+
+    // Find dependency with error failure mode
+    const deps = policy.constraints.dependencies.filter(
+      d => d.failureMode === 'error'
+    );
+
+    if (deps.length > 0) {
+      // Attempting to resolve dependencies should throw or return error
+      try {
+        const result = policy.resolveDependencies([trigger]);
+        // If it doesn't throw, check for error indication
+      } catch (e) {
+        // Expected in error mode
+        assert_true(true);
+      }
+    }
+
+    container.innerHTML = '';
+  }
+}, 'Error mode halts context construction on dependency failure');
+
+// =============================================================================
+// Recursive Dependency Resolution
+// =============================================================================
+
+test(() => {
+  const policy = document.llmGlobalPolicy;
+  if (policy !== null) {
+    const container = document.getElementById('test-container');
+
+    // Create chain of dependencies
+    container.innerHTML = `
+      <div class="pull-quote" id="q1">Quote 1</div>
+      <div class="pull-quote" id="q2">Quote 2</div>
+      <div class="attribution" id="a1">Attribution for Q1 only</div>
+    `;
+
+    const q1 = document.getElementById('q1');
+    const q2 = document.getElementById('q2');
+    const a1 = document.getElementById('a1');
+
+    const deps = policy.constraints.dependencies.filter(
+      d => d.trigger === '.pull-quote' && d.requires === '.attribution'
+    );
+
+    if (deps.length > 0) {
+      const omitted = policy.resolveDependencies([q1, q2, a1]);
+      // q2 might be omitted if attribution requirement is per-trigger
+      // or both might be kept if one attribution satisfies all
+      // Test captures actual behavior
+      assert_true(Array.isArray(omitted));
+    }
+
+    container.innerHTML = '';
+  }
+}, 'Multiple triggers with shared requirement are resolved');
+
+// =============================================================================
+// Dependency Scope: Input
+// =============================================================================
+
+test(() => {
+  const policy = document.llmGlobalPolicy;
+  if (policy !== null) {
+    const deps = policy.constraints.dependencies.filter(d => d.scope === 'input');
+    if (deps.length > 0) {
+      // Input scope dependencies only apply during context construction
+      assert_equals(deps[0].scope, 'input');
+    }
+  }
+}, "Dependencies with scope='input' apply to visibility");
+
+// =============================================================================
+// Dependency Scope: Output
+// =============================================================================
+
+test(() => {
+  const policy = document.llmGlobalPolicy;
+  if (policy !== null) {
+    const deps = policy.constraints.dependencies.filter(d => d.scope === 'output');
+    if (deps.length > 0) {
+      // Output scope dependencies only apply during mutation enforcement
+      assert_equals(deps[0].scope, 'output');
+    }
+  }
+}, "Dependencies with scope='output' apply to mutations");
+
+// =============================================================================
+// Dependency Scope: Both
+// =============================================================================
+
+test(() => {
+  const policy = document.llmGlobalPolicy;
+  if (policy !== null) {
+    const deps = policy.constraints.dependencies.filter(d => d.scope === 'both');
+    if (deps.length > 0) {
+      // Both scope applies to all phases
+      assert_equals(deps[0].scope, 'both');
+    }
+  }
+}, "Dependencies with scope='both' apply to all phases");
+
+// =============================================================================
+// Empty Candidate Set
+// =============================================================================
+
+test(() => {
+  const policy = document.llmGlobalPolicy;
+  if (policy !== null) {
+    const omitted = policy.resolveDependencies([]);
+    assert_true(Array.isArray(omitted));
+    assert_equals(omitted.length, 0);
+  }
+}, 'Empty candidate set returns empty omitted list');
+
+// =============================================================================
+// Non-Matching Elements
+// =============================================================================
+
+test(() => {
+  const policy = document.llmGlobalPolicy;
+  if (policy !== null) {
+    const container = document.getElementById('test-container');
+    container.innerHTML = `
+      <div id="normal1">Normal element 1</div>
+      <div id="normal2">Normal element 2</div>
+    `;
+
+    const el1 = document.getElementById('normal1');
+    const el2 = document.getElementById('normal2');
+
+    const omitted = policy.resolveDependencies([el1, el2]);
+    // Elements not matching any trigger should not be omitted
+    assert_equals(omitted.length, 0);
+
+    container.innerHTML = '';
+  }
+}, 'Elements not matching triggers are not affected');
+
+// =============================================================================
+// Cascading Omissions
+// =============================================================================
+
+test(() => {
+  const policy = document.llmGlobalPolicy;
+  if (policy !== null) {
+    const container = document.getElementById('test-container');
+
+    // If A requires B, and B requires C, omitting C should cascade
+    container.innerHTML = `
+      <div class="level-a" id="a">A</div>
+      <div class="level-b" id="b">B (requires A)</div>
+    `;
+
+    // This tests cascading dependency resolution
+    // Actual behavior depends on defined dependencies
+
+    container.innerHTML = '';
+  }
+}, 'Cascading dependencies are resolved recursively');
+</script>

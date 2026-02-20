@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>LLM Policy Context Representation Format</title>
+<link rel="help" href="https://example.org/llm-markup#enforcement-of-visibility">
+<script src="/resources/testharness.js"></script>
+<script src="/resources/testharnessreport.js"></script>
+<script src="../../resources/llm-markup-helpers.js"></script>
+
+<div id="test-container"></div>
+
+<script>
+'use strict';
+
+// =============================================================================
+// Basic Context Construction
+// =============================================================================
+
+test(() => {
+  const container = document.getElementById('test-container');
+  container.innerHTML = '<p>Hello World</p>';
+
+  const context = document.buildLLMContext({ root: container });
+  assert_true(typeof context === 'string');
+  assert_true(context.includes('Hello World'));
+  assert_true(context.includes('<p>'));
+
+  container.innerHTML = '';
+}, 'buildLLMContext returns HTML string by default');
+
+test(() => {
+  const container = document.getElementById('test-container');
+  container.innerHTML = '<div><p>Nested</p></div>';
+
+  const context = document.buildLLMContext({ root: container });
+  assert_true(context.includes('<div>'));
+  assert_true(context.includes('<p>'));
+  assert_true(context.includes('Nested'));
+
+  container.innerHTML = '';
+}, 'Context preserves element hierarchy');
+
+// =============================================================================
+// Visibility Token: none
+// =============================================================================
+
+test(() => {
+  const container = document.getElementById('test-container');
+  container.innerHTML = `
+    <div>
+      <p llm-policy-input="none">Hidden content</p>
+      <p>Visible content</p>
+    </div>
+  `;
+
+  const context = document.buildLLMContext({ root: container });
+  assert_false(context.includes('Hidden content'));
+  assert_true(context.includes('Visible content'));
+
+  container.innerHTML = '';
+}, 'input="none" omits element and descendants');
+
+test(() => {
+  const container = document.getElementById('test-container');
+  container.innerHTML = `
+    <div llm-policy-input="none">
+      <p>Child of hidden</p>
+      <div>
+        <span>Deeply nested</span>
+      </div>
+    </div>
+  `;
+
+  const context = document.buildLLMContext({ root: container });
+  assert_false(context.includes('Child of hidden'));
+  assert_false(context.includes('Deeply nested'));
+
+  container.innerHTML = '';
+}, 'input="none" omits all descendants');
+
+// =============================================================================
+// Visibility Token: structure without text
+// =============================================================================
+
+test(() => {
+  const container = document.getElementById('test-container');
+  container.innerHTML = `
+    <p llm-policy-input="structure">Secret text here</p>
+  `;
+
+  const context = document.buildLLMContext({ root: container });
+  assert_true(context.includes('<p'));
+  assert_true(context.includes('</p>'));
+  assert_false(context.includes('Secret text here'));
+  assert_true(context.includes('[REDACTED]'));
+
+  container.innerHTML = '';
+}, 'structure without text replaces content with [REDACTED]');
+
+test(() => {
+  const container = document.getElementById('test-container');
+  container.innerHTML = `
+    <div llm-policy-input="structure">
+      <p>First paragraph</p>
+      <p>Second paragraph</p>
+    </div>
+  `;
+
+  const context = document.buildLLMContext({ root: container });
+  assert_true(context.includes('<div'));
+  assert_true(context.includes('<p'));
+  assert_false(context.includes('First paragraph'));
+  assert_false(context.includes('Second paragraph'));
+
+  container.innerHTML = '';
+}, 'structure without text redacts all nested text');
+
+// =============================================================================
+// Visibility Token: structure text (without attributes)
+// =============================================================================
+
+test(() => {
+  const container = document.getElementById('test-container');
+  container.innerHTML = `
+    <p llm-policy-input="structure text" data-secret="hidden" class="visible">
+      Text is visible
+    </p>
+  `;
+
+  const context = document.buildLLMContext({ root: container });
+  assert_true(context.includes('Text is visible'));
+  assert_true(context.includes('class="visible"'));
+  assert_false(context.includes('data-secret'));
+
+  container.innerHTML = '';
+}, 'structure text keeps text and allowed attributes only');
+
+test(() => {
+  const container = document.getElementById('test-container');
+  container.innerHTML = `
+    <div llm-policy-input="structure text" id="keep-id" role="main" aria-label="test">
+      Content
+    </div>
+  `;
+
+  const context = document.buildLLMContext({ root: container });
+  assert_true(context.includes('id="keep-id"'));
+  assert_true(context.includes('role="main"'));
+  assert_true(context.includes('aria-label'));
+
+  container.innerHTML = '';
+}, 'structure text preserves id, role, and aria-* attributes');
+
+// =============================================================================
+// Visibility Token: media
+// =============================================================================
+
+test(() => {
+  const container = document.getElementById('test-container');
+  container.innerHTML = `
+    <img llm-policy-input="structure media" src="photo.jpg" alt="A photo">
+  `;
+
+  const context = document.buildLLMContext({ root: container });
+  assert_true(context.includes('src="photo.jpg"'));
+  assert_true(context.includes('alt="A photo"'));
+
+  container.innerHTML = '';
+}, 'media token preserves src and alt on images');
+
+test(() => {
+  const container = document.getElementById('test-container');
+  container.innerHTML = `
+    <img llm-policy-input="structure" src="photo.jpg" alt="A photo">
+  `;
+
+  const context = document.buildLLMContext({ root: container });
+  assert_false(context.includes('src="photo.jpg"'));
+  assert_true(context.includes('[image]'));
+
+  container.innerHTML = '';
+}, 'structure without media replaces with placeholder');
+
+test(() => {
+  const container = document.getElementById('test-container');
+  container.innerHTML = `
+    <video llm-policy-input="structure" src="video.mp4">Fallback</video>
+  `;
+
+  const context = document.buildLLMContext({ root: container });
+  assert_false(context.includes('src="video.mp4"'));
+  assert_true(context.includes('[video content]'));
+
+  container.innerHTML = '';
+}, 'video without media token gets placeholder');
+
+test(() => {
+  const container = document.getElementById('test-container');
+  container.innerHTML = `
+    <audio llm-policy-input="structure" src="audio.mp3">Fallback</audio>
+  `;
+
+  const context = document.buildLLMContext({ root: container });
+  assert_false(context.includes('src="audio.mp3"'));
+  assert_true(context.includes('[audio content]'));
+
+  container.innerHTML = '';
+}, 'audio without media token gets placeholder');
+
+// =============================================================================
+// Visibility Token: all
+// =============================================================================
+
+test(() => {
+  const container = document.getElementById('test-container');
+  container.innerHTML = `
+    <div llm-policy-input="all" data-custom="value" class="test">
+      <img src="img.png" alt="test">
+      <p>Full visibility</p>
+    </div>
+  `;
+
+  const context = document.buildLLMContext({ root: container });
+  assert_true(context.includes('data-custom="value"'));
+  assert_true(context.includes('class="test"'));
+  assert_true(context.includes('src="img.png"'));
+  assert_true(context.includes('Full visibility'));
+
+  container.innerHTML = '';
+}, 'input="all" preserves everything');
+
+// =============================================================================
+// Whitespace Normalization
+// =============================================================================
+
+test(() => {
+  const container = document.getElementById('test-container');
+  container.innerHTML = `
+    <p>Multiple    spaces    here</p>
+  `;
+
+  const context = document.buildLLMContext({ root: container });
+  // Multiple spaces should be collapsed
+  assert_false(context.includes('    '));
+
+  container.innerHTML = '';
+}, 'Multiple spaces are collapsed');
+
+test(() => {
+  const container = document.getElementById('test-container');
+  container.innerHTML = `
+    <pre>  Preserved   whitespace  </pre>
+  `;
+
+  const context = document.buildLLMContext({ root: container });
+  // Whitespace in pre should be preserved
+  assert_true(context.includes('  Preserved   whitespace  '));
+
+  container.innerHTML = '';
+}, 'Whitespace in pre elements is preserved');
+
+test(() => {
+  const container = document.getElementById('test-container');
+  container.innerHTML = `
+    <code>  code  spaces  </code>
+  `;
+
+  const context = document.buildLLMContext({ root: container });
+  // Whitespace in code should be preserved
+  assert_true(context.includes('code  spaces') || context.includes('code spaces'));
+
+  container.innerHTML = '';
+}, 'Whitespace in code elements is handled');
+
+// =============================================================================
+// Script and Style Elements
+// =============================================================================
+
+test(() => {
+  const container = document.getElementById('test-container');
+  container.innerHTML = `
+    <div>
+      <script>console.log("test");</script>
+      <p>Content</p>
+    </div>
+  `;
+
+  const context = document.buildLLMContext({ root: container });
+  assert_true(context.includes('<script>'));
+  assert_true(context.includes('console.log'));
+
+  container.innerHTML = '';
+}, 'Script elements are included in context');
+
+test(() => {
+  const container = document.getElementById('test-container');
+  container.innerHTML = `
+    <div>
+      <style>.test { color: red; }</style>
+      <p class="test">Styled</p>
+    </div>
+  `;
+
+  const context = document.buildLLMContext({ root: container });
+  assert_true(context.includes('<style>'));
+  assert_true(context.includes('color: red'));
+
+  container.innerHTML = '';
+}, 'Style elements are included in context');
+
+test(() => {
+  const container = document.getElementById('test-container');
+  container.innerHTML = `
+    <script type="application/json">{"key": "value"}</script>
+  `;
+
+  const context = document.buildLLMContext({ root: container });
+  assert_true(context.includes('application/json'));
+  assert_true(context.includes('"key"'));
+
+  container.innerHTML = '';
+}, 'JSON script elements are included');
+
+// =============================================================================
+// Security Filtering
+// =============================================================================
+
+test(() => {
+  const container = document.getElementById('test-container');
+  container.innerHTML = `
+    <button onclick="alert('xss')">Click</button>
+  `;
+
+  const context = document.buildLLMContext({ root: container });
+  assert_false(context.includes('onclick'));
+  assert_false(context.includes('alert'));
+  assert_true(context.includes('<button'));
+
+  container.innerHTML = '';
+}, 'Event handler attributes are stripped');
+
+test(() => {
+  const container = document.getElementById('test-container');
+  container.innerHTML = `
+    <a href="javascript:alert('xss')">Link</a>
+  `;
+
+  const context = document.buildLLMContext({ root: container });
+  assert_false(context.includes('javascript:alert'));
+  assert_true(context.includes('[javascript]') || !context.includes('href'));
+
+  container.innerHTML = '';
+}, 'JavaScript URLs are replaced with placeholder');
+
+// =============================================================================
+// Comments
+// =============================================================================
+
+test(() => {
+  const container = document.getElementById('test-container');
+  container.innerHTML = `
+    <div>
+      <!-- This is a comment -->
+      <p>Content</p>
+    </div>
+  `;
+
+  const context = document.buildLLMContext({ root: container });
+  assert_false(context.includes('This is a comment'));
+  assert_true(context.includes('Content'));
+
+  container.innerHTML = '';
+}, 'HTML comments are stripped');
+
+// =============================================================================
+// Iframe Elements
+// =============================================================================
+
+test(() => {
+  const container = document.getElementById('test-container');
+  container.innerHTML = `
+    <iframe src="https://example.com"></iframe>
+  `;
+
+  const context = document.buildLLMContext({ root: container });
+  assert_true(context.includes('<iframe'));
+  assert_true(context.includes('[cross-origin content]') || !context.includes('example.com'));
+
+  container.innerHTML = '';
+}, 'Iframe content is replaced with placeholder');
+
+// =============================================================================
+// LLMContextResult (with metadata)
+// =============================================================================
+
+test(() => {
+  const container = document.getElementById('test-container');
+  container.innerHTML = `
+    <div>
+      <p>Visible</p>
+      <p llm-policy-input="none">Hidden</p>
+    </div>
+  `;
+
+  const result = document.buildLLMContext({
+    root: container,
+    includeMetadata: true
+  });
+
+  assert_true('content' in result);
+  assert_true('truncated' in result);
+  assert_true('elementCount' in result);
+  assert_true('omittedCount' in result);
+
+  container.innerHTML = '';
+}, 'includeMetadata returns LLMContextResult object');
+
+test(() => {
+  const container = document.getElementById('test-container');
+  container.innerHTML = `
+    <p llm-policy-input="structure">Secret</p>
+  `;
+
+  const result = document.buildLLMContext({
+    root: container,
+    includeMetadata: true
+  });
+
+  assert_true(result.redactedTextNodes >= 1);
+
+  container.innerHTML = '';
+}, 'LLMContextResult tracks redacted text nodes');
+
+// =============================================================================
+// Placeholder Constants
+// =============================================================================
+
+test(() => {
+  assert_equals(LLMContextPlaceholders.redactedText, '[REDACTED]');
+  assert_equals(LLMContextPlaceholders.imageAlt, '[image]');
+  assert_equals(LLMContextPlaceholders.videoContent, '[video content]');
+  assert_equals(LLMContextPlaceholders.audioContent, '[audio content]');
+  assert_equals(LLMContextPlaceholders.canvasGraphic, '[canvas graphic]');
+  assert_equals(LLMContextPlaceholders.crossOriginContent, '[cross-origin content]');
+}, 'LLMContextPlaceholders has correct values');
+
+// =============================================================================
+// Element.getLLMContextRepresentation
+// =============================================================================
+
+test(() => {
+  const container = document.getElementById('test-container');
+  container.innerHTML = '<p llm-policy-input="structure text">Hello</p>';
+  const p = container.querySelector('p');
+
+  const repr = p.getLLMContextRepresentation();
+  assert_true(typeof repr === 'string');
+  assert_true(repr.includes('Hello'));
+
+  container.innerHTML = '';
+}, 'Element.getLLMContextRepresentation returns string');
+
+test(() => {
+  const container = document.getElementById('test-container');
+  container.innerHTML = '<p llm-policy-input="none">Hidden</p>';
+  const p = container.querySelector('p');
+
+  const repr = p.getLLMContextRepresentation();
+  assert_equals(repr, '');
+
+  container.innerHTML = '';
+}, 'getLLMContextRepresentation returns empty for hidden elements');
+
+// =============================================================================
+// Default Visibility
+// =============================================================================
+
+test(() => {
+  const container = document.getElementById('test-container');
+  container.innerHTML = `
+    <div data-test="value">
+      <img src="test.png" alt="test">
+      <p>Text content</p>
+    </div>
+  `;
+
+  const context = document.buildLLMContext({ root: container });
+  // Default is "all" - everything visible
+  assert_true(context.includes('data-test="value"'));
+  assert_true(context.includes('src="test.png"'));
+  assert_true(context.includes('Text content'));
+
+  container.innerHTML = '';
+}, 'Default visibility is "all"');
+</script>

@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>LLM Intent Attribute Parsing</title>
+<link rel="help" href="https://example.org/llm-markup#llm-intent-namespace">
+<script src="/resources/testharness.js"></script>
+<script src="/resources/testharnessreport.js"></script>
+<script src="../../resources/llm-markup-helpers.js"></script>
+
+<div id="test-container"></div>
+
+<script>
+'use strict';
+
+// =============================================================================
+// llm-intent-category
+// =============================================================================
+
+test(() => {
+  const el = createLLMElement('div', { 'llm-intent-category': 'quote' });
+  assert_equals(el.llmIntent.category, 'quote');
+}, 'llm-intent-category is parsed correctly');
+
+test(() => {
+  const el = createLLMElement('div', { 'llm-intent-category': 'custom-category' });
+  assert_equals(el.llmIntent.category, 'custom-category');
+}, 'Custom category values are accepted');
+
+test(() => {
+  const el = createLLMElement('div', { 'llm-intent-category': '' });
+  assert_equals(el.llmIntent.category, '');
+}, 'Empty category is handled');
+
+test(() => {
+  const el = createLLMElement('div', {});
+  assert_equals(el.llmIntent.category, null);
+}, 'Missing category attribute returns null');
+
+// =============================================================================
+// llm-intent-importance
+// =============================================================================
+
+test(() => {
+  const el = createLLMElement('div', { 'llm-intent-importance': 'critical' });
+  assert_equals(el.llmIntent.importance, 'critical');
+}, "llm-intent-importance='critical' is parsed correctly");
+
+test(() => {
+  const el = createLLMElement('div', { 'llm-intent-importance': 'high' });
+  assert_equals(el.llmIntent.importance, 'high');
+}, "llm-intent-importance='high' is parsed correctly");
+
+test(() => {
+  const el = createLLMElement('div', { 'llm-intent-importance': 'normal' });
+  assert_equals(el.llmIntent.importance, 'normal');
+}, "llm-intent-importance='normal' is parsed correctly");
+
+test(() => {
+  const el = createLLMElement('div', { 'llm-intent-importance': 'low' });
+  assert_equals(el.llmIntent.importance, 'low');
+}, "llm-intent-importance='low' is parsed correctly");
+
+test(() => {
+  const el = createLLMElement('div', { 'llm-intent-importance': 'background' });
+  assert_equals(el.llmIntent.importance, 'background');
+}, "llm-intent-importance='background' is parsed correctly");
+
+test(() => {
+  const el = createLLMElement('div', {});
+  assert_equals(el.llmIntent.importance, 'normal');
+}, 'Default importance is normal');
+
+test(() => {
+  const el = createLLMElement('div', { 'llm-intent-importance': 'CRITICAL' });
+  assert_equals(el.llmIntent.importance, 'critical');
+}, 'Importance parsing is case-insensitive');
+
+test(() => {
+  const el = createLLMElement('div', { 'llm-intent-importance': 'invalid' });
+  // Invalid values should fall back to 'normal'
+  assert_equals(el.llmIntent.importance, 'normal');
+}, 'Invalid importance falls back to normal');
+
+for (const level of VALID_IMPORTANCE_LEVELS) {
+  test(() => {
+    const el = createLLMElement('div', { 'llm-intent-importance': level });
+    assert_equals(el.llmIntent.importance, level);
+  }, `Valid importance level '${level}' is accepted`);
+}
+
+// =============================================================================
+// llm-intent-entity
+// =============================================================================
+
+test(() => {
+  const el = createLLMElement('div', { 'llm-intent-entity': 'https://www.wikidata.org/wiki/Q42' });
+  assert_equals(el.llmIntent.entity, 'https://www.wikidata.org/wiki/Q42');
+}, 'llm-intent-entity with Wikidata URI is parsed correctly');
+
+test(() => {
+  const el = createLLMElement('div', { 'llm-intent-entity': 'https://schema.org/Person' });
+  assert_equals(el.llmIntent.entity, 'https://schema.org/Person');
+}, 'llm-intent-entity with Schema.org URI is parsed correctly');
+
+test(() => {
+  const el = createLLMElement('div', {});
+  assert_equals(el.llmIntent.entity, null);
+}, 'Missing entity attribute returns null');
+
+// =============================================================================
+// llm-intent-instruction
+// =============================================================================
+
+test(() => {
+  const el = createLLMElement('div', {
+    'llm-intent-instruction': 'Summarize this paragraph in one sentence.'
+  });
+  assert_equals(el.llmIntent.instruction, 'Summarize this paragraph in one sentence.');
+}, 'llm-intent-instruction is parsed correctly');
+
+test(() => {
+  const el = createLLMElement('div', {
+    'llm-intent-instruction': 'Do not modify this content under any circumstances.'
+  });
+  assert_equals(el.llmIntent.instruction, 'Do not modify this content under any circumstances.');
+}, 'Custom instructions with any text are accepted');
+
+test(() => {
+  const el = createLLMElement('div', {});
+  assert_equals(el.llmIntent.instruction, null);
+}, 'Missing instruction attribute returns null');
+
+// =============================================================================
+// llm-intent-function (Phase 2)
+// =============================================================================
+
+test(() => {
+  const el = createLLMElement('button', { 'llm-intent-function': 'submit' });
+  assert_equals(el.llmIntent.function, 'submit');
+}, 'llm-intent-function is parsed correctly');
+
+test(() => {
+  const el = createLLMElement('button', { 'llm-intent-function': 'custom-action' });
+  assert_equals(el.llmIntent.function, 'custom-action');
+}, 'Custom function values are accepted');
+
+test(() => {
+  const el = createLLMElement('button', {});
+  assert_equals(el.llmIntent.function, null);
+}, 'Missing function attribute returns null');
+
+// =============================================================================
+// llm-intent-workflow (Phase 2)
+// =============================================================================
+
+test(() => {
+  const el = createLLMElement('div', { 'llm-intent-workflow': 'step' });
+  assert_equals(el.llmIntent.workflow, 'step');
+}, 'llm-intent-workflow is parsed correctly');
+
+test(() => {
+  const el = createLLMElement('div', { 'llm-intent-workflow': 'prerequisite' });
+  assert_equals(el.llmIntent.workflow, 'prerequisite');
+}, "llm-intent-workflow='prerequisite' is parsed correctly");
+
+test(() => {
+  const el = createLLMElement('div', {});
+  assert_equals(el.llmIntent.workflow, null);
+}, 'Missing workflow attribute returns null');
+
+// =============================================================================
+// llm-intent-output (Phase 3)
+// =============================================================================
+
+test(() => {
+  const el = createLLMElement('div', { 'llm-intent-output': 'json' });
+  assert_equals(el.llmIntent.output, 'json');
+}, "llm-intent-output='json' is parsed correctly");
+
+test(() => {
+  const el = createLLMElement('div', { 'llm-intent-output': 'markdown' });
+  assert_equals(el.llmIntent.output, 'markdown');
+}, "llm-intent-output='markdown' is parsed correctly");
+
+test(() => {
+  const el = createLLMElement('div', { 'llm-intent-output': 'concise' });
+  assert_equals(el.llmIntent.output, 'concise');
+}, "llm-intent-output='concise' is parsed correctly");
+
+test(() => {
+  const el = createLLMElement('div', {});
+  assert_equals(el.llmIntent.output, null);
+}, 'Missing output attribute returns null');
+
+// =============================================================================
+// llm-intent-tone (Phase 3)
+// =============================================================================
+
+test(() => {
+  const el = createLLMElement('div', { 'llm-intent-tone': 'formal' });
+  assert_equals(el.llmIntent.tone, 'formal');
+}, "llm-intent-tone='formal' is parsed correctly");
+
+test(() => {
+  const el = createLLMElement('div', { 'llm-intent-tone': 'casual' });
+  assert_equals(el.llmIntent.tone, 'casual');
+}, "llm-intent-tone='casual' is parsed correctly");
+
+test(() => {
+  const el = createLLMElement('div', { 'llm-intent-tone': 'empathetic' });
+  assert_equals(el.llmIntent.tone, 'empathetic');
+}, "llm-intent-tone='empathetic' is parsed correctly");
+
+test(() => {
+  const el = createLLMElement('div', {});
+  assert_equals(el.llmIntent.tone, null);
+}, 'Missing tone attribute returns null');
+
+// =============================================================================
+// hasIntent Property
+// =============================================================================
+
+test(() => {
+  const el = createLLMElement('div', {});
+  assert_false(el.llmIntent.hasIntent);
+}, 'hasIntent is false when no intent attributes are set');
+
+test(() => {
+  const el = createLLMElement('div', { 'llm-intent-category': 'quote' });
+  assert_true(el.llmIntent.hasIntent);
+}, 'hasIntent is true when category is set');
+
+test(() => {
+  const el = createLLMElement('div', { 'llm-intent-importance': 'critical' });
+  assert_true(el.llmIntent.hasIntent);
+}, 'hasIntent is true when importance is non-default');
+
+test(() => {
+  const el = createLLMElement('div', { 'llm-intent-instruction': 'test' });
+  assert_true(el.llmIntent.hasIntent);
+}, 'hasIntent is true when instruction is set');
+
+test(() => {
+  const el = createLLMElement('div', { 'llm-intent-entity': 'https://example.com' });
+  assert_true(el.llmIntent.hasIntent);
+}, 'hasIntent is true when entity is set');
+
+// =============================================================================
+// Combined Attributes
+// =============================================================================
+
+test(() => {
+  const el = createLLMElement('div', {
+    'llm-intent-category': 'quote',
+    'llm-intent-importance': 'high',
+    'llm-intent-entity': 'https://example.com/source',
+    'llm-intent-tone': 'formal'
+  });
+
+  assert_equals(el.llmIntent.category, 'quote');
+  assert_equals(el.llmIntent.importance, 'high');
+  assert_equals(el.llmIntent.entity, 'https://example.com/source');
+  assert_equals(el.llmIntent.tone, 'formal');
+  assert_true(el.llmIntent.hasIntent);
+}, 'Multiple intent attributes can be combined');
+
+// =============================================================================
+// isLexiconCategory Method
+// =============================================================================
+
+test(() => {
+  const el = createLLMElement('div', { 'llm-intent-category': 'summary' });
+  assert_true(el.llmIntent.isLexiconCategory());
+}, "Lexicon category 'summary' is recognized");
+
+test(() => {
+  const el = createLLMElement('div', { 'llm-intent-category': 'code-block' });
+  assert_true(el.llmIntent.isLexiconCategory());
+}, "Lexicon category 'code-block' is recognized");
+
+test(() => {
+  const el = createLLMElement('div', { 'llm-intent-category': 'custom-unknown' });
+  assert_false(el.llmIntent.isLexiconCategory());
+}, 'Custom category is not a lexicon category');
+
+test(() => {
+  const el = createLLMElement('div', {});
+  assert_false(el.llmIntent.isLexiconCategory());
+}, 'No category returns false for isLexiconCategory');
+</script>

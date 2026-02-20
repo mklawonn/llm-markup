@@ -143,9 +143,125 @@ Governs the persistence of interaction data (Retention). This attribute accepts 
 
 **Example:** `llm-policy-memory="session user"` allows personalization but prohibits using the data for model training.
 
-# Global Policy Header
+# Global Policy
 
 A server MAY provide a global policy via a JSON-encoded payload. This payload defines default behaviors and immutable constraints for the entire document.
+
+## Policy Delivery
+
+The Global Policy MAY be delivered via HTTP response header, HTML meta tag, or both. When multiple sources are present, the User Agent MUST apply **layered precedence** where the HTTP header establishes authoritative constraints and the meta tag can only add further restrictions.
+
+### HTTP Response Header
+
+The server MAY deliver the Global Policy via the `LLM-Policy` HTTP response header.
+
+**Syntax:**
+
+```http
+LLM-Policy: <json-policy>
+```
+
+**Example:**
+
+```http
+HTTP/1.1 200 OK
+Content-Type: text/html
+LLM-Policy: {"defaults":{"llm-policy-output":["readonly"]},"constraints":{"block-selectors":[".secret"]}}
+```
+
+For policies exceeding practical header size limits (~8KB), the server SHOULD use the `LLM-Policy-Src` header to reference an external policy file.
+
+**External Policy Reference:**
+
+```http
+LLM-Policy-Src: /.well-known/llm-policy.json
+```
+
+The User Agent MUST fetch the referenced policy file before allowing any LLM interaction with the document. The referenced file MUST be same-origin or served with appropriate CORS headers (`Access-Control-Allow-Origin`).
+
+### HTML Meta Tag
+
+The document MAY include a Global Policy via a `<meta>` tag in the `<head>` element.
+
+**Syntax:**
+
+```html
+<meta name="llm-policy" content="<json-policy>">
+```
+
+**Example:**
+
+```html
+<head>
+  <meta name="llm-policy" content='{"defaults":{"llm-policy-memory":["none"]}}'>
+</head>
+```
+
+For external policy files:
+
+```html
+<meta name="llm-policy-src" content="/.well-known/llm-policy.json">
+```
+
+### Delivery Precedence
+
+When both HTTP header and meta tag provide policy, the User Agent MUST apply the following precedence rules:
+
+1.  **HTTP Header Authority:** The policy delivered via HTTP header (or `LLM-Policy-Src`) establishes the authoritative baseline. This policy is considered **tamper-proof** as it cannot be modified by page scripts.
+
+2.  **Meta Tag Restrictions:** The policy delivered via meta tag is applied as an **additional restriction** using intersection semantics. The meta tag can only make the policy MORE restrictive, never more permissive.
+
+3.  **Intersection Calculation:**
+    *   `effective.defaults = header.defaults ∩ meta.defaults`
+    *   `effective.constraints = header.constraints ∪ meta.constraints`
+
+**Example (Precedence Resolution):**
+
+```http
+LLM-Policy: {"defaults":{"llm-policy-output":["style","content","annotation"]}}
+```
+
+```html
+<meta name="llm-policy" content='{"defaults":{"llm-policy-output":["style","annotation"]}}'>
+```
+
+**Effective Policy:**
+```
+defaults.llm-policy-output = [style, content, annotation] ∩ [style, annotation]
+                           = [style, annotation]
+```
+
+The meta tag removed `content` from the allowed outputs, which is permitted. A meta tag attempting to ADD permissions not in the header would have no effect.
+
+### Timing and Blocking
+
+The User Agent MUST resolve the Global Policy before initiating any LLM interaction with the document.
+
+*   **HTTP Header:** Available immediately upon response receipt. Does not block HTML parsing.
+*   **External File (via `LLM-Policy-Src` or `llm-policy-src`):** The User Agent MUST fetch and parse the policy file before LLM interaction. This fetch SHOULD be initiated as early as possible (e.g., during HTML preload scanning).
+*   **Meta Tag:** Parsed during normal HTML parsing. The User Agent MUST NOT allow LLM interaction with elements that appear before the meta tag until the meta tag is processed.
+
+If the external policy file fails to load (network error, 4xx/5xx response), the User Agent MUST apply **fail-closed** semantics: treat the document as if it had `llm-policy-input="none"` on the root element (no LLM visibility).
+
+### Policy Immutability
+
+Once the Global Policy is resolved (after HTTP headers are received and any external files are fetched), the policy is **immutable** for the lifetime of the document.
+
+*   Page scripts MUST NOT be able to modify the effective Global Policy.
+*   Dynamically inserted `<meta name="llm-policy">` tags MUST be ignored.
+*   The policy persists across soft navigations (SPA route changes via `pushState`).
+
+For applications requiring per-route policies, the server SHOULD deliver different policies via HTTP header for each route, or the application SHOULD use local DOM attributes (`llm-policy-*`) on route containers.
+
+### Error Handling
+
+If the Global Policy JSON is malformed or fails schema validation:
+
+*   **HTTP Header:** The User Agent MUST apply fail-closed semantics (no LLM visibility) and SHOULD report the error to the developer console.
+*   **Meta Tag:** The User Agent MUST ignore the malformed meta tag and continue with the HTTP header policy (if present) or specification defaults.
+*   **External File:** The User Agent MUST apply fail-closed semantics if the file is unparseable.
+
+The User Agent SHOULD report policy parsing errors to the `report-to` endpoint if one is configured in a valid portion of the policy.
 
 ## JSON Schema
 
@@ -192,9 +308,45 @@ The Global Policy Header supports a reporting mechanism to help developers audit
 
 ## Precedence and Inheritance
 
-1.  **Constraints:** Constraints defined in the global policy header MUST NOT be overridden by local DOM attributes.
-2.  **Local Overrides:** Local attributes (e.g., `llm-policy-output="mutable"`) override the global `defaults` unless a constraint prevents it.
-3.  **Inheritance:** Attributes on a node apply to all its descendants unless a descendant specifies its own attribute.
+The effective policy for any element is determined by a layered precedence model. At each layer, **intersection semantics** apply: permissions are only granted if ALL applicable layers agree.
+
+### Precedence Layers (Highest to Lowest Authority)
+
+1.  **License Profile:** If `llm-policy-license` specifies an SPDX identifier, the license's implicit constraints take highest precedence. See Section 6.
+2.  **Global Policy Constraints:** Constraints from `block-selectors`, `category-rules`, and `dependencies` cannot be overridden by any lower layer.
+3.  **Global Policy (HTTP Header):** The policy delivered via HTTP header establishes the authoritative defaults.
+4.  **Global Policy (Meta Tag):** Can only restrict (never expand) the HTTP header policy via intersection.
+5.  **Shadow DOM Boundary:** If the element is within a shadow tree, inheritance from light DOM requires explicit opt-in. See Section 10.
+6.  **Inherited Policy:** Policy inherited from ancestor elements in the DOM tree.
+7.  **Local Attributes:** Policy attributes on the element itself (`llm-policy-input`, `llm-policy-output`, `llm-policy-memory`).
+
+### Effective Policy Calculation
+
+For any element, the effective policy is computed as:
+
+```
+EffectivePolicy(element) =
+    LicenseProfile(element)                    // If llm-policy-license present
+  ∩ GlobalConstraints                          // block-selectors, category-rules
+  ∩ GlobalDefaults(header ∩ meta)              // Resolved global defaults
+  ∩ InheritedPolicy(ancestors)                 // DOM inheritance chain
+  ∩ LocalAttributes(element)                   // Element's own attributes
+```
+
+### Inheritance Rules
+
+1.  **DOM Inheritance:** Attributes on a node apply to all its descendants unless a descendant specifies its own attribute.
+2.  **Shadow Boundary:** Shadow roots block inheritance by default. Components must opt-in via `llm-policy-inherit`.
+3.  **Slotted Content:** Subject to intersection of light DOM policy AND slot container policy.
+4.  **Constraints Are Absolute:** Global Policy constraints (`block-selectors`, `category-rules`) MUST NOT be overridden by any local attribute or inheritance.
+
+### Conflict Resolution
+
+When computing intersections, the following rules apply:
+
+*   **Token Intersection:** Only tokens present in ALL applicable policies are granted.
+*   **Empty Intersection:** If intersection results in an empty set for `llm-policy-output`, the effective policy is `readonly`.
+*   **Conflicting Defaults:** If no explicit policy exists at any layer, specification defaults apply (`input=all`, `output=readonly`, `memory=none`).
 
 # Processing Model
 
@@ -265,23 +417,151 @@ The User Agent MUST allow a mutation if and only if it is authorized by at least
 
 ## 4. Enforcement of Visibility (`llm-policy-input`)
 
-The User Agent MUST transform the DOM into a context representation (e.g., HTML string, Accessibility Tree) for the LLM by filtering nodes based on the `llm-policy-input` tokens. The effective visibility is the union of all allowed channels.
+The User Agent MUST transform the DOM into a context representation for the LLM by filtering nodes based on the `llm-policy-input` tokens. This section defines the normative requirements for context construction.
 
-*   **`none` (Omission):** If the effective set is empty or explicitly `none`, the User Agent MUST omit the node and all its descendants from the context. It appears as if it does not exist.
-*   **`structure` (Skeleton):**
-    *   The element tag MUST be preserved.
-    *   Text nodes MUST be replaced with an empty string or a generic placeholder (e.g., `[REDACTED]`).
-    *   Attributes are filtered based on the presence of the `attributes` token.
-*   **`text` (Content):**
-    *   Text nodes MUST be preserved.
-*   **`attributes` (Metadata):**
-    *   Attributes MUST be preserved.
-    *   *Constraint:* If `structure` is present but `attributes` is NOT, the User Agent MUST strip all attributes except `id`, `class`, and `llm-*` metadata.
-*   **`media` (Visuals):**
-    *   Media-specific attributes (`src`, `alt`, `poster`, `srcset`) MUST be preserved on `<img>`, `<video>`, `<audio>`, and `<source>` elements.
-    *   If `media` is NOT present, these attributes MUST be stripped or redacted.
+### 4.1. Context Representation Format
 
-**Default Behavior:** If no attribute is present, the default is `structure text attributes media` (Full Visibility), unless overridden by the Global Policy.
+The context representation MUST be an HTML fragment string. The User Agent MAY support additional output formats (plain text, Markdown, accessibility tree) as implementation-defined options, but HTML is the normative default.
+
+**Output Requirements:**
+
+1.  **Well-formed HTML:** The output MUST be a well-formed HTML fragment that could be parsed by a standard HTML parser.
+2.  **Encoding:** The output MUST be encoded as UTF-8.
+3.  **No Wrapper:** The output MUST NOT include `<!DOCTYPE>`, `<html>`, `<head>`, or `<body>` wrapper elements unless they are part of the filtered content itself.
+
+### 4.2. Visibility Token Processing
+
+The effective visibility for a node is the union of all tokens present in its `llm-policy-input` attribute (after inheritance and constraint resolution). The User Agent MUST process each node according to the following rules:
+
+#### `none` (Omission)
+If the effective token set is empty or contains only `none`, the User Agent MUST omit the node and all its descendants from the context representation. The node appears as if it does not exist in the document.
+
+#### `structure` (Element Skeleton)
+If `structure` is present:
+*   The element's opening and closing tags MUST be preserved.
+*   The element's position in the document hierarchy MUST be preserved.
+*   Child elements MUST be processed recursively according to their own visibility rules.
+
+If `structure` is present but `text` is NOT:
+*   All text node descendants MUST be replaced with the placeholder string `[REDACTED]`.
+*   Multiple consecutive text nodes MAY be collapsed into a single placeholder.
+
+#### `text` (Text Content)
+If `text` is present:
+*   Text nodes MUST be preserved with their content intact.
+*   The text content MUST reflect the current DOM state (including any script-driven modifications).
+
+#### `attributes` (Element Attributes)
+If `attributes` is present:
+*   All attributes on the element MUST be preserved, except as restricted by the Semantic Payload Principle or security filtering (see Section 4.5).
+
+If `structure` is present but `attributes` is NOT:
+*   The User Agent MUST strip all attributes except:
+    *   `id` (for structural reference)
+    *   `class` (for semantic classification)
+    *   `role` (for accessibility semantics)
+    *   All `llm-*` attributes (for policy and intent metadata)
+    *   All `aria-*` attributes (for accessibility state)
+
+#### `media` (Media Content)
+If `media` is present:
+*   Media-specific attributes MUST be preserved on media elements:
+    *   `<img>`: `src`, `srcset`, `alt`, `width`, `height`
+    *   `<video>`: `src`, `poster`, `width`, `height`
+    *   `<audio>`: `src`
+    *   `<source>`: `src`, `srcset`, `type`, `media`
+    *   `<picture>`: All child `<source>` elements processed recursively
+
+If `structure` is present but `media` is NOT:
+*   Media-specific attributes MUST be replaced with placeholders:
+    *   `<img>`: Replace `src` with empty string, set `alt="[image]"` if `alt` was present or add `alt="[image]"` if absent
+    *   `<video>`: Replace `src` and `poster` with empty strings, content replaced with `[video content]`
+    *   `<audio>`: Replace `src` with empty string, content replaced with `[audio content]`
+    *   `<canvas>`: Content replaced with `[canvas graphic]`
+
+#### `all` (Full Visibility)
+The token `all` is equivalent to `structure text attributes media`. All content is preserved without redaction.
+
+### 4.3. Whitespace Normalization
+
+The User Agent MUST normalize whitespace in the context representation according to the following rules:
+
+1.  **Collapse Whitespace:** Sequences of whitespace characters (space, tab, newline, carriage return) MUST be collapsed to a single space character, except as noted below.
+
+2.  **Trim Element Boundaries:** Leading whitespace after an opening tag and trailing whitespace before a closing tag MAY be removed for non-inline elements.
+
+3.  **Preserve Preformatted Content:** Whitespace MUST be preserved exactly within:
+    *   `<pre>` elements and their descendants
+    *   `<code>` elements (unless nested in a context that normalizes)
+    *   `<textarea>` element content
+    *   Elements with `style="white-space: pre"` or equivalent (if `attributes` token includes style)
+    *   Elements with `xml:space="preserve"`
+
+4.  **Script and Style Content:** Whitespace within `<script>` and `<style>` elements MUST be preserved exactly to maintain code validity.
+
+### 4.4. Special Element Handling
+
+The following elements require special processing:
+
+#### Script Elements
+`<script>` elements MUST be included in the context representation if their ancestor visibility allows. Scripts are essential for understanding page behavior when the `interaction` output token permits script insertion or modification.
+
+*   **Executable Scripts** (`type="text/javascript"` or no `type`): Include the element and its content.
+*   **Data Scripts** (`type="application/json"`, `type="application/ld+json"`, etc.): Include the element and its content. These may be modified via the `data` output token.
+*   **Module Scripts** (`type="module"`): Include the element and its content.
+
+#### Style Elements
+`<style>` elements MUST be included in the context representation if their ancestor visibility allows. Styles are essential for understanding page presentation when the `style` or `interaction` output tokens permit style modification or insertion.
+
+#### Template Elements
+`<template>` elements are inert and MUST be included with their content if visibility allows. The template content represents potential DOM that may be instantiated.
+
+#### Comment Nodes
+HTML comments MUST be stripped from the context representation. Comments are not part of the rendered document and may contain implementation notes not intended for LLM consumption.
+
+#### Iframe Elements
+`<iframe>` elements MUST be represented as empty placeholder elements: `<iframe src="[cross-origin content]"></iframe>`. The User Agent MUST NOT include cross-origin iframe content in the context representation due to security boundaries.
+
+### 4.5. Security Filtering
+
+Regardless of visibility tokens, the User Agent MUST apply security filtering:
+
+1.  **Event Handler Attributes:** Attributes beginning with `on` (e.g., `onclick`, `onload`) MUST be stripped from the context representation. The LLM can observe that interactive behavior exists via the `interaction` output token, but raw handler code poses injection risks if echoed back.
+
+2.  **JavaScript URLs:** Attribute values beginning with `javascript:` MUST be replaced with `[javascript]`.
+
+3.  **Data URLs:** Large `data:` URLs (exceeding 1024 characters) MAY be truncated with a placeholder indicating the MIME type: `data:image/png;[truncated]`.
+
+### 4.6. Placeholder Format
+
+When content is redacted or replaced, the following placeholder formats MUST be used:
+
+| Context | Placeholder |
+|---------|-------------|
+| Text content (structure without text) | `[REDACTED]` |
+| Image without media token | `alt="[image]"` |
+| Video without media token | `[video content]` |
+| Audio without media token | `[audio content]` |
+| Canvas element | `[canvas graphic]` |
+| Cross-origin iframe | `[cross-origin content]` |
+| Truncated data URL | `data:<mime>;[truncated]` |
+| JavaScript URL | `[javascript]` |
+
+### 4.7. Importance-Based Prioritization
+
+When constructing context for token-limited LLM interactions, the User Agent SHOULD prioritize content based on `llm-intent-importance`:
+
+1.  **`critical`:** MUST be included. If token limits prevent inclusion, the User Agent MUST report an error rather than omit critical content.
+2.  **`high`:** SHOULD be included before `normal` content.
+3.  **`normal`:** Default prioritization.
+4.  **`low`:** MAY be truncated if token limits require.
+5.  **`background`:** SHOULD be truncated first if token limits require.
+
+The specific algorithm for token budgeting and truncation is implementation-defined. When truncation occurs, the User Agent SHOULD append `<!-- [content truncated] -->` to indicate incomplete context.
+
+### 4.8. Default Behavior
+
+If no `llm-policy-input` attribute is present on a node and no inherited or global policy applies, the default visibility is `all` (equivalent to `structure text attributes media`), providing full visibility to the LLM.
 
 ## 5. Enforcement of Retention (`llm-policy-memory`)
 
@@ -306,19 +586,150 @@ The User Agent MUST signal and enforce storage limitations based on the `llm-pol
 
 The User Agent MUST resolve `llm-policy-license` attributes by expanding the license identifier into a set of implicit policy constraints (a **License Profile**). The effective policy for the node is the **intersection** of the explicitly declared `llm-policy-output` tokens and the License Profile's allowed permissions.
 
-### License Profile Examples (Informative)
-The User Agent SHOULD support standard SPDX identifiers with the following implicit profiles:
+### 6.1. License Profile Structure
 
-*   **`CC-BY-ND` (No Derivatives):**
-    *   **Allowed:** `readonly`, `annotation` (if non-destructive).
-    *   **Blocked:** `mutable`, `content`, `reorder`, `append`.
-*   **`GPL-*` (Copyleft/Viral):**
-    *   **Constraint:** Any output generated from this content MUST carry a compatible license.
-    *   **Blocked:** Insertion into contexts marked as `proprietary` or incompatibly licensed.
-*   **`Public Domain` / `CC0`:**
-    *   **Allowed:** All permissions (`mutable`).
+A License Profile is a data structure containing the following fields:
 
-**Conflict Resolution:** If an explicit attribute (e.g., `llm-policy-output="mutable"`) conflicts with the License Profile (e.g., `CC-BY-ND` implying `readonly`), the **License Profile takes precedence** (Intersection Logic), and the conflicting permissions are revoked. The User Agent MAY emit a warning.
+| Field | Type | Description |
+|-------|------|-------------|
+| `spdxIdentifier` | String | The canonical SPDX identifier |
+| `allowedOutputTokens` | Sequence&lt;String&gt; | Output tokens permitted by this license |
+| `requiresAttribution` | Boolean | Whether the license requires attribution |
+| `isCopyleft` | Boolean | Whether the license has copyleft/viral requirements |
+| `licenseName` | String? | Human-readable name of the license |
+| `commercialUse` | Boolean | Whether commercial use is permitted |
+| `shareAlike` | Boolean | Whether derivatives must use the same license |
+
+### 6.2. License Compatibility Matrix (Normative)
+
+The User Agent MUST support the following SPDX identifiers with their associated profiles. This matrix defines the **normative** behavior for license enforcement.
+
+#### 6.2.1. Public Domain and Permissive Licenses
+
+These licenses impose minimal or no restrictions on LLM modifications.
+
+| SPDX Identifier | Allowed Tokens | Attribution | Copyleft | Commercial |
+|-----------------|----------------|-------------|----------|------------|
+| `CC0-1.0` | `mutable` | No | No | Yes |
+| `Unlicense` | `mutable` | No | No | Yes |
+| `WTFPL` | `mutable` | No | No | Yes |
+| `MIT` | `mutable` | Yes | No | Yes |
+| `MIT-0` | `mutable` | No | No | Yes |
+| `ISC` | `mutable` | Yes | No | Yes |
+| `BSD-2-Clause` | `mutable` | Yes | No | Yes |
+| `BSD-3-Clause` | `mutable` | Yes | No | Yes |
+| `Apache-2.0` | `mutable` | Yes | No | Yes |
+| `Zlib` | `mutable` | Yes | No | Yes |
+
+#### 6.2.2. Creative Commons Licenses
+
+Creative Commons licenses have specific conditions that map to output token restrictions.
+
+| SPDX Identifier | Allowed Tokens | Attribution | Copyleft | Commercial | Notes |
+|-----------------|----------------|-------------|----------|------------|-------|
+| `CC-BY-4.0` | `mutable` | Yes | No | Yes | Derivatives allowed |
+| `CC-BY-3.0` | `mutable` | Yes | No | Yes | Legacy version |
+| `CC-BY-SA-4.0` | `mutable` | Yes | Yes | Yes | ShareAlike requirement |
+| `CC-BY-SA-3.0` | `mutable` | Yes | Yes | Yes | Legacy ShareAlike |
+| `CC-BY-NC-4.0` | `mutable` | Yes | No | No | Non-commercial only |
+| `CC-BY-NC-3.0` | `mutable` | Yes | No | No | Legacy NC |
+| `CC-BY-NC-SA-4.0` | `mutable` | Yes | Yes | No | NC + ShareAlike |
+| `CC-BY-ND-4.0` | `readonly`, `annotation` | Yes | No | Yes | **No derivatives** |
+| `CC-BY-ND-3.0` | `readonly`, `annotation` | Yes | No | Yes | Legacy ND |
+| `CC-BY-NC-ND-4.0` | `readonly`, `annotation` | Yes | No | No | NC + ND |
+| `CC-BY-NC-ND-3.0` | `readonly`, `annotation` | Yes | No | No | Legacy NC-ND |
+
+**No Derivatives (ND) Constraint:** For ND licenses, the User Agent MUST restrict output tokens to `readonly` and `annotation` only. The `annotation` token is permitted because it wraps content without modifying the underlying text.
+
+#### 6.2.3. Copyleft Licenses
+
+Copyleft licenses allow modifications but require derivatives to carry compatible licenses.
+
+| SPDX Identifier | Allowed Tokens | Attribution | Copyleft | Commercial | Notes |
+|-----------------|----------------|-------------|----------|------------|-------|
+| `GPL-2.0-only` | `mutable` | Yes | Yes | Yes | Strong copyleft |
+| `GPL-2.0-or-later` | `mutable` | Yes | Yes | Yes | GPL 2+ |
+| `GPL-3.0-only` | `mutable` | Yes | Yes | Yes | Strong copyleft |
+| `GPL-3.0-or-later` | `mutable` | Yes | Yes | Yes | GPL 3+ |
+| `LGPL-2.1-only` | `mutable` | Yes | Yes | Yes | Weak copyleft |
+| `LGPL-2.1-or-later` | `mutable` | Yes | Yes | Yes | LGPL 2.1+ |
+| `LGPL-3.0-only` | `mutable` | Yes | Yes | Yes | Weak copyleft |
+| `LGPL-3.0-or-later` | `mutable` | Yes | Yes | Yes | LGPL 3+ |
+| `AGPL-3.0-only` | `mutable` | Yes | Yes | Yes | Network copyleft |
+| `AGPL-3.0-or-later` | `mutable` | Yes | Yes | Yes | AGPL 3+ |
+| `MPL-2.0` | `mutable` | Yes | Yes | Yes | File-level copyleft |
+| `EPL-2.0` | `mutable` | Yes | Yes | Yes | Eclipse copyleft |
+| `EUPL-1.2` | `mutable` | Yes | Yes | Yes | EU copyleft |
+
+**Copyleft Constraint:** When `isCopyleft` is true, the User Agent MUST ensure that any LLM-generated content derived from this node is marked with a compatible license in `llm-provenance-operation` entries. The User Agent MAY prevent insertion of copyleft content into contexts marked as proprietary or incompatibly licensed.
+
+#### 6.2.4. Proprietary and Restricted Licenses
+
+These identifiers indicate content that MUST NOT be modified or may have special restrictions.
+
+| SPDX Identifier | Allowed Tokens | Attribution | Copyleft | Commercial | Notes |
+|-----------------|----------------|-------------|----------|------------|-------|
+| `proprietary` | `readonly` | N/A | N/A | N/A | No modifications |
+| `all-rights-reserved` | `readonly` | N/A | N/A | N/A | Traditional copyright |
+| `LicenseRef-*` | (varies) | (varies) | (varies) | (varies) | Custom license reference |
+
+**Proprietary Content:** Content marked with `proprietary` or `all-rights-reserved` MUST be treated as `readonly` only. The User Agent MUST NOT permit any output tokens beyond `readonly`.
+
+### 6.3. License Expression Syntax
+
+The User Agent MUST support SPDX License Expression syntax for compound licenses:
+
+*   **`AND` (Conjunction):** Both licenses apply. The effective profile is the **intersection** of allowed tokens from both licenses.
+    *   Example: `MIT AND CC-BY-4.0` → `mutable` (both allow), `requiresAttribution: true` (either requires)
+*   **`OR` (Disjunction):** Either license may apply. The effective profile is the **union** of allowed tokens from both licenses.
+    *   Example: `GPL-3.0-only OR MIT` → `mutable`, User Agent MAY choose the less restrictive option.
+*   **`WITH` (Exception):** Adds an exception to a license. The User Agent SHOULD resolve known exceptions.
+    *   Example: `GPL-2.0-only WITH Classpath-exception-2.0`
+
+**Parentheses:** The User Agent MUST support parentheses for grouping: `(MIT OR Apache-2.0) AND CC-BY-4.0`.
+
+### 6.4. Unknown License Handling
+
+When the User Agent encounters an SPDX identifier not in its supported list:
+
+1.  **Conservative Default:** The User Agent MUST treat unknown licenses as `readonly` only (most restrictive).
+2.  **Attribution Assumed:** The User Agent MUST assume `requiresAttribution: true`.
+3.  **Warning:** The User Agent SHOULD emit a warning indicating the license is unrecognized.
+4.  **Fallback Override:** Authors MAY provide explicit `llm-policy-output` tokens, but the conservative default still applies via intersection.
+
+### 6.5. Attribution Enforcement
+
+When a License Profile has `requiresAttribution: true`:
+
+1.  **Provenance Citation Required:** Any LLM mutation on this node MUST include a `llm-provenance-citation` attribute or entry linking to the original source.
+2.  **Inherited Requirement:** If a child element is modified, the attribution requirement propagates from the licensed ancestor.
+3.  **Validation:** The User Agent MUST validate that mutations include proper attribution; violations SHOULD be reported.
+
+### 6.6. Commercial Use Restrictions
+
+When a License Profile has `commercialUse: false` (e.g., CC-BY-NC variants):
+
+1.  **Context Signal:** The User Agent MUST signal to the LLM that this content is non-commercial only.
+2.  **Output Restriction:** The User Agent SHOULD prevent insertion of NC-licensed content into contexts identified as commercial.
+3.  **Implementation Note:** Detection of "commercial context" is implementation-defined but MAY include signals from the embedding page or user configuration.
+
+### 6.7. Conflict Resolution
+
+If an explicit `llm-policy-output` attribute conflicts with the License Profile:
+
+1.  **License Takes Precedence:** The effective output tokens are the **intersection** of the explicit tokens and the License Profile's allowed tokens.
+2.  **Example:** `llm-policy-output="mutable"` with `llm-policy-license="CC-BY-ND-4.0"` results in effective tokens of `readonly`, `annotation` (the ND license restricts to these).
+3.  **Warning:** The User Agent MAY emit a warning when an explicit attribute is overridden by license constraints.
+4.  **No Expansion:** An explicit attribute cannot grant permissions beyond what the license allows.
+
+### 6.8. License Inheritance
+
+License constraints inherit to descendants unless overridden:
+
+1.  **Downward Propagation:** A `llm-policy-license` attribute applies to all descendants of the element.
+2.  **Local Override:** A descendant MAY specify a different `llm-policy-license`, which applies to that subtree.
+3.  **Restriction Only:** A descendant's license can only further restrict, not expand, permissions (intersection with ancestor license).
+4.  **Mixed Content:** When content from multiple license sources is combined, the most restrictive license applies to the combined output.
 
 ## 7. Dependency Resolution (Global Policy)
 
@@ -370,26 +781,575 @@ These attributes operate independently of the Instruction/Category hierarchy and
 
 ## 9. Provenance Processing Model (Trust & Audit)
 
-To ensure accountability, the User Agent functions as the **Authority** on provenance, strictly enforcing the correlation between DOM mutations and the Causal Ledger.
+To ensure accountability, the User Agent functions as the **Authority** on provenance, strictly enforcing the correlation between DOM mutations and the Causal Ledger. This section defines the normative requirements for tracking, validating, and reporting LLM-initiated changes.
 
 ### 9.1. Causal Logging Requirement
+
 Whenever the LLM or User Agent modifies a node (e.g., rewriting text, changing a class), it MUST append a corresponding entry to the `llm-provenance-operation` attribute of that node or its nearest container.
 
 *   **Format:** The entry MUST follow the syntax `<layer>:<explanation>`.
 *   **Layer Alignment:** The `<layer>` token MUST match the type of mutation performed (e.g., `content` for text changes, `style` for class changes).
 *   **Explanation:** The `<explanation>` SHOULD be a concise, hyphenated rationale generated by the Agent (e.g., `summarized-text`, `corrected-fact`).
 
-### 9.2. Diff Tracking & Integrity Validation
-The User Agent MUST maintain a logical **Diff** between the Original Served DOM (as received from the server) and the Current Rendered DOM.
+#### Layer Token Mapping
 
-*   **Validation Cycle:** Periodically or upon mutation, the User Agent MUST verify the integrity of the Causal Ledger.
-*   **Validation Rule:** For every detected mutation in a specific layer, there MUST be a corresponding entry in the `llm-provenance-operation` attribute.
-*   **Integrity Violation:** If a layer is modified (e.g., `textContent` changed) but the ledger lacks a corresponding entry (e.g., no `content:...` token), the User Agent MUST flag this as an **Integrity Violation**.
-    *   **Action:** The User Agent MAY revert the unauthorized change, highlight it with a warning, or block the content from being rendered, depending on user security settings.
+| Mutation Type | Layer Token | Examples |
+|--------------|-------------|----------|
+| Text node content | `content` | Rewriting text, summarizing, correcting |
+| `class` or `style` attribute | `style` | Adding highlight class, changing colors |
+| Event handlers, ARIA, form state | `interaction` | Adding onclick, changing aria-expanded |
+| Child node reordering | `topology` | Sorting list items, reordering sections |
+| `data-*` attributes, form values | `data` | Updating data attributes, form autofill |
+| `llm-intent-*` attributes | `intent` | Modifying semantic hints |
 
-### 9.3. Mandatory User Inspection
+#### Explanation Format
+
+The explanation component MUST be a hyphenated string of lowercase ASCII letters and numbers. It SHOULD describe the rationale for the change, not the change itself.
+
+**Valid examples:** `summarized-text`, `corrected-spelling`, `user-requested`, `auto-translated`, `fact-checked-false`
+
+**Invalid examples:** `changed the text`, `MODIFIED`, `update_1`
+
+### 9.2. Provenance Ledger Structure
+
+The User Agent MUST maintain an internal **Provenance Ledger** that records all LLM-initiated mutations. This ledger is separate from (but correlated with) the `llm-provenance-operation` attribute.
+
+#### Ledger Entry Structure
+
+Each ledger entry MUST contain:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | String | Unique identifier for this entry |
+| `timestamp` | DOMHighResTimeStamp | When the mutation occurred |
+| `target` | Element reference | The element that was modified |
+| `layer` | LLMProvenanceLayer | The type of mutation |
+| `explanation` | String | The hyphenated rationale |
+| `originalValue` | Any | Snapshot of the value before mutation |
+| `newValue` | Any | The value after mutation |
+| `hasAttributeEntry` | Boolean | Whether a corresponding `llm-provenance-operation` entry exists |
+| `agentId` | String? | Optional identifier of the LLM agent that made the change |
+
+#### Original Value Snapshots
+
+The `originalValue` field MUST capture sufficient information to reconstruct the pre-mutation state:
+
+| Layer | Original Value Content |
+|-------|----------------------|
+| `content` | The text content string before modification |
+| `style` | Object with `class` and `style` attribute values |
+| `interaction` | Object with relevant attribute values (`aria-*`, `on*`, form state) |
+| `topology` | Ordered array of child node references or identifiers |
+| `data` | Object with `data-*` attribute values and form `value` |
+| `intent` | Object with `llm-intent-*` attribute values |
+
+### 9.3. Baseline Snapshot
+
+The User Agent MUST capture a **Baseline Snapshot** of the DOM at a defined point in time. This baseline serves as the reference for detecting unauthorized mutations.
+
+#### Snapshot Timing
+
+The baseline snapshot MUST be captured:
+
+1.  **Initial Load:** After the document has finished parsing (`DOMContentLoaded`) and the Global Policy has been resolved.
+2.  **After Server Updates:** After any server-initiated DOM update (e.g., via `innerHTML` assignment from fetch response, server-sent events, WebSocket messages) that is explicitly marked as authoritative.
+
+The User Agent MUST NOT capture a new baseline after LLM-initiated mutations; those are tracked as deltas from the existing baseline.
+
+#### Snapshot Content
+
+For each element in the document, the baseline snapshot MUST record:
+
+*   **Text Content:** The `textContent` of all text nodes.
+*   **Attributes:** All attribute name-value pairs.
+*   **Child Order:** The ordered list of child element identifiers.
+*   **Tree Position:** The element's position in the DOM tree.
+
+The snapshot MAY be stored as a serialized representation, a hash-based diff structure, or a copy-on-write mechanism—the specific implementation is User Agent-defined.
+
+#### Snapshot Scope
+
+The baseline snapshot MUST cover:
+
+*   All elements in the light DOM.
+*   Shadow DOM content for shadow roots with `llm-provenance-transparent` (see Section 10.7).
+*   Aggregated mutation tracking for other shadow roots.
+
+### 9.4. Mutation Detection
+
+The User Agent MUST detect DOM mutations that could indicate LLM-initiated changes. The detection mechanism MUST NOT rely solely on the LLM reporting its changes; the User Agent independently verifies.
+
+#### Detection Mechanism
+
+The User Agent SHOULD use MutationObserver or an equivalent mechanism to observe:
+
+*   `childList` mutations (node insertion, removal, reordering)
+*   `characterData` mutations (text content changes)
+*   `attributes` mutations (attribute changes)
+*   `subtree` for recursive observation
+
+#### Attribution
+
+When a mutation is detected, the User Agent MUST determine whether it was:
+
+1.  **LLM-Initiated:** The mutation occurred as a result of LLM agent action. These MUST be logged to the ledger.
+2.  **User-Initiated:** The mutation occurred as a result of direct user action (typing, clicking). These SHOULD NOT be logged to the LLM provenance ledger.
+3.  **Script-Initiated:** The mutation occurred from page JavaScript not related to LLM. These SHOULD NOT be logged to the LLM provenance ledger.
+
+The User Agent MAY use call stack inspection, explicit API markers, or isolated execution contexts to attribute mutations.
+
+### 9.5. Integrity Validation
+
+The User Agent MUST periodically validate that the Provenance Ledger accurately reflects all LLM-initiated mutations.
+
+#### Validation Triggers
+
+Integrity validation MUST occur:
+
+1.  **On Mutation:** After each LLM-initiated mutation is recorded.
+2.  **On Read:** Before returning provenance information via `llmProvenance` or `llmProvenanceLedger` APIs.
+3.  **Periodically:** At User Agent-defined intervals during active LLM sessions.
+4.  **On Navigation:** Before the document is unloaded or navigated away.
+
+#### Validation Algorithm
+
+For each element with LLM-initiated modifications:
+
+1.  **Compare Current State:** Compare the element's current state to its baseline snapshot.
+2.  **Identify Layers:** Determine which layers have been modified (content, style, interaction, topology, data, intent).
+3.  **Check Ledger:** For each modified layer, verify that a corresponding ledger entry exists.
+4.  **Check Attribute:** For each ledger entry, verify that a corresponding `llm-provenance-operation` token exists on the element.
+5.  **Flag Violations:** Any mismatch constitutes an integrity violation.
+
+#### Integrity Violation Types
+
+| Violation Type | Description |
+|----------------|-------------|
+| `missing-ledger-entry` | DOM was modified but no ledger entry exists |
+| `missing-attribute-entry` | Ledger entry exists but `llm-provenance-operation` lacks corresponding token |
+| `layer-mismatch` | Ledger entry layer does not match the type of detected mutation |
+| `orphaned-entry` | Ledger entry exists but no corresponding DOM change detected |
+| `tampered-attribute` | `llm-provenance-operation` attribute was modified without corresponding ledger entry |
+
+### 9.6. Violation Response
+
+When an integrity violation is detected, the User Agent MUST respond according to the violation severity and user preferences.
+
+#### Response Actions
+
+The User Agent MAY implement any combination of:
+
+1.  **Flag:** Mark the element with a visual indicator (e.g., colored border, icon) to alert the user.
+2.  **Warn:** Display a non-blocking warning in the UI or console.
+3.  **Block:** Prevent the modified content from being rendered until user acknowledgment.
+4.  **Revert:** Restore the element to its baseline state.
+5. **Report:** Send a violation report to the Global Policy's `report-to` endpoint.
+
+#### Revert Algorithm
+
+If the User Agent implements reversion:
+
+1.  Retrieve the `originalValue` from the ledger entry (if available) or baseline snapshot.
+2.  Apply the original value to the element:
+    *   For `content`: Set `textContent` to original.
+    *   For `style`: Restore `class` and `style` attributes.
+    *   For `topology`: Reorder children to original sequence.
+    *   For `data`: Restore `data-*` attributes and form values.
+    *   For `interaction`: Restore event handlers and ARIA states.
+3.  Remove the invalid ledger entry.
+4.  Update `llm-provenance-operation` attribute to remove the invalid token.
+5.  Fire an `llmintegrityviolation` event with `reverted: true`.
+
+#### User Preferences
+
+The User Agent SHOULD allow users to configure violation response behavior:
+
+*   **Strict Mode:** Block or revert all violations automatically.
+*   **Permissive Mode:** Flag and warn only; allow content to render.
+*   **Report-Only Mode:** Log violations but take no visible action (for debugging).
+
+### 9.7. Ledger Lifecycle
+
+#### Persistence
+
+The Provenance Ledger MUST persist for the lifetime of the document. The ledger MUST NOT be persisted across page loads unless explicitly authorized by `llm-policy-memory="session"` or `llm-policy-memory="user"`.
+
+If memory retention is authorized:
+
+*   **`session`:** The ledger MAY be serialized to `sessionStorage` and restored on back/forward navigation.
+*   **`user`:** The ledger MAY be persisted to long-term storage for audit purposes.
+
+#### Memory Management
+
+For long-running pages with many mutations, the User Agent MAY implement ledger compaction:
+
+1.  **Merge Entries:** Multiple mutations to the same element and layer MAY be merged, preserving only the original `originalValue` and the final `newValue`.
+2.  **Prune Reverted:** Entries for reverted mutations MAY be removed.
+3.  **Archive Old:** Entries older than a User Agent-defined threshold MAY be archived to compressed storage.
+
+The User Agent MUST NOT discard entries that have not been validated or that represent unacknowledged violations.
+
+### 9.8. Mandatory User Inspection
+
 To ensure conspicuous disclosure without cluttering the UI, the User Agent MUST provide a mechanism for the user to inspect the raw provenance data for any element.
 
-*   **Mechanism:** This MAY be implemented as a context menu item (e.g., "Inspect Provenance"), a dedicated "Trust Panel," or a developer tool.
-*   **Data Disclosure:** The inspection view MUST display the full `llm-provenance-source`, `llm-provenance-confidence`, and the complete `llm-provenance-operation` history.
+#### Inspection Mechanism
+
+The User Agent MUST implement at least one of:
+
+*   **Context Menu:** A context menu item (e.g., "Inspect LLM Provenance") on right-click.
+*   **Trust Panel:** A dedicated panel or sidebar showing provenance for the current page.
+*   **Developer Tools:** A tab or section in the browser's developer tools.
+*   **Keyboard Shortcut:** A keyboard command to inspect the focused element's provenance.
+
+#### Disclosed Information
+
+The inspection view MUST display:
+
+*   **Source:** The `llm-provenance-source` URI, if present.
+*   **Confidence:** The `llm-provenance-confidence` score, if present.
+*   **Operations:** The complete `llm-provenance-operation` history as a list.
+*   **Ledger Entries:** All ledger entries associated with the element, including timestamps and original/new values.
+*   **Integrity Status:** Whether the element has any integrity violations.
+
+#### Visual Indicators
+
+The User Agent SHOULD provide optional visual indicators for LLM-modified content:
+
+*   **Modified Indicator:** A subtle visual cue (icon, underline, background) on elements with `llm-provenance-operation` entries.
+*   **Confidence Indicator:** Color-coded indicator based on `llm-provenance-confidence` (green for high, yellow for medium, red for low).
+*   **Violation Indicator:** Prominent visual cue for elements with integrity violations.
+
+These indicators SHOULD be user-configurable (on, off, or hover-to-reveal).
+
+### 9.9. Provenance Events
+
+The User Agent MUST fire events to allow pages to respond to provenance changes.
+
+#### `llmprovenancechange` Event
+
+Fired when a new entry is added to the Provenance Ledger.
+
+```webidl
+interface LLMProvenanceChangeEvent : Event {
+  readonly attribute Element target;
+  readonly attribute LLMProvenanceLayer layer;
+  readonly attribute DOMString explanation;
+  readonly attribute DOMHighResTimeStamp timestamp;
+};
+```
+
+#### `llmintegrityviolation` Event
+
+Fired when an integrity violation is detected.
+
+```webidl
+interface LLMIntegrityViolationEvent : Event {
+  readonly attribute Element target;
+  readonly attribute LLMProvenanceLayer layer;
+  readonly attribute DOMString violationType;
+  readonly attribute any originalValue;
+  readonly attribute any currentValue;
+  readonly attribute boolean reverted;
+};
+```
+
+Pages MAY listen to these events for custom logging, analytics, or UI updates. Pages MUST NOT be able to suppress or modify integrity violation detection.
+
+## 10. Shadow DOM Policy Boundaries
+
+This section defines how LLM Markup policies interact with Shadow DOM encapsulation boundaries. The guiding principle is that **component authors have precedence** over page authors for content within their shadow trees, while **intersection semantics** ensure that permissions are only granted when both parties agree.
+
+### 10.1. Core Principles
+
+1.  **Component Author Precedence:** The author of a shadow root (component author) has final authority over policy decisions within that shadow tree. Page authors cannot override component policies.
+2.  **Opt-Out Default:** Shadow roots constitute policy boundaries. By default, policies from the light DOM do NOT cross into shadow trees.
+3.  **Opt-In Inheritance:** Component authors MAY explicitly opt into inheriting policies from the host element's context.
+4.  **Intersection Semantics:** When inheritance is enabled, the effective policy is the intersection of inherited and local policies. Both component author and page author must agree for a permission to be granted.
+
+### 10.2. Shadow Root as Policy Boundary
+
+A shadow root creates an encapsulation boundary for LLM Markup policies. By default:
+
+*   `llm-policy-*` attributes on ancestors of the shadow host do NOT apply to nodes within the shadow tree.
+*   `llm-intent-*` attributes on ancestors of the shadow host do NOT propagate into the shadow tree.
+*   Global Policy selectors (e.g., `block-selectors`, `category-rules`) do NOT match elements inside shadow trees.
+
+Nodes within a shadow tree that lack explicit policy attributes fall back to the specification defaults, NOT to inherited values from the light DOM.
+
+**Example (Default Behavior - No Inheritance):**
+
+```html
+<body llm-policy-input="none" llm-policy-output="readonly">
+  <!-- Light DOM: hidden from LLM, readonly -->
+  <my-widget>
+    <!-- Shadow boundary blocks inheritance -->
+    #shadow-root
+      <div>
+        <!-- Falls back to spec defaults: input=all, output=readonly -->
+        <!-- Component content is VISIBLE to LLM despite page's input="none" -->
+      </div>
+  </my-widget>
+</body>
+```
+
+### 10.3. Opt-In Policy Inheritance
+
+A shadow root MAY opt into policy inheritance by specifying the `llm-policy-inherit` attribute on the shadow root's template or via the `attachShadow()` options.
+
+**Declarative Shadow DOM:**
+
+```html
+<template shadowrootmode="open" llm-policy-inherit>
+  <!-- Inherits all policy namespaces from host context -->
+</template>
+
+<template shadowrootmode="open" llm-policy-inherit="input memory">
+  <!-- Inherits only specified namespaces; others use spec defaults -->
+</template>
+```
+
+**Imperative Shadow DOM:**
+
+```javascript
+element.attachShadow({
+  mode: 'open',
+  llmPolicyInherit: true              // Inherit all namespaces
+  // OR
+  llmPolicyInherit: ['input', 'memory']  // Inherit specific namespaces
+});
+```
+
+**Inheritance Values:**
+
+*   `true` or empty attribute: Inherit all policy namespaces (`input`, `output`, `memory`).
+*   Space-separated list (e.g., `"input memory"`): Inherit only the specified namespaces.
+*   `false` or attribute absent: No inheritance (default).
+
+### 10.4. Intersection Semantics for Inherited Policies
+
+When a shadow root opts into inheritance, the effective policy for nodes within the shadow tree is computed as the **intersection** of:
+
+1.  The inherited policy from the host element's context (including global policy defaults and constraints).
+2.  Any local policy attributes specified within the shadow tree.
+
+**Rule:** A permission is granted only if BOTH the inherited policy AND the local policy allow it. If either party omits or denies a permission, that permission is denied.
+
+**Example (Intersection):**
+
+```html
+<body llm-policy-output="mutable">
+  <my-widget>
+    #shadow-root llm-policy-inherit
+      <div llm-policy-output="style annotation">
+        <!-- Inherited: mutable (all permissions) -->
+        <!-- Local: style, annotation -->
+        <!-- Effective: mutable ∩ (style annotation) = style annotation -->
+        <!-- Component restricts page's broad permissions -->
+      </div>
+  </my-widget>
+</body>
+```
+
+**Example (Component Restriction):**
+
+```html
+<body llm-policy-output="content annotation">
+  <secure-viewer>
+    #shadow-root llm-policy-inherit
+      <div llm-policy-output="readonly">
+        <!-- Inherited: content, annotation -->
+        <!-- Local: readonly (no permissions) -->
+        <!-- Effective: (content annotation) ∩ readonly = readonly -->
+        <!-- Component enforces stricter policy -->
+      </div>
+  </secure-viewer>
+</body>
+```
+
+### 10.5. Slotted Content
+
+Slotted content presents a unique case: elements exist in the light DOM (page author's domain) but render visually within the shadow DOM (component author's domain). The effective policy for slotted content is the **intersection** of both contexts.
+
+**Effective Policy Calculation for Slotted Elements:**
+
+```
+EffectivePolicy(slottedElement) =
+    Policy(slottedElement)                    // Element's own attributes
+  ∩ InheritedPolicy(lightDOMancestors)        // Light DOM inheritance chain
+  ∩ SlotContextPolicy(shadowContainer)        // Shadow DOM slot container
+```
+
+**Rules:**
+
+1.  The page author's policy on the slotted element (in light DOM) establishes a ceiling of permissions.
+2.  The component author's policy on the slot's containing element establishes additional constraints.
+3.  The effective policy is the intersection; both must agree for a permission to be granted.
+4.  Component authors can RESTRICT what happens to slotted content but cannot EXPAND permissions beyond what the page author allowed.
+
+**Example (Slotted Content):**
+
+```html
+<!-- Page author's light DOM -->
+<my-secure-viewer>
+  <p slot="content" llm-policy-output="mutable">
+    Page author allows full mutability
+  </p>
+</my-secure-viewer>
+
+<!-- Component author's shadow DOM -->
+#shadow-root
+  <div class="viewer-frame" llm-policy-output="readonly annotation">
+    <slot name="content"></slot>
+  </div>
+
+<!-- Effective policy on <p>:
+     Page policy (mutable) ∩ Slot context (readonly annotation)
+     = annotation (only permission both agree on)
+-->
+```
+
+### 10.6. Global Policy and Shadow DOM
+
+Global Policy constraints (`block-selectors`, `category-rules`) do NOT pierce shadow boundaries by default. To apply global policies to shadow content:
+
+1.  **Apply categories to the host element:** The page author marks the shadow host with `llm-intent-category`.
+2.  **Component opts into inheritance:** The shadow root includes `llm-policy-inherit`.
+3.  **Category rules propagate:** The inherited category triggers Global Policy rules within the shadow tree.
+
+**Example:**
+
+```html
+<!-- Global Policy -->
+{
+  "constraints": {
+    "category-rules": {
+      "advertisement": { "llm-policy-input": ["none"] }
+    }
+  }
+}
+
+<!-- Page author marks host -->
+<ad-component llm-intent-category="advertisement">
+  #shadow-root llm-policy-inherit
+    <div>
+      <!-- Inherits category="advertisement" from host -->
+      <!-- Global category-rule applies: input=none -->
+      <!-- Shadow content is hidden from LLM -->
+    </div>
+</ad-component>
+```
+
+**Without Inheritance:**
+
+```html
+<ad-component llm-intent-category="advertisement">
+  #shadow-root  <!-- No llm-policy-inherit -->
+    <div>
+      <!-- Category NOT inherited; global rule does NOT apply -->
+      <!-- Shadow content uses spec defaults (visible) -->
+      <!-- Component controls its own visibility -->
+    </div>
+</ad-component>
+```
+
+### 10.7. Provenance and Shadow DOM
+
+Provenance tracking serves auditability requirements that may override normal encapsulation. The User Agent MUST track mutations across all shadow boundaries, but the level of detail disclosed is controlled by the component author.
+
+**Mandatory Reporting:**
+
+*   Mutations within shadow trees MUST be reported to the document's provenance ledger.
+*   The User Agent MUST record that mutations occurred, even if details are not disclosed.
+
+**Detail Level Control:**
+
+By default, mutations within shadow roots are reported in **aggregated form** (mutation count per layer). Component authors MAY opt into full transparency.
+
+**Declarative:**
+
+```html
+<template shadowrootmode="open" llm-provenance-transparent>
+  <!-- Full mutation details reported to document ledger -->
+</template>
+```
+
+**Imperative:**
+
+```javascript
+element.attachShadow({
+  mode: 'open',
+  llmProvenanceTransparent: true
+});
+```
+
+**Ledger Entry Formats:**
+
+*   **Default (Aggregated):**
+    ```
+    <my-widget> [shadow-root: 3 mutations]
+      ├─ content: 2 operations
+      └─ style: 1 operation
+    ```
+*   **Transparent (Full Detail):**
+    ```
+    <my-widget> [shadow-root]
+      ├─ <p> content:summarized-text
+      ├─ <span> content:corrected-spelling
+      └─ <div> style:highlighted-warning
+    ```
+
+**Integrity Requirement:**
+
+The User Agent MUST NOT allow component authors to completely hide that mutations occurred. Users can always determine that a shadow root contains modified content, even if specific details are aggregated.
+
+### 10.8. Nested Shadow DOM
+
+Each shadow boundary requires explicit opt-in for inheritance. Inheritance does NOT cascade automatically through nested shadow roots.
+
+**Example:**
+
+```html
+<component-a>
+  #shadow-root llm-policy-inherit        <!-- A inherits from page -->
+    <component-b>
+      #shadow-root                       <!-- B does NOT auto-inherit -->
+        <div>
+          <!-- Falls back to spec defaults -->
+          <!-- Does NOT inherit A's effective policy -->
+        </div>
+    </component-b>
+</component-a>
+```
+
+**For nested inheritance:**
+
+```html
+<component-a>
+  #shadow-root llm-policy-inherit        <!-- A inherits from page -->
+    <component-b>
+      #shadow-root llm-policy-inherit    <!-- B explicitly inherits from A -->
+        <div>
+          <!-- Inherits A's effective policy -->
+          <!-- Which already includes page's policy (intersected) -->
+        </div>
+    </component-b>
+</component-a>
+```
+
+**Intersection Chain:**
+
+```
+Page policy
+  ∩ Component A's local policy (A opted in)
+  ∩ Component B's local policy (B opted in)
+= Final effective policy inside B
+```
+
+### 10.9. Recommendations for Component Authors
+
+*   **General-purpose components** (date pickers, modals, tooltips) SHOULD opt into policy inheritance (`llm-policy-inherit`) to respect page-level policies.
+*   **Security-sensitive components** (password managers, payment forms, authentication widgets) SHOULD NOT inherit policies and SHOULD enforce `llm-policy-input="none"` or `llm-policy-output="readonly"` explicitly.
+*   **Components displaying user-generated content** SHOULD inherit input policies but MAY enforce output restrictions.
+*   **All components** SHOULD document their LLM Markup behavior for page authors.
 

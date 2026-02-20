@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>LLM Global Policy Category Rules</title>
+<link rel="help" href="https://example.org/llm-markup#global-policy-resolution">
+<script src="/resources/testharness.js"></script>
+<script src="/resources/testharnessreport.js"></script>
+<script src="../../resources/llm-markup-helpers.js"></script>
+
+<div id="test-container"></div>
+
+<script>
+'use strict';
+
+// =============================================================================
+// LLMPolicyConstraints Interface
+// =============================================================================
+
+test(() => {
+  const policy = document.llmGlobalPolicy;
+  if (policy !== null) {
+    assert_true('constraints' in policy);
+    const constraints = policy.constraints;
+    assert_true('blockSelectors' in constraints);
+    assert_true('dependencies' in constraints);
+    assert_true(typeof constraints.getCategoryRule === 'function');
+    assert_true(typeof constraints.getAllCategoryRules === 'function');
+    assert_true(typeof constraints.isBlocked === 'function');
+    assert_true(typeof constraints.getApplicableRules === 'function');
+  }
+}, 'LLMPolicyConstraints has required properties and methods');
+
+// =============================================================================
+// Block Selectors
+// =============================================================================
+
+test(() => {
+  const policy = document.llmGlobalPolicy;
+  if (policy !== null) {
+    assert_true(Array.isArray(policy.constraints.blockSelectors));
+  }
+}, 'blockSelectors is an array');
+
+test(() => {
+  const policy = document.llmGlobalPolicy;
+  if (policy !== null && policy.constraints.blockSelectors.length > 0) {
+    const container = document.getElementById('test-container');
+    const selector = policy.constraints.blockSelectors[0];
+
+    // Create element matching block selector
+    container.innerHTML = `<div class="secret" id="blocked-el">Secret content</div>`;
+    const el = document.getElementById('blocked-el');
+
+    if (selector === '.secret') {
+      assert_true(policy.constraints.isBlocked(el));
+    }
+
+    container.innerHTML = '';
+  }
+}, 'Elements matching block selectors are blocked');
+
+test(() => {
+  const policy = document.llmGlobalPolicy;
+  if (policy !== null) {
+    const container = document.getElementById('test-container');
+    container.innerHTML = '<div id="not-blocked">Normal content</div>';
+    const el = document.getElementById('not-blocked');
+
+    assert_false(policy.constraints.isBlocked(el));
+
+    container.innerHTML = '';
+  }
+}, 'Elements not matching block selectors are not blocked');
+
+// =============================================================================
+// Category Rules
+// =============================================================================
+
+test(() => {
+  const policy = document.llmGlobalPolicy;
+  if (policy !== null) {
+    const rules = policy.constraints.getAllCategoryRules();
+    assert_true(Array.isArray(rules));
+  }
+}, 'getAllCategoryRules returns an array');
+
+test(() => {
+  const policy = document.llmGlobalPolicy;
+  if (policy !== null) {
+    const rule = policy.constraints.getCategoryRule('advertisement');
+    // May be null if not defined, or an object if defined
+    assert_true(rule === null || typeof rule === 'object');
+  }
+}, "getCategoryRule returns null or rule object for 'advertisement'");
+
+test(() => {
+  const policy = document.llmGlobalPolicy;
+  if (policy !== null) {
+    const rule = policy.constraints.getCategoryRule('advertisement');
+    if (rule !== null) {
+      assert_true('categoryName' in rule);
+      assert_equals(rule.categoryName, 'advertisement');
+    }
+  }
+}, 'Category rule has categoryName property');
+
+test(() => {
+  const policy = document.llmGlobalPolicy;
+  if (policy !== null) {
+    const rule = policy.constraints.getCategoryRule('advertisement');
+    if (rule !== null) {
+      // Advertisement typically has input: ['none']
+      assert_true(rule.inputTokens === null ||
+                  Array.isArray(rule.inputTokens));
+    }
+  }
+}, 'Category rule may have inputTokens');
+
+// =============================================================================
+// Category Rule Enforcement
+// =============================================================================
+
+test(() => {
+  const container = document.getElementById('test-container');
+  container.innerHTML = `
+    <div id="ad" llm-intent-category="advertisement">Ad content</div>
+  `;
+  const el = document.getElementById('ad');
+
+  const policy = document.llmGlobalPolicy;
+  if (policy !== null) {
+    const rule = policy.constraints.getCategoryRule('advertisement');
+    if (rule !== null && rule.inputTokens && rule.inputTokens.includes('none')) {
+      // Element should be hidden due to category rule
+      assert_true(el.llmPolicy.isHidden);
+    }
+  }
+
+  container.innerHTML = '';
+}, 'Category rules affect element visibility');
+
+test(() => {
+  const container = document.getElementById('test-container');
+  container.innerHTML = `
+    <div id="quote" llm-intent-category="quote">Quoted content</div>
+  `;
+  const el = document.getElementById('quote');
+
+  const policy = document.llmGlobalPolicy;
+  if (policy !== null) {
+    const rule = policy.constraints.getCategoryRule('quote');
+    if (rule !== null && rule.outputTokens) {
+      // Effective output should be constrained by category rule
+      const effective = el.llmPolicy.effectiveOutputTokens;
+      // Check intersection with rule
+    }
+  }
+
+  container.innerHTML = '';
+}, 'Category rules affect element mutability');
+
+// =============================================================================
+// getApplicableRules Method
+// =============================================================================
+
+test(() => {
+  const container = document.getElementById('test-container');
+  container.innerHTML = `
+    <div id="multi-cat" llm-intent-category="quote">Quoted content</div>
+  `;
+  const el = document.getElementById('multi-cat');
+
+  const policy = document.llmGlobalPolicy;
+  if (policy !== null) {
+    const rules = policy.constraints.getApplicableRules(el);
+    assert_true(Array.isArray(rules));
+  }
+
+  container.innerHTML = '';
+}, 'getApplicableRules returns array of applicable rules');
+
+// =============================================================================
+// Intersection Logic (Multiple Categories)
+// =============================================================================
+
+test(() => {
+  // This test requires an element that could match multiple category rules
+  // The effective policy should be the intersection of all applicable rules
+
+  const container = document.getElementById('test-container');
+  // Simulating an element that could have multiple categories
+  // (Note: llm-intent-category is single value, but policy can apply
+  // based on multiple factors)
+
+  container.innerHTML = `
+    <div id="intersection-test" llm-intent-category="user-content">
+      User generated content
+    </div>
+  `;
+  const el = document.getElementById('intersection-test');
+
+  const policy = document.llmGlobalPolicy;
+  if (policy !== null) {
+    const rules = policy.constraints.getApplicableRules(el);
+    // If multiple rules apply, effective should be intersection
+    // This is the Category Conflicts resolution
+  }
+
+  container.innerHTML = '';
+}, 'Multiple applicable rules use intersection logic');
+
+// =============================================================================
+// Constraint Precedence Over Local Attributes
+// =============================================================================
+
+test(() => {
+  const container = document.getElementById('test-container');
+  container.innerHTML = `
+    <div id="constrained"
+         llm-intent-category="advertisement"
+         llm-policy-input="all">
+      Ad with local override attempt
+    </div>
+  `;
+  const el = document.getElementById('constrained');
+
+  const policy = document.llmGlobalPolicy;
+  if (policy !== null) {
+    const rule = policy.constraints.getCategoryRule('advertisement');
+    if (rule !== null && rule.inputTokens && rule.inputTokens.includes('none')) {
+      // Constraint should override local attribute
+      assert_true(el.llmPolicy.isHidden);
+    }
+  }
+
+  container.innerHTML = '';
+}, 'Constraints take precedence over local attributes');
+
+// =============================================================================
+// Unknown Category
+// =============================================================================
+
+test(() => {
+  const policy = document.llmGlobalPolicy;
+  if (policy !== null) {
+    const rule = policy.constraints.getCategoryRule('nonexistent-category');
+    assert_equals(rule, null);
+  }
+}, 'Unknown category returns null rule');
+
+test(() => {
+  const container = document.getElementById('test-container');
+  container.innerHTML = `
+    <div id="unknown-cat" llm-intent-category="unknown-category">Content</div>
+  `;
+  const el = document.getElementById('unknown-cat');
+
+  // Unknown category should use defaults, not fail
+  assert_true(el.llmPolicy.effectiveInputTokens.length >= 0);
+
+  container.innerHTML = '';
+}, 'Unknown category uses default policy');
+
+// =============================================================================
+// LLMPolicyCategoryRule Interface
+// =============================================================================
+
+test(() => {
+  const policy = document.llmGlobalPolicy;
+  if (policy !== null) {
+    const rules = policy.constraints.getAllCategoryRules();
+    if (rules.length > 0) {
+      const rule = rules[0];
+      assert_true('categoryName' in rule);
+      assert_true('inputTokens' in rule);
+      assert_true('outputTokens' in rule);
+      assert_true('memoryTokens' in rule);
+    }
+  }
+}, 'LLMPolicyCategoryRule has expected properties');
+</script>

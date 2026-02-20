@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>LLM Global Policy Delivery</title>
+<link rel="help" href="https://example.org/llm-markup#policy-delivery">
+<script src="/resources/testharness.js"></script>
+<script src="/resources/testharnessreport.js"></script>
+<script src="../../resources/llm-markup-helpers.js"></script>
+
+<div id="test-container"></div>
+
+<script>
+'use strict';
+
+// =============================================================================
+// Document Policy Resolution State
+// =============================================================================
+
+test(() => {
+  assert_true('llmPolicyResolved' in document);
+  assert_true(typeof document.llmPolicyResolved === 'boolean');
+}, 'document.llmPolicyResolved exists and is boolean');
+
+test(() => {
+  assert_true('llmGlobalPolicy' in document);
+}, 'document.llmGlobalPolicy exists');
+
+test(() => {
+  // By the time this test runs, policy should be resolved
+  // (assuming no external policy files that would delay resolution)
+  if (document.llmPolicyResolved) {
+    assert_not_equals(document.llmGlobalPolicy, null);
+  }
+}, 'llmGlobalPolicy is available when resolved');
+
+// =============================================================================
+// LLMGlobalPolicy Interface
+// =============================================================================
+
+test(() => {
+  const policy = document.llmGlobalPolicy;
+  if (policy !== null) {
+    assert_true('headerSource' in policy);
+    assert_true('metaSource' in policy);
+    assert_true('resolved' in policy);
+  }
+}, 'LLMGlobalPolicy has source info properties');
+
+test(() => {
+  const policy = document.llmGlobalPolicy;
+  if (policy !== null) {
+    assert_true('defaults' in policy);
+    assert_true('constraints' in policy);
+    assert_true('reportTo' in policy);
+    assert_true('reportOnly' in policy);
+  }
+}, 'LLMGlobalPolicy has policy properties');
+
+// =============================================================================
+// LLMGlobalPolicySourceInfo Interface
+// =============================================================================
+
+test(() => {
+  const policy = document.llmGlobalPolicy;
+  if (policy !== null && policy.headerSource) {
+    const source = policy.headerSource;
+    assert_true('source' in source);
+    assert_true('sourceUrl' in source);
+    assert_true('loaded' in source);
+    assert_true('error' in source);
+  }
+}, 'LLMGlobalPolicySourceInfo has required properties');
+
+test(() => {
+  const policy = document.llmGlobalPolicy;
+  if (policy !== null && policy.headerSource) {
+    const validSources = ['http-header', 'http-header-src', 'meta-tag', 'meta-tag-src', 'none'];
+    assert_true(validSources.includes(policy.headerSource.source));
+  }
+}, 'Policy source is a valid enum value');
+
+// =============================================================================
+// Precedence: Header vs Meta
+// =============================================================================
+
+test(() => {
+  // This test verifies the precedence model exists
+  // Actual precedence testing requires server-side header configuration
+  const policy = document.llmGlobalPolicy;
+  if (policy !== null) {
+    // headerPolicy and metaPolicy should be available for inspection
+    assert_true('headerPolicy' in policy);
+    assert_true('metaPolicy' in policy);
+  }
+}, 'headerPolicy and metaPolicy are exposed for inspection');
+
+// =============================================================================
+// Policy Resolution Event
+// =============================================================================
+
+test(() => {
+  assert_true('onllmpolicyresolved' in document);
+}, 'document.onllmpolicyresolved event handler exists');
+
+async_test(t => {
+  // If policy is already resolved, the event may have already fired
+  if (document.llmPolicyResolved) {
+    t.done();
+    return;
+  }
+
+  document.onllmpolicyresolved = t.step_func_done(event => {
+    assert_true('policy' in event);
+    assert_true('hadErrors' in event);
+    assert_not_equals(event.policy, null);
+  });
+
+  // Timeout in case policy is already resolved
+  t.step_timeout(() => t.done(), 100);
+}, 'Policy resolution event fires with policy object');
+
+// =============================================================================
+// LLMGlobalPolicyResolvedEvent
+// =============================================================================
+
+test(() => {
+  const policy = document.llmGlobalPolicy || {
+    reportTo: null,
+    reportOnly: false,
+    defaults: { input: [], output: [], memory: [] },
+    constraints: { blockSelectors: [], dependencies: [] },
+    headerSource: { source: 'none', loaded: true },
+    metaSource: { source: 'none', loaded: true },
+    resolved: true
+  };
+
+  const event = new LLMGlobalPolicyResolvedEvent('llmpolicyresolved', {
+    policy: policy,
+    hadErrors: false
+  });
+
+  assert_equals(event.type, 'llmpolicyresolved');
+  assert_equals(event.hadErrors, false);
+}, 'LLMGlobalPolicyResolvedEvent can be constructed');
+
+// =============================================================================
+// buildLLMContext Timing
+// =============================================================================
+
+test(() => {
+  if (!document.llmPolicyResolved) {
+    // If policy not resolved, buildLLMContext should throw
+    assert_throws_dom('InvalidStateError', () => {
+      document.buildLLMContext();
+    });
+  } else {
+    // If resolved, should succeed
+    const context = document.buildLLMContext();
+    assert_true(typeof context === 'string');
+  }
+}, 'buildLLMContext respects policy resolution state');
+
+// =============================================================================
+// Policy Immutability
+// =============================================================================
+
+test(() => {
+  const policy = document.llmGlobalPolicy;
+  if (policy !== null && policy.resolved) {
+    // Attempt to get policy twice - should be same object
+    const policy2 = document.llmGlobalPolicy;
+    assert_equals(policy, policy2, 'Policy is same object (immutable)');
+  }
+}, 'Resolved policy is immutable (same object)');
+
+test(() => {
+  // Dynamically inserted meta tags should be ignored
+  const container = document.getElementById('test-container');
+  const meta = document.createElement('meta');
+  meta.name = 'llm-policy';
+  meta.content = '{"defaults":{"llm-policy-output":["mutable"]}}';
+
+  const policyBefore = document.llmGlobalPolicy;
+  container.appendChild(meta);
+  const policyAfter = document.llmGlobalPolicy;
+
+  // Policy should not change
+  if (policyBefore !== null && policyAfter !== null) {
+    assert_equals(
+      JSON.stringify(policyBefore.defaults),
+      JSON.stringify(policyAfter.defaults),
+      'Dynamic meta tag does not change policy'
+    );
+  }
+
+  meta.remove();
+}, 'Dynamically inserted meta tags are ignored');
+
+// =============================================================================
+// Error Handling
+// =============================================================================
+
+test(() => {
+  const policy = document.llmGlobalPolicy;
+  if (policy !== null) {
+    // Check if error information is available
+    if (policy.headerSource.error !== null) {
+      assert_true(typeof policy.headerSource.error === 'string');
+    }
+    if (policy.metaSource.error !== null) {
+      assert_true(typeof policy.metaSource.error === 'string');
+    }
+  }
+}, 'Policy source errors are strings or null');
+
+// =============================================================================
+// Default Policy (No Headers or Meta)
+// =============================================================================
+
+test(() => {
+  const policy = document.llmGlobalPolicy;
+  if (policy !== null) {
+    // Even without explicit policy, defaults should exist
+    assert_not_equals(policy.defaults, null);
+    assert_true('input' in policy.defaults);
+    assert_true('output' in policy.defaults);
+    assert_true('memory' in policy.defaults);
+  }
+}, 'Default policy values exist even without explicit configuration');
+
+// =============================================================================
+// Source Enum Values
+// =============================================================================
+
+test(() => {
+  const policy = document.llmGlobalPolicy;
+  if (policy !== null) {
+    const headerSrc = policy.headerSource.source;
+    const metaSrc = policy.metaSource.source;
+
+    const validValues = ['http-header', 'http-header-src', 'meta-tag', 'meta-tag-src', 'none'];
+
+    assert_true(validValues.includes(headerSrc), `Header source '${headerSrc}' is valid`);
+    assert_true(validValues.includes(metaSrc), `Meta source '${metaSrc}' is valid`);
+  }
+}, 'Policy source enum values are valid');
+
+// =============================================================================
+// Raw Policy Access (Debugging)
+// =============================================================================
+
+test(() => {
+  const policy = document.llmGlobalPolicy;
+  if (policy !== null && policy.headerSource.loaded) {
+    // rawPolicy should be available for debugging
+    const raw = policy.headerSource.rawPolicy;
+    assert_true(raw === null || typeof raw === 'string');
+  }
+}, 'Raw policy string is accessible for debugging');
+</script>

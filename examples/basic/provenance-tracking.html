@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>LLM Markup: Provenance Tracking Example</title>
+  <meta name="description" content="Demonstrates llm-provenance-* attributes for tracking content origin and modifications">
+</head>
+<body>
+
+<h1>Provenance Tracking with llm-provenance-*</h1>
+
+<!--
+  SOURCE ATTRIBUTION
+  Track the canonical origin of content.
+-->
+<section>
+  <h2>Source Attribution</h2>
+
+  <blockquote
+    llm-provenance-source="https://en.wikipedia.org/wiki/Machine_learning"
+    llm-provenance-citation="Wikipedia, Machine Learning">
+    <p>
+      Machine learning is a subset of artificial intelligence that
+      enables systems to learn and improve from experience.
+    </p>
+  </blockquote>
+
+  <p
+    llm-provenance-source="https://doi.org/10.1000/example"
+    llm-provenance-citation="Smith et al., Nature 2024">
+    According to recent research, transformer architectures have
+    revolutionized natural language processing.
+  </p>
+</section>
+
+<!--
+  CONFIDENCE SCORING
+  Indicate the certainty level of AI-generated content.
+-->
+<section>
+  <h2>Confidence Indicators</h2>
+
+  <p llm-provenance-confidence="0.95">
+    Paris is the capital of France.
+    <!-- High confidence: well-established fact -->
+  </p>
+
+  <p llm-provenance-confidence="0.7">
+    The project will likely be completed by Q3 2025.
+    <!-- Moderate confidence: prediction based on available data -->
+  </p>
+
+  <p llm-provenance-confidence="0.3">
+    This interpretation of the poem suggests themes of isolation.
+    <!-- Low confidence: subjective analysis -->
+  </p>
+</section>
+
+<!--
+  OPERATION LOGGING
+  Record what modifications the LLM has made.
+-->
+<section>
+  <h2>Modification History</h2>
+
+  <p llm-provenance-operation="content:summarized-from-original-500-word-article">
+    This is a concise summary of the key points from the original article.
+  </p>
+
+  <p llm-provenance-operation="content:translated-from-spanish style:added-emphasis">
+    This paragraph was translated from Spanish and key terms were highlighted.
+  </p>
+
+  <div llm-provenance-operation="topology:reordered-by-priority">
+    <ol>
+      <li>Critical: Fix security vulnerability</li>
+      <li>High: Implement user authentication</li>
+      <li>Medium: Add dark mode support</li>
+      <li>Low: Update documentation</li>
+    </ol>
+  </div>
+</section>
+
+<!--
+  MULTI-LAYER OPERATIONS
+  Track changes across different layers.
+-->
+<section>
+  <h2>Complex Modifications</h2>
+
+  <article llm-provenance-operation="content:grammar-corrected content:simplified-language style:highlighted-key-terms interaction:added-tooltips">
+    <p>
+      The <mark title="Artificial Intelligence">AI</mark> system
+      uses <mark title="Natural Language Processing">NLP</mark>
+      to understand user queries.
+    </p>
+    <!--
+      This element tracks multiple types of changes:
+      - Grammar was corrected (content layer)
+      - Language was simplified (content layer)
+      - Key terms were highlighted (style layer)
+      - Tooltips were added (interaction layer)
+    -->
+  </article>
+</section>
+
+<!--
+  COMBINING WITH POLICY
+  Provenance works with policy attributes.
+-->
+<section>
+  <h2>Policy + Provenance</h2>
+
+  <!-- Allow content modification but track all changes -->
+  <div llm-policy-output="content annotation"
+       llm-provenance-source="https://example.com/original">
+    <p>
+      Original content that can be modified. All modifications
+      will be logged in the provenance ledger for audit purposes.
+    </p>
+  </div>
+
+  <!-- CC-BY content requires attribution in provenance -->
+  <blockquote
+    llm-policy-license="CC-BY-4.0"
+    llm-provenance-source="https://creativecommons.org/example"
+    llm-provenance-citation="Creative Commons, CC BY 4.0">
+    <p>
+      This content is licensed under CC-BY. Any modifications
+      must maintain attribution in the provenance metadata.
+    </p>
+  </blockquote>
+</section>
+
+<!--
+  JAVASCRIPT API USAGE
+  How to inspect provenance programmatically.
+-->
+<script>
+// Example: Inspecting provenance via the DOM API
+document.addEventListener('DOMContentLoaded', () => {
+
+  // Access the provenance ledger
+  const ledger = document.llmProvenanceLedger;
+  console.log('Ledger entries:', ledger.length);
+
+  // Get entries for a specific element
+  const article = document.querySelector('article');
+  const entries = ledger.getEntriesForElement(article);
+  entries.forEach(entry => {
+    console.log(`${entry.layer}: ${entry.explanation}`);
+  });
+
+  // Get all content-layer modifications
+  const contentChanges = ledger.getEntriesForLayer('content');
+  console.log('Content modifications:', contentChanges.length);
+
+  // Check for integrity violations
+  if (ledger.hasIntegrityViolations) {
+    const violations = ledger.getIntegrityViolations();
+    console.warn('Integrity violations detected:', violations);
+  }
+
+  // Listen for new provenance entries
+  document.onllmprovenancechange = (event) => {
+    console.log('New modification:', event.layer, event.explanation);
+  };
+
+  // Listen for integrity violations
+  document.onllmintegrityviolation = (event) => {
+    console.error('Unauthorized modification detected!', {
+      element: event.target,
+      layer: event.layer,
+      type: event.violationType,
+      reverted: event.reverted
+    });
+  };
+
+});
+</script>
+
+</body>
+</html>

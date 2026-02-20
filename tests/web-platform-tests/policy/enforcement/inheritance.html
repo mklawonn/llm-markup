@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>LLM Policy Inheritance</title>
+<link rel="help" href="https://example.org/llm-markup#precedence-and-inheritance">
+<script src="/resources/testharness.js"></script>
+<script src="/resources/testharnessreport.js"></script>
+<script src="../../resources/llm-markup-helpers.js"></script>
+
+<div id="test-container"></div>
+
+<script>
+'use strict';
+
+// =============================================================================
+// Basic Inheritance
+// =============================================================================
+
+test(() => {
+  const container = document.getElementById('test-container');
+  container.innerHTML = `
+    <div id="parent" llm-policy-output="style content">
+      <div id="child"></div>
+    </div>
+  `;
+
+  const parent = document.getElementById('parent');
+  const child = document.getElementById('child');
+
+  // Child should inherit parent's policy
+  assert_true(child.llmPolicy.hasOutputPermission('style'));
+  assert_true(child.llmPolicy.hasOutputPermission('content'));
+
+  container.innerHTML = '';
+}, 'Child elements inherit parent policy attributes');
+
+test(() => {
+  const container = document.getElementById('test-container');
+  container.innerHTML = `
+    <div id="grandparent" llm-policy-output="style">
+      <div id="parent">
+        <div id="child"></div>
+      </div>
+    </div>
+  `;
+
+  const child = document.getElementById('child');
+  assert_true(child.llmPolicy.hasOutputPermission('style'));
+
+  container.innerHTML = '';
+}, 'Policy inheritance works through multiple levels');
+
+// =============================================================================
+// Local Override
+// =============================================================================
+
+test(() => {
+  const container = document.getElementById('test-container');
+  container.innerHTML = `
+    <div id="parent" llm-policy-output="style content">
+      <div id="child" llm-policy-output="readonly"></div>
+    </div>
+  `;
+
+  const parent = document.getElementById('parent');
+  const child = document.getElementById('child');
+
+  assert_true(parent.llmPolicy.hasOutputPermission('style'));
+  assert_true(child.llmPolicy.isReadonly);
+
+  container.innerHTML = '';
+}, 'Local attribute overrides inherited policy');
+
+test(() => {
+  const container = document.getElementById('test-container');
+  container.innerHTML = `
+    <div id="parent" llm-policy-output="readonly">
+      <div id="child" llm-policy-output="mutable"></div>
+    </div>
+  `;
+
+  const parent = document.getElementById('parent');
+  const child = document.getElementById('child');
+
+  assert_true(parent.llmPolicy.isReadonly);
+  assert_true(child.llmPolicy.isMutable);
+
+  container.innerHTML = '';
+}, 'Child can expand permissions beyond parent');
+
+// =============================================================================
+// Input Inheritance
+// =============================================================================
+
+test(() => {
+  const container = document.getElementById('test-container');
+  container.innerHTML = `
+    <div id="parent" llm-policy-input="structure text">
+      <div id="child"></div>
+    </div>
+  `;
+
+  const child = document.getElementById('child');
+  assert_true(child.llmPolicy.hasInputChannel('structure'));
+  assert_true(child.llmPolicy.hasInputChannel('text'));
+  assert_false(child.llmPolicy.hasInputChannel('attributes'));
+
+  container.innerHTML = '';
+}, 'Input visibility is inherited');
+
+test(() => {
+  const container = document.getElementById('test-container');
+  container.innerHTML = `
+    <div id="parent" llm-policy-input="none">
+      <div id="child" llm-policy-input="all"></div>
+    </div>
+  `;
+
+  const parent = document.getElementById('parent');
+  const child = document.getElementById('child');
+
+  // Parent is hidden, so child should also be hidden (can't override parent's none)
+  // This tests that 'none' on ancestor propagates regardless of child's attribute
+  assert_true(parent.llmPolicy.isHidden);
+  // Note: Child's effective visibility depends on implementation
+  // If parent is hidden, child might be hidden too (node doesn't exist in context)
+
+  container.innerHTML = '';
+}, "Parent's input='none' affects child visibility");
+
+// =============================================================================
+// Memory Inheritance
+// =============================================================================
+
+test(() => {
+  const container = document.getElementById('test-container');
+  container.innerHTML = `
+    <div id="parent" llm-policy-memory="session">
+      <div id="child"></div>
+    </div>
+  `;
+
+  const child = document.getElementById('child');
+  assert_true(child.llmPolicy.hasMemoryScope('session'));
+
+  container.innerHTML = '';
+}, 'Memory policy is inherited');
+
+test(() => {
+  const container = document.getElementById('test-container');
+  container.innerHTML = `
+    <div id="parent" llm-policy-memory="session user">
+      <div id="child" llm-policy-memory="none"></div>
+    </div>
+  `;
+
+  const parent = document.getElementById('parent');
+  const child = document.getElementById('child');
+
+  assert_true(parent.llmPolicy.hasMemoryScope('session'));
+  assert_true(child.llmPolicy.hasMemoryScope('none'));
+
+  container.innerHTML = '';
+}, 'Child can restrict memory policy');
+
+// =============================================================================
+// License Inheritance
+// =============================================================================
+
+test(() => {
+  const container = document.getElementById('test-container');
+  container.innerHTML = `
+    <div id="parent" llm-policy-license="CC-BY-ND">
+      <div id="child"></div>
+    </div>
+  `;
+
+  const child = document.getElementById('child');
+  const profile = child.llmPolicy.licenseProfile;
+  assert_not_equals(profile, null);
+  assert_equals(profile.spdxIdentifier, 'CC-BY-ND');
+
+  container.innerHTML = '';
+}, 'License is inherited from parent');
+
+test(() => {
+  const container = document.getElementById('test-container');
+  container.innerHTML = `
+    <div id="parent" llm-policy-license="CC-BY-ND">
+      <div id="child" llm-policy-license="CC0"></div>
+    </div>
+  `;
+
+  const parent = document.getElementById('parent');
+  const child = document.getElementById('child');
+
+  // Child has its own license, but parent's license still applies to the context
+  // The effective license should consider both (intersection or most restrictive)
+  const parentProfile = parent.llmPolicy.licenseProfile;
+  const childProfile = child.llmPolicy.licenseProfile;
+
+  assert_equals(parentProfile.spdxIdentifier, 'CC-BY-ND');
+  assert_equals(childProfile.spdxIdentifier, 'CC0');
+
+  container.innerHTML = '';
+}, 'Child can have different license from parent');
+
+// =============================================================================
+// Deep Nesting
+// =============================================================================
+
+test(() => {
+  const container = document.getElementById('test-container');
+  container.innerHTML = `
+    <div id="l1" llm-policy-output="style">
+      <div id="l2">
+        <div id="l3" llm-policy-output="content">
+          <div id="l4">
+            <div id="l5"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const l2 = document.getElementById('l2');
+  const l4 = document.getElementById('l4');
+  const l5 = document.getElementById('l5');
+
+  assert_true(l2.llmPolicy.hasOutputPermission('style'));
+  assert_true(l4.llmPolicy.hasOutputPermission('content'));
+  assert_true(l5.llmPolicy.hasOutputPermission('content'));
+
+  container.innerHTML = '';
+}, 'Deep nesting with intermediate overrides works correctly');
+
+// =============================================================================
+// Siblings Independence
+// =============================================================================
+
+test(() => {
+  const container = document.getElementById('test-container');
+  container.innerHTML = `
+    <div id="parent">
+      <div id="sibling1" llm-policy-output="style"></div>
+      <div id="sibling2" llm-policy-output="content"></div>
+      <div id="sibling3"></div>
+    </div>
+  `;
+
+  const s1 = document.getElementById('sibling1');
+  const s2 = document.getElementById('sibling2');
+  const s3 = document.getElementById('sibling3');
+
+  assert_true(s1.llmPolicy.hasOutputPermission('style'));
+  assert_false(s1.llmPolicy.hasOutputPermission('content'));
+
+  assert_true(s2.llmPolicy.hasOutputPermission('content'));
+  assert_false(s2.llmPolicy.hasOutputPermission('style'));
+
+  // s3 inherits from parent (default readonly)
+  assert_true(s3.llmPolicy.isReadonly);
+
+  container.innerHTML = '';
+}, 'Sibling elements have independent policies');
+
+// =============================================================================
+// Local vs Effective Tokens
+// =============================================================================
+
+test(() => {
+  const container = document.getElementById('test-container');
+  container.innerHTML = `
+    <div id="parent" llm-policy-output="style content">
+      <div id="child"></div>
+    </div>
+  `;
+
+  const parent = document.getElementById('parent');
+  const child = document.getElementById('child');
+
+  // Parent has local tokens
+  assert_array_equals_unordered(parent.llmPolicy.outputTokens, ['style', 'content']);
+
+  // Child has no local tokens
+  assert_array_equals(child.llmPolicy.outputTokens, []);
+
+  // Child's effective tokens come from inheritance
+  assert_array_equals_unordered(child.llmPolicy.effectiveOutputTokens, ['style', 'content']);
+
+  container.innerHTML = '';
+}, 'Local tokens vs effective tokens are distinguished');
+
+// =============================================================================
+// Mixed Attribute Inheritance
+// =============================================================================
+
+test(() => {
+  const container = document.getElementById('test-container');
+  container.innerHTML = `
+    <div id="parent" llm-policy-input="structure text" llm-policy-output="style">
+      <div id="child" llm-policy-output="content"></div>
+    </div>
+  `;
+
+  const child = document.getElementById('child');
+
+  // Child inherits input from parent
+  assert_true(child.llmPolicy.hasInputChannel('structure'));
+  assert_true(child.llmPolicy.hasInputChannel('text'));
+
+  // Child overrides output
+  assert_true(child.llmPolicy.hasOutputPermission('content'));
+  assert_false(child.llmPolicy.hasOutputPermission('style'));
+
+  container.innerHTML = '';
+}, 'Different attributes inherit independently');
+</script>

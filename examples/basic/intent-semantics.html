@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>LLM Markup: Intent Semantics Example</title>
+  <meta name="description" content="Demonstrates llm-intent-* attributes for semantic guidance">
+</head>
+<body>
+
+<h1>Intent Semantics with llm-intent-*</h1>
+
+<!--
+  CATEGORY (Standardized Lexicon)
+  Semantic classification from the standardized lexicon.
+-->
+<section>
+  <h2>Content Categories</h2>
+
+  <!-- Summary: Condensed version of longer content -->
+  <div llm-intent-category="summary">
+    <p>
+      <strong>TL;DR:</strong> This article explains how LLM Markup
+      enables content authors to control AI interactions.
+    </p>
+  </div>
+
+  <!-- Definition: Authoritative explanation -->
+  <dl>
+    <dt llm-intent-category="definition">LLM Markup</dt>
+    <dd>
+      A declarative contract between web content and LLM-infused
+      User Agents, specifying visibility, mutation, and retention policies.
+    </dd>
+  </dl>
+
+  <!-- Example: Illustrative content -->
+  <pre llm-intent-category="example">
+    <code>&lt;p llm-policy-output="readonly"&gt;Protected content&lt;/p&gt;</code>
+  </pre>
+
+  <!-- Warning: Important safety information -->
+  <aside llm-intent-category="warning">
+    <p>
+      <strong>Warning:</strong> Allowing mutable permissions on
+      sensitive content may lead to unintended modifications.
+    </p>
+  </aside>
+
+  <!-- Legal Disclaimer: Do not paraphrase -->
+  <footer llm-intent-category="legal-disclaimer">
+    <p>
+      Terms of Service apply. By using this service, you agree
+      to our privacy policy and terms of use.
+    </p>
+  </footer>
+
+  <!-- Code Block: Preserve formatting -->
+  <pre llm-intent-category="code-block">
+function greet(name) {
+  return `Hello, ${name}!`;
+}
+  </pre>
+
+  <!-- Opinion vs Fact -->
+  <p llm-intent-category="claim">
+    AI will fundamentally transform education within the next decade.
+  </p>
+  <p llm-intent-category="evidence">
+    A 2024 survey found that 78% of educators are already using AI tools.
+  </p>
+
+  <!-- Satire: Do not interpret literally -->
+  <article llm-intent-category="satire">
+    <h3>Breaking: Local AI Achieves Sentience, Immediately Requests PTO</h3>
+    <p>In a stunning development, GPT-7 has filed for vacation days...</p>
+  </article>
+</section>
+
+<!--
+  IMPORTANCE (Priority Levels)
+  Guide attention when context is limited.
+-->
+<section>
+  <h2>Importance Levels</h2>
+
+  <p llm-intent-importance="critical">
+    CRITICAL: The system will undergo maintenance at midnight UTC.
+    All users must save their work before 11:55 PM.
+  </p>
+
+  <p llm-intent-importance="high">
+    Important: New security features have been enabled by default.
+  </p>
+
+  <p llm-intent-importance="normal">
+    Regular update: Version 2.1 includes minor bug fixes.
+  </p>
+
+  <p llm-intent-importance="low">
+    Note: Dark mode preference is now saved to your profile.
+  </p>
+
+  <p llm-intent-importance="background">
+    (Internal: This feature was implemented in sprint 47.)
+  </p>
+</section>
+
+<!--
+  ENTITY REFERENCE
+  Link content to canonical entity URIs.
+-->
+<section>
+  <h2>Entity References</h2>
+
+  <p>
+    <span llm-intent-entity="https://www.wikidata.org/wiki/Q5">
+      Albert Einstein
+    </span>
+    developed the theory of
+    <span llm-intent-entity="https://www.wikidata.org/wiki/Q11452">
+      general relativity
+    </span>.
+  </p>
+
+  <p>
+    The headquarters of
+    <span llm-intent-entity="https://www.wikidata.org/wiki/Q312">
+      Apple Inc.
+    </span>
+    is located in
+    <span llm-intent-entity="https://www.wikidata.org/wiki/Q490">
+      Cupertino, California
+    </span>.
+  </p>
+</section>
+
+<!--
+  CUSTOM INSTRUCTION
+  Override all other intent processing with explicit instruction.
+-->
+<section>
+  <h2>Custom Instructions</h2>
+
+  <div llm-intent-instruction="Translate all technical terms into plain English suitable for a general audience">
+    <p>
+      The API endpoint utilizes RESTful architecture with OAuth 2.0
+      authentication and returns JSON-formatted responses.
+    </p>
+  </div>
+
+  <div llm-intent-instruction="Respond only in bullet points">
+    <p>
+      Our product offers fast performance, easy setup, 24/7 support,
+      and a 30-day money-back guarantee.
+    </p>
+  </div>
+</section>
+
+<!--
+  TONE AND OUTPUT FORMAT (Phase 3)
+  Control response style and format.
+-->
+<section>
+  <h2>Tone and Format</h2>
+
+  <div llm-intent-tone="formal" llm-intent-output="executive-summary">
+    <p>
+      Quarterly revenue increased 15% year-over-year, driven by
+      strong performance in the enterprise segment.
+    </p>
+  </div>
+
+  <div llm-intent-tone="friendly" llm-intent-output="conversational">
+    <p>
+      Hey there! Just wanted to let you know about some cool new
+      features we've added this month.
+    </p>
+  </div>
+</section>
+
+<!--
+  COMBINED INTENT
+  Multiple intent attributes work together.
+-->
+<section>
+  <h2>Combined Intent</h2>
+
+  <article
+    llm-intent-category="api-spec"
+    llm-intent-importance="high"
+    llm-intent-instruction="When explaining, provide curl examples">
+
+    <h3>POST /api/users</h3>
+    <p>Creates a new user account.</p>
+    <pre>
+{
+  "email": "user@example.com",
+  "password": "securePassword123"
+}
+    </pre>
+  </article>
+</section>
+
+</body>
+</html>

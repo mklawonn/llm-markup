@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>LLM Markup Web Platform Tests</title>
+<style>
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    max-width: 900px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+    line-height: 1.6;
+  }
+  h1 { border-bottom: 2px solid #333; padding-bottom: 0.5rem; }
+  h2 { color: #444; margin-top: 2rem; }
+  h3 { color: #666; }
+  ul { list-style: none; padding-left: 1rem; }
+  li { margin: 0.5rem 0; }
+  a { color: #0066cc; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .test-link { font-family: monospace; }
+  .section { margin-bottom: 2rem; padding: 1rem; background: #f5f5f5; border-radius: 4px; }
+  .count { color: #888; font-size: 0.9em; }
+</style>
+
+<h1>LLM Markup (LLMPM) Web Platform Tests</h1>
+
+<p>
+  This test suite validates conformance with the
+  <a href="../../spec/index.bs">LLM Markup Specification</a>.
+</p>
+
+<div class="section">
+  <h2>Policy Namespace <span class="count">(8 test files)</span></h2>
+
+  <h3>Parsing Tests</h3>
+  <ul>
+    <li><a class="test-link" href="policy/parsing/input-tokens.html">input-tokens.html</a> - llm-policy-input token parsing</li>
+    <li><a class="test-link" href="policy/parsing/output-tokens.html">output-tokens.html</a> - llm-policy-output token parsing</li>
+    <li><a class="test-link" href="policy/parsing/memory-tokens.html">memory-tokens.html</a> - llm-policy-memory token parsing</li>
+    <li><a class="test-link" href="policy/parsing/license.html">license.html</a> - llm-policy-license and SPDX profiles</li>
+  </ul>
+
+  <h3>Enforcement Tests</h3>
+  <ul>
+    <li><a class="test-link" href="policy/enforcement/mutation-validation.html">mutation-validation.html</a> - Token-based mutation enforcement</li>
+    <li><a class="test-link" href="policy/enforcement/inheritance.html">inheritance.html</a> - Policy inheritance and local overrides</li>
+    <li><a class="test-link" href="policy/enforcement/shadow-dom.html">shadow-dom.html</a> - Shadow DOM policy boundaries and intersection semantics</li>
+    <li><a class="test-link" href="policy/enforcement/context-representation.html">context-representation.html</a> - Context format, placeholders, and visibility filtering</li>
+  </ul>
+</div>
+
+<div class="section">
+  <h2>Intent Namespace <span class="count">(2 test files)</span></h2>
+
+  <h3>Parsing Tests</h3>
+  <ul>
+    <li><a class="test-link" href="intent/parsing/attributes.html">attributes.html</a> - All llm-intent-* attribute parsing</li>
+  </ul>
+
+  <h3>Prompt Construction Tests</h3>
+  <ul>
+    <li><a class="test-link" href="intent/prompt/construction.html">construction.html</a> - Hierarchy of instruction and templates</li>
+  </ul>
+</div>
+
+<div class="section">
+  <h2>Provenance Namespace <span class="count">(2 test files)</span></h2>
+
+  <h3>Parsing Tests</h3>
+  <ul>
+    <li><a class="test-link" href="provenance/parsing/attributes.html">attributes.html</a> - All llm-provenance-* attribute parsing</li>
+  </ul>
+
+  <h3>Integrity Tests</h3>
+  <ul>
+    <li><a class="test-link" href="provenance/integrity/ledger.html">ledger.html</a> - Provenance ledger and diff tracking</li>
+  </ul>
+</div>
+
+<div class="section">
+  <h2>Global Policy <span class="count">(4 test files)</span></h2>
+
+  <h3>Delivery Tests</h3>
+  <ul>
+    <li><a class="test-link" href="global-policy/delivery/policy-delivery.html">policy-delivery.html</a> - HTTP header and meta tag delivery, precedence</li>
+  </ul>
+
+  <h3>Default Tests</h3>
+  <ul>
+    <li><a class="test-link" href="global-policy/defaults/policy-defaults.html">policy-defaults.html</a> - Global default values and inheritance</li>
+  </ul>
+
+  <h3>Constraint Tests</h3>
+  <ul>
+    <li><a class="test-link" href="global-policy/constraints/category-rules.html">category-rules.html</a> - Block selectors and category rules</li>
+  </ul>
+
+  <h3>Dependency Tests</h3>
+  <ul>
+    <li><a class="test-link" href="global-policy/dependencies/resolution.html">resolution.html</a> - Dependency resolution algorithm</li>
+  </ul>
+</div>
+
+<div class="section">
+  <h2>Integration Tests <span class="count">(1 test file)</span></h2>
+  <ul>
+    <li><a class="test-link" href="integration/cross-namespace.html">cross-namespace.html</a> - Cross-namespace interactions</li>
+  </ul>
+</div>
+
+<hr>
+
+<h2>Test Resources</h2>
+<ul>
+  <li><a class="test-link" href="resources/llm-markup-helpers.js">llm-markup-helpers.js</a> - Test helper utilities</li>
+</ul>
+
+<h2>Running Tests</h2>
+<p>
+  These tests use the <a href="https://web-platform-tests.org/">Web Platform Tests</a> harness.
+  In a WPT environment, run:
+</p>
+<pre><code>./wpt run chrome llm-markup/</code></pre>
+
+<p>
+  For local development, serve files over HTTP and open individual test files in a browser.
+</p>

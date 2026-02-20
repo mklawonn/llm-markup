@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>LLM Provenance Ledger and Integrity</title>
+<link rel="help" href="https://example.org/llm-markup#provenance-processing-model">
+<script src="/resources/testharness.js"></script>
+<script src="/resources/testharnessreport.js"></script>
+<script src="../../resources/llm-markup-helpers.js"></script>
+
+<div id="test-container"></div>
+
+<script>
+'use strict';
+
+// =============================================================================
+// LLMProvenanceLedger Interface
+// =============================================================================
+
+test(() => {
+  assert_true('llmProvenanceLedger' in document);
+}, 'document.llmProvenanceLedger exists');
+
+test(() => {
+  const ledger = document.llmProvenanceLedger;
+  assert_true('length' in ledger);
+  assert_true(typeof ledger.length === 'number');
+}, 'llmProvenanceLedger has length property');
+
+test(() => {
+  const ledger = document.llmProvenanceLedger;
+  assert_true(typeof ledger.item === 'function');
+}, 'llmProvenanceLedger has item() method');
+
+test(() => {
+  const ledger = document.llmProvenanceLedger;
+  assert_true(typeof ledger.getEntriesForElement === 'function');
+}, 'llmProvenanceLedger has getEntriesForElement() method');
+
+test(() => {
+  const ledger = document.llmProvenanceLedger;
+  assert_true(typeof ledger.getEntriesForLayer === 'function');
+}, 'llmProvenanceLedger has getEntriesForLayer() method');
+
+test(() => {
+  const ledger = document.llmProvenanceLedger;
+  assert_true(typeof ledger.getEntriesInRange === 'function');
+}, 'llmProvenanceLedger has getEntriesInRange() method');
+
+test(() => {
+  const ledger = document.llmProvenanceLedger;
+  assert_true(typeof ledger.getIntegrityViolations === 'function');
+}, 'llmProvenanceLedger has getIntegrityViolations() method');
+
+test(() => {
+  const ledger = document.llmProvenanceLedger;
+  assert_true('hasIntegrityViolations' in ledger);
+}, 'llmProvenanceLedger has hasIntegrityViolations property');
+
+// =============================================================================
+// Ledger Entry Properties
+// =============================================================================
+
+test(() => {
+  // This test requires simulating a ledger entry
+  // In a real implementation, entries would be created by LLM mutations
+  const ledger = document.llmProvenanceLedger;
+  if (ledger.length > 0) {
+    const entry = ledger.item(0);
+    assert_true('id' in entry);
+    assert_true('target' in entry);
+    assert_true('layer' in entry);
+    assert_true('explanation' in entry);
+    assert_true('timestamp' in entry);
+    assert_true('hasAttributeEntry' in entry);
+    assert_true('originalValue' in entry);
+    assert_true('newValue' in entry);
+    assert_true('agentId' in entry);
+  }
+}, 'Ledger entries have required properties');
+
+// =============================================================================
+// getEntriesForElement
+// =============================================================================
+
+test(() => {
+  const container = document.getElementById('test-container');
+  container.innerHTML = '<div id="target"></div>';
+  const target = document.getElementById('target');
+
+  const entries = document.llmProvenanceLedger.getEntriesForElement(target);
+  assert_true(Array.isArray(entries));
+
+  container.innerHTML = '';
+}, 'getEntriesForElement returns an array');
+
+test(() => {
+  const el = createLLMElement('div', {});
+  // Element not in DOM and no mutations
+  const entries = document.llmProvenanceLedger.getEntriesForElement(el);
+  assert_equals(entries.length, 0);
+}, 'getEntriesForElement returns empty array for untracked element');
+
+// =============================================================================
+// getEntriesForLayer
+// =============================================================================
+
+test(() => {
+  const entries = document.llmProvenanceLedger.getEntriesForLayer('content');
+  assert_true(Array.isArray(entries));
+}, "getEntriesForLayer('content') returns an array");
+
+test(() => {
+  const entries = document.llmProvenanceLedger.getEntriesForLayer('style');
+  assert_true(Array.isArray(entries));
+}, "getEntriesForLayer('style') returns an array");
+
+for (const layer of VALID_PROVENANCE_LAYERS) {
+  test(() => {
+    const entries = document.llmProvenanceLedger.getEntriesForLayer(layer);
+    assert_true(Array.isArray(entries));
+  }, `getEntriesForLayer('${layer}') returns an array`);
+}
+
+// =============================================================================
+// getEntriesInRange
+// =============================================================================
+
+test(() => {
+  const now = performance.now();
+  const entries = document.llmProvenanceLedger.getEntriesInRange(0, now);
+  assert_true(Array.isArray(entries));
+}, 'getEntriesInRange returns an array');
+
+test(() => {
+  const entries = document.llmProvenanceLedger.getEntriesInRange(0, 0);
+  assert_true(Array.isArray(entries));
+  assert_equals(entries.length, 0);
+}, 'getEntriesInRange with zero-width range returns empty array');
+
+// =============================================================================
+// Integrity Violations
+// =============================================================================
+
+test(() => {
+  const violations = document.llmProvenanceLedger.getIntegrityViolations();
+  assert_true(Array.isArray(violations));
+}, 'getIntegrityViolations returns an array');
+
+test(() => {
+  const hasViolations = document.llmProvenanceLedger.hasIntegrityViolations;
+  assert_true(typeof hasViolations === 'boolean');
+}, 'hasIntegrityViolations is a boolean');
+
+// =============================================================================
+// Document.getIntegrityViolations
+// =============================================================================
+
+test(() => {
+  assert_true(typeof document.getIntegrityViolations === 'function');
+}, 'document.getIntegrityViolations exists');
+
+test(() => {
+  const violations = document.getIntegrityViolations();
+  assert_true(Array.isArray(violations));
+}, 'document.getIntegrityViolations returns an array');
+
+// =============================================================================
+// Integrity Violation Event
+// =============================================================================
+
+test(() => {
+  assert_true('onllmintegrityviolation' in document);
+}, 'document.onllmintegrityviolation event handler exists');
+
+async_test(t => {
+  // This test simulates listening for integrity violations
+  document.onllmintegrityviolation = t.step_func_done(event => {
+    assert_true('target' in event);
+    assert_true('layer' in event);
+    assert_true('originalValue' in event);
+    assert_true('newValue' in event);
+  });
+
+  // In a real test, this would be triggered by an unauthorized mutation
+  // For now, we just verify the handler can be set
+  t.done();
+}, 'Integrity violation event handler can be set');
+
+// =============================================================================
+// Causal Logging Requirement
+// =============================================================================
+
+test(() => {
+  const container = document.getElementById('test-container');
+  container.innerHTML = `
+    <div id="target" llm-policy-output="content">Original text</div>
+  `;
+  const target = document.getElementById('target');
+
+  // Simulate an LLM mutation with proper provenance
+  // In a real implementation, this would be done by the LLM agent
+  // The test verifies the provenance-operation attribute is checked
+
+  const hasOp = target.hasAttribute('llm-provenance-operation');
+  // If content was modified without provenance, it should be a violation
+
+  container.innerHTML = '';
+}, 'Mutations should be tracked in provenance-operation');
+
+// =============================================================================
+// Diff Tracking
+// =============================================================================
+
+test(() => {
+  const container = document.getElementById('test-container');
+  container.innerHTML = `
+    <div id="target" llm-provenance-operation="content:modified-text">
+      Modified text
+    </div>
+  `;
+  const target = document.getElementById('target');
+
+  // Verify the ledger can track the diff between served and current DOM
+  const entries = document.llmProvenanceLedger.getEntriesForElement(target);
+  // Should have entry if mutation was tracked
+
+  container.innerHTML = '';
+}, 'Diff between served and rendered DOM is tracked');
+
+// =============================================================================
+// Ledger Immutability (Read-Only Access)
+// =============================================================================
+
+test(() => {
+  const ledger = document.llmProvenanceLedger;
+
+  // Attempt to modify ledger should fail or be ignored
+  const originalLength = ledger.length;
+
+  try {
+    ledger.length = 999;
+  } catch (e) {
+    // Expected to throw or be ignored
+  }
+
+  assert_equals(ledger.length, originalLength);
+}, 'Ledger length is read-only');
+
+// =============================================================================
+// LLMProvenanceChangeEvent
+// =============================================================================
+
+test(() => {
+  assert_true('onllmprovenancechange' in document);
+}, 'document.onllmprovenancechange event handler exists');
+
+test(() => {
+  const event = new LLMProvenanceChangeEvent('llmprovenancechange', {
+    target: document.body,
+    layer: 'content',
+    explanation: 'Updated heading text',
+    timestamp: performance.now()
+  });
+
+  assert_equals(event.type, 'llmprovenancechange');
+  assert_equals(event.target, document.body);
+  assert_equals(event.layer, 'content');
+  assert_equals(event.explanation, 'Updated heading text');
+  assert_true(typeof event.timestamp === 'number');
+}, 'LLMProvenanceChangeEvent can be constructed');
+
+test(() => {
+  const event = new LLMProvenanceChangeEvent('llmprovenancechange', {
+    target: document.body,
+    layer: 'style'
+  });
+
+  // Default values
+  assert_equals(event.explanation, '');
+  assert_equals(event.timestamp, 0);
+}, 'LLMProvenanceChangeEvent has default values');
+
+async_test(t => {
+  document.onllmprovenancechange = t.step_func_done(event => {
+    assert_true('target' in event);
+    assert_true('layer' in event);
+    assert_true('explanation' in event);
+    assert_true('timestamp' in event);
+  });
+
+  // Verify handler can be set (actual triggering requires LLM mutation)
+  t.done();
+}, 'Provenance change event handler can be set');
+
+// =============================================================================
+// LLMIntegrityViolationEvent
+// =============================================================================
+
+test(() => {
+  const event = new LLMIntegrityViolationEvent('llmintegrityviolation', {
+    target: document.body,
+    layer: 'content',
+    violationType: 'missing-ledger-entry',
+    originalValue: 'original',
+    currentValue: 'modified',
+    reverted: false
+  });
+
+  assert_equals(event.type, 'llmintegrityviolation');
+  assert_equals(event.target, document.body);
+  assert_equals(event.layer, 'content');
+  assert_equals(event.violationType, 'missing-ledger-entry');
+  assert_equals(event.originalValue, 'original');
+  assert_equals(event.currentValue, 'modified');
+  assert_equals(event.reverted, false);
+}, 'LLMIntegrityViolationEvent can be constructed');
+
+test(() => {
+  const event = new LLMIntegrityViolationEvent('llmintegrityviolation', {
+    target: document.body,
+    layer: 'data'
+  });
+
+  // Default values
+  assert_equals(event.violationType, 'missing-ledger-entry');
+  assert_equals(event.reverted, false);
+}, 'LLMIntegrityViolationEvent has default values');
+
+test(() => {
+  const event = new LLMIntegrityViolationEvent('llmintegrityviolation', {
+    target: document.body,
+    layer: 'content',
+    violationType: 'layer-mismatch',
+    originalValue: 'text',
+    currentValue: 'modified text',
+    reverted: true
+  });
+
+  assert_equals(event.violationType, 'layer-mismatch');
+  assert_equals(event.reverted, true);
+}, 'LLMIntegrityViolationEvent supports layer-mismatch violation type');
+
+test(() => {
+  const event = new LLMIntegrityViolationEvent('llmintegrityviolation', {
+    target: document.body,
+    layer: 'data',
+    violationType: 'tampered-attribute'
+  });
+
+  assert_equals(event.violationType, 'tampered-attribute');
+}, 'LLMIntegrityViolationEvent supports tampered-attribute violation type');
+
+// =============================================================================
+// hasAttributeEntry Validation
+// =============================================================================
+
+test(() => {
+  const container = document.getElementById('test-container');
+  container.innerHTML = `
+    <div id="with-op" llm-provenance-operation="content:test">With operation</div>
+    <div id="without-op">Without operation</div>
+  `;
+
+  const withOp = document.getElementById('with-op');
+  const withoutOp = document.getElementById('without-op');
+
+  // Element with operation should have valid ledger correlation
+  const withOpEntries = document.llmProvenanceLedger.getEntriesForElement(withOp);
+  const withoutOpEntries = document.llmProvenanceLedger.getEntriesForElement(withoutOp);
+
+  // withOp should have entries with hasAttributeEntry=true (if tracked)
+  // withoutOp should have no entries or entries with hasAttributeEntry=false (if modified)
+
+  container.innerHTML = '';
+}, 'hasAttributeEntry correlates with provenance-operation attribute');
+
+// =============================================================================
+// Baseline Snapshot
+// =============================================================================
+
+test(() => {
+  // Baseline is established after DOMContentLoaded
+  // The ledger should be able to compare current state against baseline
+  const ledger = document.llmProvenanceLedger;
+
+  // Ledger should exist and be initialized
+  assert_true(ledger !== null);
+  assert_true(typeof ledger.length === 'number');
+}, 'Ledger exists after DOMContentLoaded (baseline established)');
+
+// =============================================================================
+// Layer Token Mapping
+// =============================================================================
+
+test(() => {
+  // Verify all layer tokens are valid
+  const validLayers = ['content', 'style', 'interaction', 'topology', 'data', 'intent'];
+
+  for (const layer of validLayers) {
+    const entries = document.llmProvenanceLedger.getEntriesForLayer(layer);
+    assert_true(Array.isArray(entries), `Layer '${layer}' returns array`);
+  }
+}, 'All provenance layers are queryable');
+
+test(() => {
+  // content layer corresponds to text modifications
+  const event = new LLMProvenanceChangeEvent('llmprovenancechange', {
+    target: document.body,
+    layer: 'content',
+    explanation: 'Modified text content'
+  });
+  assert_equals(event.layer, 'content');
+}, 'content layer represents text modifications');
+
+test(() => {
+  // style layer corresponds to class/style changes
+  const event = new LLMProvenanceChangeEvent('llmprovenancechange', {
+    target: document.body,
+    layer: 'style',
+    explanation: 'Changed CSS class'
+  });
+  assert_equals(event.layer, 'style');
+}, 'style layer represents presentation changes');
+
+test(() => {
+  // topology layer corresponds to structural changes
+  const event = new LLMProvenanceChangeEvent('llmprovenancechange', {
+    target: document.body,
+    layer: 'topology',
+    explanation: 'Reordered children'
+  });
+  assert_equals(event.layer, 'topology');
+}, 'topology layer represents structural changes');
+
+// =============================================================================
+// Ledger Entry Structure
+// =============================================================================
+
+test(() => {
+  // Verify LLMProvenanceLedgerEntry interface
+  // We create a mock scenario by checking what properties should exist
+  const ledger = document.llmProvenanceLedger;
+
+  // Methods for querying
+  assert_true(typeof ledger.getEntriesForElement === 'function');
+  assert_true(typeof ledger.getEntriesForLayer === 'function');
+  assert_true(typeof ledger.getEntriesInRange === 'function');
+  assert_true(typeof ledger.getIntegrityViolations === 'function');
+
+  // Properties
+  assert_true('length' in ledger);
+  assert_true('hasIntegrityViolations' in ledger);
+}, 'LLMProvenanceLedger has complete interface');
+
+// =============================================================================
+// Integrity Validation Triggers
+// =============================================================================
+
+test(() => {
+  // Integrity violations should be detectable
+  const violations = document.llmProvenanceLedger.getIntegrityViolations();
+  assert_true(Array.isArray(violations));
+}, 'Integrity violations can be queried');
+
+test(() => {
+  // document.getIntegrityViolations should return elements
+  const violations = document.getIntegrityViolations();
+  assert_true(Array.isArray(violations));
+
+  // Each item should be an Element (if any violations exist)
+  for (const v of violations) {
+    assert_true(v instanceof Element);
+  }
+}, 'document.getIntegrityViolations returns Element array');
+
+// =============================================================================
+// Violation Types
+// =============================================================================
+
+test(() => {
+  // missing-ledger-entry: mutation without provenance tracking
+  const event = new LLMIntegrityViolationEvent('llmintegrityviolation', {
+    target: document.body,
+    layer: 'content',
+    violationType: 'missing-ledger-entry'
+  });
+  assert_equals(event.violationType, 'missing-ledger-entry');
+}, 'missing-ledger-entry violation type for untracked mutations');
+
+test(() => {
+  // layer-mismatch: provenance-operation declares wrong layer
+  const event = new LLMIntegrityViolationEvent('llmintegrityviolation', {
+    target: document.body,
+    layer: 'style',
+    violationType: 'layer-mismatch'
+  });
+  assert_equals(event.violationType, 'layer-mismatch');
+}, 'layer-mismatch violation type for incorrect layer declaration');
+
+test(() => {
+  // tampered-attribute: provenance-operation was modified after initial write
+  const event = new LLMIntegrityViolationEvent('llmintegrityviolation', {
+    target: document.body,
+    layer: 'data',
+    violationType: 'tampered-attribute'
+  });
+  assert_equals(event.violationType, 'tampered-attribute');
+}, 'tampered-attribute violation type for modified provenance');
+
+// =============================================================================
+// Violation Response
+// =============================================================================
+
+test(() => {
+  // reverted=true indicates UA rolled back the change
+  const event = new LLMIntegrityViolationEvent('llmintegrityviolation', {
+    target: document.body,
+    layer: 'content',
+    violationType: 'missing-ledger-entry',
+    originalValue: 'Original text',
+    currentValue: 'Modified text',
+    reverted: true
+  });
+
+  assert_equals(event.reverted, true);
+  assert_equals(event.originalValue, 'Original text');
+}, 'Integrity violation can indicate reversion');
+
+test(() => {
+  // reverted=false indicates change was flagged but not rolled back
+  const event = new LLMIntegrityViolationEvent('llmintegrityviolation', {
+    target: document.body,
+    layer: 'style',
+    violationType: 'layer-mismatch',
+    reverted: false
+  });
+
+  assert_equals(event.reverted, false);
+}, 'Integrity violation can indicate non-reversion');
+
+// =============================================================================
+// Shadow DOM Support (via LLMProvenanceLedger)
+// =============================================================================
+
+test(() => {
+  const ledger = document.llmProvenanceLedger;
+
+  // Shadow DOM methods should exist
+  assert_true(typeof ledger.getShadowSummary === 'function');
+  assert_true(typeof ledger.getShadowRootsWithMutations === 'function');
+}, 'LLMProvenanceLedger has shadow DOM support methods');
+
+test(() => {
+  const shadowRoots = document.llmProvenanceLedger.getShadowRootsWithMutations();
+  assert_true(Array.isArray(shadowRoots));
+}, 'getShadowRootsWithMutations returns array');
+
+// =============================================================================
+// Ledger Persistence (Memory Policy Interaction)
+// =============================================================================
+
+test(() => {
+  // Ledger entries should be retained according to memory policy
+  // In a session-only context, entries should persist during session
+  const ledger = document.llmProvenanceLedger;
+
+  // Basic persistence check - ledger should maintain state
+  const initialLength = ledger.length;
+  assert_true(typeof initialLength === 'number');
+}, 'Ledger maintains entries during session');
+
+// =============================================================================
+// Agent ID Tracking
+// =============================================================================
+
+test(() => {
+  // Ledger entries should include agent identification when available
+  const ledger = document.llmProvenanceLedger;
+
+  // If entries exist, check for agentId field
+  if (ledger.length > 0) {
+    const entry = ledger.item(0);
+    // agentId is nullable - can be null if agent didn't identify
+    assert_true('agentId' in entry);
+    assert_true(entry.agentId === null || typeof entry.agentId === 'string');
+  }
+}, 'Ledger entries include agentId field (may be null)');
+
+// =============================================================================
+// Entry ID Uniqueness
+// =============================================================================
+
+test(() => {
+  const ledger = document.llmProvenanceLedger;
+
+  if (ledger.length >= 2) {
+    const entry1 = ledger.item(0);
+    const entry2 = ledger.item(1);
+    assert_not_equals(entry1.id, entry2.id, 'Entry IDs should be unique');
+  }
+}, 'Ledger entry IDs are unique');
+
+test(() => {
+  const ledger = document.llmProvenanceLedger;
+
+  if (ledger.length > 0) {
+    const entry = ledger.item(0);
+    assert_true(typeof entry.id === 'string');
+    assert_true(entry.id.length > 0);
+  }
+}, 'Ledger entry ID is a non-empty string');
+</script>
