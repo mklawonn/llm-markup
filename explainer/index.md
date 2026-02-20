@@ -23,9 +23,9 @@ Without such standards, LLM-infused browsers face a dilemma:
 
 LLM Markup provides a declarative contract layer that sits on top of existing HTML. It uses three orthogonal namespaces to address different concerns:
 
-### 1. LLM-Policy (Hard Constraints)
+### 1. LLM-Policy (Access & Permissions)
 
-Policy attributes are **mechanistically enforced by the User Agent**. The LLM never gets a chance to violate them because the UA filters content before it reaches the LLM.
+Policy attributes define the **hard boundaries** of the interaction. The User Agent enforces these by **redacting content** from the context window (Input Policy) and ensuring the LLM is **never prompted to mutate** restricted sections (Output Policy). Immutable content passes through the interaction layer unaltered, with the UA acting as a mechanistic barrier to unauthorized changes.
 
 ```html
 <!-- Visibility Control -->
@@ -48,9 +48,9 @@ Policy attributes are **mechanistically enforced by the User Agent**. The LLM ne
 <div llm-policy-memory="training">    <!-- Training data authorized -->
 ```
 
-### 2. LLM-Intent (Semantic Guidance)
+### 2. LLM-Intent (Prompt Construction)
 
-Intent attributes guide the LLM's interpretation but are not hard constraints. The User Agent deterministically constructs prompts from these attributes.
+Intent attributes govern the **deterministic construction of prompts**. The User Agent translates these semantic markers into the framing and instructions seen by the LLM. While mechanistic in its generation, the Intent namespace controls the *context and direction* of the model without redacting content or directly enforcing mutation permissions.
 
 ```html
 <!-- Semantic Categories -->
