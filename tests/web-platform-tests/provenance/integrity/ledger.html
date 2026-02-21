@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
 <title>LLM Provenance Ledger and Integrity</title>
-<link rel="help" href="https://example.org/llm-markup#provenance-processing-model">
+<link rel="help" href="https://example.org/web-agent-markup#provenance-processing-model">
 <script src="/resources/testharness.js"></script>
 <script src="/resources/testharnessreport.js"></script>
-<script src="../../resources/llm-markup-helpers.js"></script>
+<script src="../../resources/web-agent-markup-helpers.js"></script>
 
 <div id="test-container"></div>
 
@@ -16,44 +16,44 @@
 // =============================================================================
 
 test(() => {
-  assert_true('llmProvenanceLedger' in document);
-}, 'document.llmProvenanceLedger exists');
+  assert_true('wamProvenanceLedger' in document);
+}, 'document.wamProvenanceLedger exists');
 
 test(() => {
-  const ledger = document.llmProvenanceLedger;
+  const ledger = document.wamProvenanceLedger;
   assert_true('length' in ledger);
   assert_true(typeof ledger.length === 'number');
-}, 'llmProvenanceLedger has length property');
+}, 'wamProvenanceLedger has length property');
 
 test(() => {
-  const ledger = document.llmProvenanceLedger;
+  const ledger = document.wamProvenanceLedger;
   assert_true(typeof ledger.item === 'function');
-}, 'llmProvenanceLedger has item() method');
+}, 'wamProvenanceLedger has item() method');
 
 test(() => {
-  const ledger = document.llmProvenanceLedger;
+  const ledger = document.wamProvenanceLedger;
   assert_true(typeof ledger.getEntriesForElement === 'function');
-}, 'llmProvenanceLedger has getEntriesForElement() method');
+}, 'wamProvenanceLedger has getEntriesForElement() method');
 
 test(() => {
-  const ledger = document.llmProvenanceLedger;
+  const ledger = document.wamProvenanceLedger;
   assert_true(typeof ledger.getEntriesForLayer === 'function');
-}, 'llmProvenanceLedger has getEntriesForLayer() method');
+}, 'wamProvenanceLedger has getEntriesForLayer() method');
 
 test(() => {
-  const ledger = document.llmProvenanceLedger;
+  const ledger = document.wamProvenanceLedger;
   assert_true(typeof ledger.getEntriesInRange === 'function');
-}, 'llmProvenanceLedger has getEntriesInRange() method');
+}, 'wamProvenanceLedger has getEntriesInRange() method');
 
 test(() => {
-  const ledger = document.llmProvenanceLedger;
+  const ledger = document.wamProvenanceLedger;
   assert_true(typeof ledger.getIntegrityViolations === 'function');
-}, 'llmProvenanceLedger has getIntegrityViolations() method');
+}, 'wamProvenanceLedger has getIntegrityViolations() method');
 
 test(() => {
-  const ledger = document.llmProvenanceLedger;
+  const ledger = document.wamProvenanceLedger;
   assert_true('hasIntegrityViolations' in ledger);
-}, 'llmProvenanceLedger has hasIntegrityViolations property');
+}, 'wamProvenanceLedger has hasIntegrityViolations property');
 
 // =============================================================================
 // Ledger Entry Properties
@@ -62,7 +62,7 @@ test(() => {
 test(() => {
   // This test requires simulating a ledger entry
   // In a real implementation, entries would be created by LLM mutations
-  const ledger = document.llmProvenanceLedger;
+  const ledger = document.wamProvenanceLedger;
   if (ledger.length > 0) {
     const entry = ledger.item(0);
     assert_true('id' in entry);
@@ -86,7 +86,7 @@ test(() => {
   container.innerHTML = '<div id="target"></div>';
   const target = document.getElementById('target');
 
-  const entries = document.llmProvenanceLedger.getEntriesForElement(target);
+  const entries = document.wamProvenanceLedger.getEntriesForElement(target);
   assert_true(Array.isArray(entries));
 
   container.innerHTML = '';
@@ -95,7 +95,7 @@ test(() => {
 test(() => {
   const el = createLLMElement('div', {});
   // Element not in DOM and no mutations
-  const entries = document.llmProvenanceLedger.getEntriesForElement(el);
+  const entries = document.wamProvenanceLedger.getEntriesForElement(el);
   assert_equals(entries.length, 0);
 }, 'getEntriesForElement returns empty array for untracked element');
 
@@ -104,18 +104,18 @@ test(() => {
 // =============================================================================
 
 test(() => {
-  const entries = document.llmProvenanceLedger.getEntriesForLayer('content');
+  const entries = document.wamProvenanceLedger.getEntriesForLayer('content');
   assert_true(Array.isArray(entries));
 }, "getEntriesForLayer('content') returns an array");
 
 test(() => {
-  const entries = document.llmProvenanceLedger.getEntriesForLayer('style');
+  const entries = document.wamProvenanceLedger.getEntriesForLayer('style');
   assert_true(Array.isArray(entries));
 }, "getEntriesForLayer('style') returns an array");
 
 for (const layer of VALID_PROVENANCE_LAYERS) {
   test(() => {
-    const entries = document.llmProvenanceLedger.getEntriesForLayer(layer);
+    const entries = document.wamProvenanceLedger.getEntriesForLayer(layer);
     assert_true(Array.isArray(entries));
   }, `getEntriesForLayer('${layer}') returns an array`);
 }
@@ -126,12 +126,12 @@ for (const layer of VALID_PROVENANCE_LAYERS) {
 
 test(() => {
   const now = performance.now();
-  const entries = document.llmProvenanceLedger.getEntriesInRange(0, now);
+  const entries = document.wamProvenanceLedger.getEntriesInRange(0, now);
   assert_true(Array.isArray(entries));
 }, 'getEntriesInRange returns an array');
 
 test(() => {
-  const entries = document.llmProvenanceLedger.getEntriesInRange(0, 0);
+  const entries = document.wamProvenanceLedger.getEntriesInRange(0, 0);
   assert_true(Array.isArray(entries));
   assert_equals(entries.length, 0);
 }, 'getEntriesInRange with zero-width range returns empty array');
@@ -141,12 +141,12 @@ test(() => {
 // =============================================================================
 
 test(() => {
-  const violations = document.llmProvenanceLedger.getIntegrityViolations();
+  const violations = document.wamProvenanceLedger.getIntegrityViolations();
   assert_true(Array.isArray(violations));
 }, 'getIntegrityViolations returns an array');
 
 test(() => {
-  const hasViolations = document.llmProvenanceLedger.hasIntegrityViolations;
+  const hasViolations = document.wamProvenanceLedger.hasIntegrityViolations;
   assert_true(typeof hasViolations === 'boolean');
 }, 'hasIntegrityViolations is a boolean');
 
@@ -192,7 +192,7 @@ async_test(t => {
 test(() => {
   const container = document.getElementById('test-container');
   container.innerHTML = `
-    <div id="target" llm-policy-output="content">Original text</div>
+    <div id="target" wam-policy-output="content">Original text</div>
   `;
   const target = document.getElementById('target');
 
@@ -200,7 +200,7 @@ test(() => {
   // In a real implementation, this would be done by the LLM agent
   // The test verifies the provenance-operation attribute is checked
 
-  const hasOp = target.hasAttribute('llm-provenance-operation');
+  const hasOp = target.hasAttribute('wam-provenance-operation');
   // If content was modified without provenance, it should be a violation
 
   container.innerHTML = '';
@@ -213,14 +213,14 @@ test(() => {
 test(() => {
   const container = document.getElementById('test-container');
   container.innerHTML = `
-    <div id="target" llm-provenance-operation="content:modified-text">
+    <div id="target" wam-provenance-operation="content:modified-text">
       Modified text
     </div>
   `;
   const target = document.getElementById('target');
 
   // Verify the ledger can track the diff between served and current DOM
-  const entries = document.llmProvenanceLedger.getEntriesForElement(target);
+  const entries = document.wamProvenanceLedger.getEntriesForElement(target);
   // Should have entry if mutation was tracked
 
   container.innerHTML = '';
@@ -231,7 +231,7 @@ test(() => {
 // =============================================================================
 
 test(() => {
-  const ledger = document.llmProvenanceLedger;
+  const ledger = document.wamProvenanceLedger;
 
   // Attempt to modify ledger should fail or be ignored
   const originalLength = ledger.length;
@@ -356,7 +356,7 @@ test(() => {
 test(() => {
   const container = document.getElementById('test-container');
   container.innerHTML = `
-    <div id="with-op" llm-provenance-operation="content:test">With operation</div>
+    <div id="with-op" wam-provenance-operation="content:test">With operation</div>
     <div id="without-op">Without operation</div>
   `;
 
@@ -364,8 +364,8 @@ test(() => {
   const withoutOp = document.getElementById('without-op');
 
   // Element with operation should have valid ledger correlation
-  const withOpEntries = document.llmProvenanceLedger.getEntriesForElement(withOp);
-  const withoutOpEntries = document.llmProvenanceLedger.getEntriesForElement(withoutOp);
+  const withOpEntries = document.wamProvenanceLedger.getEntriesForElement(withOp);
+  const withoutOpEntries = document.wamProvenanceLedger.getEntriesForElement(withoutOp);
 
   // withOp should have entries with hasAttributeEntry=true (if tracked)
   // withoutOp should have no entries or entries with hasAttributeEntry=false (if modified)
@@ -380,7 +380,7 @@ test(() => {
 test(() => {
   // Baseline is established after DOMContentLoaded
   // The ledger should be able to compare current state against baseline
-  const ledger = document.llmProvenanceLedger;
+  const ledger = document.wamProvenanceLedger;
 
   // Ledger should exist and be initialized
   assert_true(ledger !== null);
@@ -396,7 +396,7 @@ test(() => {
   const validLayers = ['content', 'style', 'interaction', 'topology', 'data', 'intent'];
 
   for (const layer of validLayers) {
-    const entries = document.llmProvenanceLedger.getEntriesForLayer(layer);
+    const entries = document.wamProvenanceLedger.getEntriesForLayer(layer);
     assert_true(Array.isArray(entries), `Layer '${layer}' returns array`);
   }
 }, 'All provenance layers are queryable');
@@ -438,7 +438,7 @@ test(() => {
 test(() => {
   // Verify LLMProvenanceLedgerEntry interface
   // We create a mock scenario by checking what properties should exist
-  const ledger = document.llmProvenanceLedger;
+  const ledger = document.wamProvenanceLedger;
 
   // Methods for querying
   assert_true(typeof ledger.getEntriesForElement === 'function');
@@ -457,7 +457,7 @@ test(() => {
 
 test(() => {
   // Integrity violations should be detectable
-  const violations = document.llmProvenanceLedger.getIntegrityViolations();
+  const violations = document.wamProvenanceLedger.getIntegrityViolations();
   assert_true(Array.isArray(violations));
 }, 'Integrity violations can be queried');
 
@@ -542,7 +542,7 @@ test(() => {
 // =============================================================================
 
 test(() => {
-  const ledger = document.llmProvenanceLedger;
+  const ledger = document.wamProvenanceLedger;
 
   // Shadow DOM methods should exist
   assert_true(typeof ledger.getShadowSummary === 'function');
@@ -550,7 +550,7 @@ test(() => {
 }, 'LLMProvenanceLedger has shadow DOM support methods');
 
 test(() => {
-  const shadowRoots = document.llmProvenanceLedger.getShadowRootsWithMutations();
+  const shadowRoots = document.wamProvenanceLedger.getShadowRootsWithMutations();
   assert_true(Array.isArray(shadowRoots));
 }, 'getShadowRootsWithMutations returns array');
 
@@ -561,7 +561,7 @@ test(() => {
 test(() => {
   // Ledger entries should be retained according to memory policy
   // In a session-only context, entries should persist during session
-  const ledger = document.llmProvenanceLedger;
+  const ledger = document.wamProvenanceLedger;
 
   // Basic persistence check - ledger should maintain state
   const initialLength = ledger.length;
@@ -574,7 +574,7 @@ test(() => {
 
 test(() => {
   // Ledger entries should include agent identification when available
-  const ledger = document.llmProvenanceLedger;
+  const ledger = document.wamProvenanceLedger;
 
   // If entries exist, check for agentId field
   if (ledger.length > 0) {
@@ -590,7 +590,7 @@ test(() => {
 // =============================================================================
 
 test(() => {
-  const ledger = document.llmProvenanceLedger;
+  const ledger = document.wamProvenanceLedger;
 
   if (ledger.length >= 2) {
     const entry1 = ledger.item(0);
@@ -600,7 +600,7 @@ test(() => {
 }, 'Ledger entry IDs are unique');
 
 test(() => {
-  const ledger = document.llmProvenanceLedger;
+  const ledger = document.wamProvenanceLedger;
 
   if (ledger.length > 0) {
     const entry = ledger.item(0);

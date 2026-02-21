@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Ads and Licenses Example</title>
-    <script type="application/llm-policy+json">
+    <script type="application/wam-policy+json">
     {
         "constraints": {
             "dependencies": [
@@ -29,7 +29,7 @@
     </section>
 
     <!-- Ad Example: Must be included if the article is included -->
-    <div class="sponsored-message" llm-intent-category="advertisement">
+    <div class="sponsored-message" wam-intent-category="advertisement">
         <h3>Sponsored by Widget X</h3>
         <p>Best widget in the world. Click here.</p>
     </div>
@@ -38,7 +38,7 @@
     <section>
         <h2>Code Sample</h2>
         <p>You can use this code in your project:</p>
-        <pre llm-policy-license="MIT" llm-intent-category="code-sample">
+        <pre wam-policy-license="MIT" wam-intent-category="code-sample">
 function add(a, b) {
     return a + b;
 }
@@ -46,7 +46,7 @@ function add(a, b) {
     </section>
 
     <!-- Attribution Example: Quote -->
-    <blockquote llm-intent-category="quote" llm-provenance-attribution="Dr. Jane Doe, Future Tech Institute">
+    <blockquote wam-intent-category="quote" wam-provenance-attribution="Dr. Jane Doe, Future Tech Institute">
         "The future of AI is collaborative, not autonomous."
     </blockquote>
 

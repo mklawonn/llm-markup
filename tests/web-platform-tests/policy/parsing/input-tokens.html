@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
 <title>LLM Policy Input Token Parsing</title>
-<link rel="help" href="https://example.org/llm-markup#llm-policy-input">
+<link rel="help" href="https://example.org/web-agent-markup#wam-policy-input">
 <script src="/resources/testharness.js"></script>
 <script src="/resources/testharnessreport.js"></script>
-<script src="../../resources/llm-markup-helpers.js"></script>
+<script src="../../resources/web-agent-markup-helpers.js"></script>
 
 <div id="test-container"></div>
 
@@ -16,28 +16,28 @@
 // =============================================================================
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-input': 'text' });
-  assert_array_equals(el.llmPolicy.inputTokens, ['text']);
+  const el = createLLMElement('div', { 'wam-policy-input': 'text' });
+  assert_array_equals(el.wamPolicy.inputTokens, ['text']);
 }, 'Single input token is parsed correctly');
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-input': 'structure text' });
-  assert_array_equals_unordered(el.llmPolicy.inputTokens, ['structure', 'text']);
+  const el = createLLMElement('div', { 'wam-policy-input': 'structure text' });
+  assert_array_equals_unordered(el.wamPolicy.inputTokens, ['structure', 'text']);
 }, 'Multiple space-separated input tokens are parsed correctly');
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-input': 'structure  text   attributes' });
-  assert_array_equals_unordered(el.llmPolicy.inputTokens, ['structure', 'text', 'attributes']);
+  const el = createLLMElement('div', { 'wam-policy-input': 'structure  text   attributes' });
+  assert_array_equals_unordered(el.wamPolicy.inputTokens, ['structure', 'text', 'attributes']);
 }, 'Multiple spaces between tokens are normalized');
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-input': '  structure text  ' });
-  assert_array_equals_unordered(el.llmPolicy.inputTokens, ['structure', 'text']);
+  const el = createLLMElement('div', { 'wam-policy-input': '  structure text  ' });
+  assert_array_equals_unordered(el.wamPolicy.inputTokens, ['structure', 'text']);
 }, 'Leading and trailing whitespace is trimmed');
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-input': 'STRUCTURE TEXT' });
-  assert_array_equals_unordered(el.llmPolicy.inputTokens, ['structure', 'text']);
+  const el = createLLMElement('div', { 'wam-policy-input': 'STRUCTURE TEXT' });
+  assert_array_equals_unordered(el.wamPolicy.inputTokens, ['structure', 'text']);
 }, 'Token parsing is case-insensitive');
 
 // =============================================================================
@@ -46,10 +46,10 @@ test(() => {
 
 for (const token of VALID_INPUT_TOKENS) {
   test(() => {
-    const el = createLLMElement('div', { 'llm-policy-input': token });
+    const el = createLLMElement('div', { 'wam-policy-input': token });
     assert_true(
-      el.llmPolicy.inputTokens.includes(token) ||
-      (token === 'all' && el.llmPolicy.inputTokens.length >= 4),
+      el.wamPolicy.inputTokens.includes(token) ||
+      (token === 'all' && el.wamPolicy.inputTokens.length >= 4),
       `Token '${token}' should be recognized`
     );
   }, `Valid input token '${token}' is accepted`);
@@ -60,8 +60,8 @@ for (const token of VALID_INPUT_TOKENS) {
 // =============================================================================
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-input': 'all' });
-  const tokens = el.llmPolicy.inputTokens;
+  const el = createLLMElement('div', { 'wam-policy-input': 'all' });
+  const tokens = el.wamPolicy.inputTokens;
   assert_true(tokens.includes('structure'), 'all includes structure');
   assert_true(tokens.includes('text'), 'all includes text');
   assert_true(tokens.includes('attributes'), 'all includes attributes');
@@ -69,9 +69,9 @@ test(() => {
 }, "'all' token expands to structure + text + attributes + media");
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-input': 'all none' });
+  const el = createLLMElement('div', { 'wam-policy-input': 'all none' });
   // Conflicting tokens: 'none' should take precedence per spec
-  assert_true(el.llmPolicy.isHidden, "Conflicting 'all' and 'none' resolves to hidden");
+  assert_true(el.wamPolicy.isHidden, "Conflicting 'all' and 'none' resolves to hidden");
 }, "Conflicting 'all' and 'none' tokens are resolved");
 
 // =============================================================================
@@ -79,15 +79,15 @@ test(() => {
 // =============================================================================
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-input': 'none' });
-  assert_true(el.llmPolicy.isHidden);
-  assert_array_equals(el.llmPolicy.effectiveInputTokens, ['none']);
+  const el = createLLMElement('div', { 'wam-policy-input': 'none' });
+  assert_true(el.wamPolicy.isHidden);
+  assert_array_equals(el.wamPolicy.effectiveInputTokens, ['none']);
 }, "'none' token marks element as hidden");
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-input': 'none structure' });
+  const el = createLLMElement('div', { 'wam-policy-input': 'none structure' });
   // 'none' is restrictive and should override other tokens
-  assert_true(el.llmPolicy.isHidden);
+  assert_true(el.wamPolicy.isHidden);
 }, "'none' combined with other tokens still results in hidden");
 
 // =============================================================================
@@ -95,21 +95,21 @@ test(() => {
 // =============================================================================
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-input': 'invalid-token' });
-  assert_false(el.llmPolicy.inputTokens.includes('invalid-token'));
+  const el = createLLMElement('div', { 'wam-policy-input': 'invalid-token' });
+  assert_false(el.wamPolicy.inputTokens.includes('invalid-token'));
 }, 'Invalid tokens are ignored');
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-input': 'text invalid structure' });
-  assert_true(el.llmPolicy.inputTokens.includes('text'));
-  assert_true(el.llmPolicy.inputTokens.includes('structure'));
-  assert_false(el.llmPolicy.inputTokens.includes('invalid'));
+  const el = createLLMElement('div', { 'wam-policy-input': 'text invalid structure' });
+  assert_true(el.wamPolicy.inputTokens.includes('text'));
+  assert_true(el.wamPolicy.inputTokens.includes('structure'));
+  assert_false(el.wamPolicy.inputTokens.includes('invalid'));
 }, 'Invalid tokens are filtered while valid tokens are preserved');
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-input': '' });
+  const el = createLLMElement('div', { 'wam-policy-input': '' });
   // Empty string should result in default behavior
-  assert_equals(el.llmPolicy.inputAttribute, '');
+  assert_equals(el.wamPolicy.inputAttribute, '');
 }, 'Empty attribute value is handled gracefully');
 
 // =============================================================================
@@ -117,8 +117,8 @@ test(() => {
 // =============================================================================
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-input': 'text text text' });
-  const textCount = el.llmPolicy.inputTokens.filter(t => t === 'text').length;
+  const el = createLLMElement('div', { 'wam-policy-input': 'text text text' });
+  const textCount = el.wamPolicy.inputTokens.filter(t => t === 'text').length;
   assert_equals(textCount, 1, 'Duplicates are deduplicated');
 }, 'Duplicate tokens are deduplicated');
 
@@ -127,8 +127,8 @@ test(() => {
 // =============================================================================
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-input': 'structure text' });
-  assert_equals(el.llmPolicy.inputAttribute, 'structure text');
+  const el = createLLMElement('div', { 'wam-policy-input': 'structure text' });
+  assert_equals(el.wamPolicy.inputAttribute, 'structure text');
 }, 'inputAttribute reflects the raw attribute value');
 
 // =============================================================================
@@ -138,29 +138,29 @@ test(() => {
 test(() => {
   const el = createLLMElement('div', {});
   // Per spec: default is full visibility (structure text attributes media)
-  const effective = el.llmPolicy.effectiveInputTokens;
+  const effective = el.wamPolicy.effectiveInputTokens;
   assert_true(effective.includes('structure') || effective.includes('all'));
   assert_true(effective.includes('text') || effective.includes('all'));
-}, 'Elements without llm-policy-input have default visibility');
+}, 'Elements without wam-policy-input have default visibility');
 
 // =============================================================================
 // hasInputChannel Method
 // =============================================================================
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-input': 'structure text' });
-  assert_true(el.llmPolicy.hasInputChannel('structure'));
-  assert_true(el.llmPolicy.hasInputChannel('text'));
-  assert_false(el.llmPolicy.hasInputChannel('attributes'));
-  assert_false(el.llmPolicy.hasInputChannel('media'));
+  const el = createLLMElement('div', { 'wam-policy-input': 'structure text' });
+  assert_true(el.wamPolicy.hasInputChannel('structure'));
+  assert_true(el.wamPolicy.hasInputChannel('text'));
+  assert_false(el.wamPolicy.hasInputChannel('attributes'));
+  assert_false(el.wamPolicy.hasInputChannel('media'));
 }, 'hasInputChannel correctly reports token presence');
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-input': 'all' });
-  assert_true(el.llmPolicy.hasInputChannel('structure'));
-  assert_true(el.llmPolicy.hasInputChannel('text'));
-  assert_true(el.llmPolicy.hasInputChannel('attributes'));
-  assert_true(el.llmPolicy.hasInputChannel('media'));
+  const el = createLLMElement('div', { 'wam-policy-input': 'all' });
+  assert_true(el.wamPolicy.hasInputChannel('structure'));
+  assert_true(el.wamPolicy.hasInputChannel('text'));
+  assert_true(el.wamPolicy.hasInputChannel('attributes'));
+  assert_true(el.wamPolicy.hasInputChannel('media'));
 }, "hasInputChannel works with 'all' token");
 
 // =============================================================================
@@ -169,16 +169,16 @@ test(() => {
 
 test(() => {
   const img = createLLMElement('img', {
-    'llm-policy-input': 'media',
+    'wam-policy-input': 'media',
     'src': 'image.png',
     'alt': 'Test image'
   });
-  assert_true(el.llmPolicy.hasInputChannel('media'));
+  assert_true(el.wamPolicy.hasInputChannel('media'));
 }, "'media' token applies to media elements");
 
 test(() => {
-  const div = createLLMElement('div', { 'llm-policy-input': 'structure attributes' });
+  const div = createLLMElement('div', { 'wam-policy-input': 'structure attributes' });
   // Without 'media', src/alt should be stripped on media elements
-  assert_false(el.llmPolicy.hasInputChannel('media'));
+  assert_false(el.wamPolicy.hasInputChannel('media'));
 }, "'media' token absence affects attribute filtering");
 </script>

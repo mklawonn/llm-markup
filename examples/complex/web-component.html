@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>LLM Markup: Web Components and Shadow DOM Example</title>
+  <title>Web Agent Markup: Web Components and Shadow DOM Example</title>
   <meta name="description" content="Demonstrates Shadow DOM policy boundaries and component isolation">
 </head>
 <body>
@@ -13,7 +13,7 @@
   Page-level policy: Allow content modification by default.
   Components will decide whether to inherit this.
 -->
-<main llm-policy-output="content annotation">
+<main wam-policy-output="content annotation">
 
   <p>
     This page demonstrates how Shadow DOM creates policy boundaries.
@@ -62,12 +62,12 @@ class IsolatedCard extends HTMLElement {
   constructor() {
     super();
 
-    // Default: llmPolicyInherit = false
+    // Default: wamPolicyInherit = false
     // Shadow root is a policy boundary
     const shadow = this.attachShadow({
       mode: 'open',
-      llmPolicyInherit: false,  // Default - explicit for clarity
-      llmProvenanceTransparent: false
+      wamPolicyInherit: false,  // Default - explicit for clarity
+      wamProvenanceTransparent: false
     });
 
     shadow.innerHTML = `
@@ -92,16 +92,16 @@ class IsolatedCard extends HTMLElement {
         This content uses component's own policies, NOT page policies.
         Default spec behavior: readonly, ephemeral.
       -->
-      <div class="body" llm-policy-output="readonly" llm-policy-memory="none">
+      <div class="body" wam-policy-output="readonly" wam-policy-memory="none">
         <slot name="content"></slot>
         <p><em>Internal component state is protected.</em></p>
       </div>
 
       <!--
         Component's internal secret - completely hidden even if page
-        tries to set llm-policy-input="all"
+        tries to set wam-policy-input="all"
       -->
-      <div class="internal" llm-policy-input="none">
+      <div class="internal" wam-policy-input="none">
         <p>Component internal: API_KEY=secret123</p>
       </div>
     `;
@@ -120,8 +120,8 @@ class InheritingCard extends HTMLElement {
     // Opt-in to inherit all policy namespaces
     const shadow = this.attachShadow({
       mode: 'open',
-      llmPolicyInherit: true,  // Inherit input, output, and memory
-      llmProvenanceTransparent: true  // Full provenance details to document ledger
+      wamPolicyInherit: true,  // Inherit input, output, and memory
+      wamProvenanceTransparent: true  // Full provenance details to document ledger
     });
 
     shadow.innerHTML = `
@@ -167,8 +167,8 @@ class SelectiveCard extends HTMLElement {
     // Output and memory use component defaults
     const shadow = this.attachShadow({
       mode: 'open',
-      llmPolicyInherit: ['input'],  // Only inherit visibility policies
-      llmProvenanceTransparent: false
+      wamPolicyInherit: ['input'],  // Only inherit visibility policies
+      wamProvenanceTransparent: false
     });
 
     shadow.innerHTML = `
@@ -193,7 +193,7 @@ class SelectiveCard extends HTMLElement {
         Inherits visibility from page, but mutation uses component default (readonly).
         LLM can see the content but cannot modify it.
       -->
-      <div class="body" llm-policy-output="readonly">
+      <div class="body" wam-policy-output="readonly">
         <slot name="content"></slot>
         <p>Visible to LLM but protected from modification.</p>
       </div>
@@ -212,9 +212,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const shadow = isolatedCard.shadowRoot;
 
   // Check inheritance status
-  console.log('Isolated card inherits:', shadow.llmPolicyInherits);
+  console.log('Isolated card inherits:', shadow.wamPolicyInherits);
   console.log('Inherited namespaces:', shadow.llmInheritedNamespaces);
-  console.log('Provenance transparent:', shadow.llmProvenanceTransparent);
+  console.log('Provenance transparent:', shadow.wamProvenanceTransparent);
 
   // Get effective policy for element inside shadow
   const internalDiv = shadow.querySelector('.body');
@@ -222,7 +222,7 @@ document.addEventListener('DOMContentLoaded', () => {
   console.log('Effective output tokens:', effectivePolicy.effectiveOutputTokens);
 
   // Shadow provenance summary (aggregated when not transparent)
-  const ledger = document.llmProvenanceLedger;
+  const ledger = document.wamProvenanceLedger;
   const summary = ledger.getShadowSummary(shadow);
   if (summary) {
     console.log('Shadow mutations:', summary.totalMutations);
@@ -249,7 +249,7 @@ document.addEventListener('DOMContentLoaded', () => {
     2. The slot's context policy
     3. The inherited policy (if any)
   -->
-  <p slot="content" llm-policy-output="content">
+  <p slot="content" wam-policy-output="content">
     I have my own policy but I'm being slotted.
   </p>
 </slotted-demo>
@@ -260,7 +260,7 @@ class SlottedDemo extends HTMLElement {
     super();
     const shadow = this.attachShadow({
       mode: 'open',
-      llmPolicyInherit: true
+      wamPolicyInherit: true
     });
 
     shadow.innerHTML = `
@@ -272,7 +272,7 @@ class SlottedDemo extends HTMLElement {
         The slot's context contributes to effective policy.
         If slot context is more restrictive, it wins.
       -->
-      <div class="slot-wrapper" llm-policy-output="annotation">
+      <div class="slot-wrapper" wam-policy-output="annotation">
         <slot name="content"></slot>
       </div>
 

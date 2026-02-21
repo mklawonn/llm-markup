@@ -1,8 +1,8 @@
 # Use Case: The Archived Thread (Conflict Resolution)
 
 ## Scenario
-A popular online forum uses LLM-Markup to allow users to edit their own comments. Each comment is tagged with `llm-intent-category="user-content"`.
-The forum also has an "Archive" feature. When a thread is locked due to inactivity or moderation, the entire thread is tagged (at the container level) with `llm-intent-category="archived"`.
+A popular online forum uses LLM-Markup to allow users to edit their own comments. Each comment is tagged with `wam-intent-category="user-content"`.
+The forum also has an "Archive" feature. When a thread is locked due to inactivity or moderation, the entire thread is tagged (at the container level) with `wam-intent-category="archived"`.
 
 This results in a conflict:
 *   `user-content`: The user *should* be able to edit their own words.
@@ -14,10 +14,10 @@ The server defines rules for both categories:
 ```json
 "category-rules": {
   "user-content": {
-    "llm-policy-output": ["content", "style"]
+    "wam-policy-output": ["content", "style"]
   },
   "archived": {
-    "llm-policy-output": ["readonly"]
+    "wam-policy-output": ["readonly"]
   }
 }
 ```
@@ -27,8 +27,8 @@ A user visits their old comment on an archived thread. They ask their browser ag
 
 The browser agent sees the markup:
 ```html
-<div class="thread" llm-intent-category="archived">
-  <div class="comment" llm-intent-category="user-content">
+<div class="thread" wam-intent-category="archived">
+  <div class="comment" wam-intent-category="user-content">
     "This is my opnion."
   </div>
 </div>

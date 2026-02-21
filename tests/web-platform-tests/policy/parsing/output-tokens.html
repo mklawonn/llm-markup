@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
 <title>LLM Policy Output Token Parsing</title>
-<link rel="help" href="https://example.org/llm-markup#llm-policy-output">
+<link rel="help" href="https://example.org/web-agent-markup#wam-policy-output">
 <script src="/resources/testharness.js"></script>
 <script src="/resources/testharnessreport.js"></script>
-<script src="../../resources/llm-markup-helpers.js"></script>
+<script src="../../resources/web-agent-markup-helpers.js"></script>
 
 <div id="test-container"></div>
 
@@ -16,23 +16,23 @@
 // =============================================================================
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-output': 'style' });
-  assert_array_equals(el.llmPolicy.outputTokens, ['style']);
+  const el = createLLMElement('div', { 'wam-policy-output': 'style' });
+  assert_array_equals(el.wamPolicy.outputTokens, ['style']);
 }, 'Single output token is parsed correctly');
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-output': 'style annotation content' });
-  assert_array_equals_unordered(el.llmPolicy.outputTokens, ['style', 'annotation', 'content']);
+  const el = createLLMElement('div', { 'wam-policy-output': 'style annotation content' });
+  assert_array_equals_unordered(el.wamPolicy.outputTokens, ['style', 'annotation', 'content']);
 }, 'Multiple space-separated output tokens are parsed correctly');
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-output': 'style  content   data' });
-  assert_array_equals_unordered(el.llmPolicy.outputTokens, ['style', 'content', 'data']);
+  const el = createLLMElement('div', { 'wam-policy-output': 'style  content   data' });
+  assert_array_equals_unordered(el.wamPolicy.outputTokens, ['style', 'content', 'data']);
 }, 'Multiple spaces between tokens are normalized');
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-output': 'STYLE CONTENT' });
-  assert_array_equals_unordered(el.llmPolicy.outputTokens, ['style', 'content']);
+  const el = createLLMElement('div', { 'wam-policy-output': 'STYLE CONTENT' });
+  assert_array_equals_unordered(el.wamPolicy.outputTokens, ['style', 'content']);
 }, 'Token parsing is case-insensitive');
 
 // =============================================================================
@@ -41,12 +41,12 @@ test(() => {
 
 for (const token of VALID_OUTPUT_TOKENS) {
   test(() => {
-    const el = createLLMElement('div', { 'llm-policy-output': token });
+    const el = createLLMElement('div', { 'wam-policy-output': token });
     if (token === 'mutable') {
-      assert_true(el.llmPolicy.isMutable, `Token '${token}' grants full access`);
+      assert_true(el.wamPolicy.isMutable, `Token '${token}' grants full access`);
     } else {
       assert_true(
-        el.llmPolicy.outputTokens.includes(token),
+        el.wamPolicy.outputTokens.includes(token),
         `Token '${token}' should be recognized`
       );
     }
@@ -58,16 +58,16 @@ for (const token of VALID_OUTPUT_TOKENS) {
 // =============================================================================
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-output': 'readonly' });
-  assert_true(el.llmPolicy.isReadonly);
-  assert_false(el.llmPolicy.hasOutputPermission('style'));
-  assert_false(el.llmPolicy.hasOutputPermission('content'));
+  const el = createLLMElement('div', { 'wam-policy-output': 'readonly' });
+  assert_true(el.wamPolicy.isReadonly);
+  assert_false(el.wamPolicy.hasOutputPermission('style'));
+  assert_false(el.wamPolicy.hasOutputPermission('content'));
 }, "'readonly' token blocks all mutations");
 
 test(() => {
   const el = createLLMElement('div', {});
   // Per spec: default is readonly
-  assert_true(el.llmPolicy.isReadonly);
+  assert_true(el.wamPolicy.isReadonly);
 }, "Default output policy is 'readonly'");
 
 // =============================================================================
@@ -75,18 +75,18 @@ test(() => {
 // =============================================================================
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-output': 'mutable' });
-  assert_true(el.llmPolicy.isMutable);
-  assert_true(el.llmPolicy.hasOutputPermission('style'));
-  assert_true(el.llmPolicy.hasOutputPermission('content'));
-  assert_true(el.llmPolicy.hasOutputPermission('data'));
-  assert_true(el.llmPolicy.hasOutputPermission('append'));
+  const el = createLLMElement('div', { 'wam-policy-output': 'mutable' });
+  assert_true(el.wamPolicy.isMutable);
+  assert_true(el.wamPolicy.hasOutputPermission('style'));
+  assert_true(el.wamPolicy.hasOutputPermission('content'));
+  assert_true(el.wamPolicy.hasOutputPermission('data'));
+  assert_true(el.wamPolicy.hasOutputPermission('append'));
 }, "'mutable' token grants all permissions");
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-output': 'readonly mutable' });
+  const el = createLLMElement('div', { 'wam-policy-output': 'readonly mutable' });
   // 'mutable' should override 'readonly' when both present
-  assert_true(el.llmPolicy.isMutable);
+  assert_true(el.wamPolicy.isMutable);
 }, "'mutable' overrides 'readonly' when both present");
 
 // =============================================================================
@@ -94,17 +94,17 @@ test(() => {
 // =============================================================================
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-output': 'style annotation' });
-  assert_true(el.llmPolicy.hasOutputPermission('style'));
-  assert_true(el.llmPolicy.hasOutputPermission('annotation'));
-  assert_false(el.llmPolicy.hasOutputPermission('content'));
-  assert_false(el.llmPolicy.hasOutputPermission('data'));
+  const el = createLLMElement('div', { 'wam-policy-output': 'style annotation' });
+  assert_true(el.wamPolicy.hasOutputPermission('style'));
+  assert_true(el.wamPolicy.hasOutputPermission('annotation'));
+  assert_false(el.wamPolicy.hasOutputPermission('content'));
+  assert_false(el.wamPolicy.hasOutputPermission('data'));
 }, 'Permission set is union of specified tokens');
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-output': 'interaction' });
+  const el = createLLMElement('div', { 'wam-policy-output': 'interaction' });
   // 'interaction' implies ability to modify class/style per spec
-  assert_true(el.llmPolicy.hasOutputPermission('interaction'));
+  assert_true(el.wamPolicy.hasOutputPermission('interaction'));
 }, "'interaction' token grants behavioral layer access");
 
 // =============================================================================
@@ -112,17 +112,17 @@ test(() => {
 // =============================================================================
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-output': 'invalid-token' });
-  assert_false(el.llmPolicy.outputTokens.includes('invalid-token'));
+  const el = createLLMElement('div', { 'wam-policy-output': 'invalid-token' });
+  assert_false(el.wamPolicy.outputTokens.includes('invalid-token'));
   // Should fall back to readonly behavior
-  assert_true(el.llmPolicy.isReadonly);
+  assert_true(el.wamPolicy.isReadonly);
 }, 'Invalid tokens are ignored, falls back to readonly');
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-output': 'style invalid content' });
-  assert_true(el.llmPolicy.outputTokens.includes('style'));
-  assert_true(el.llmPolicy.outputTokens.includes('content'));
-  assert_false(el.llmPolicy.outputTokens.includes('invalid'));
+  const el = createLLMElement('div', { 'wam-policy-output': 'style invalid content' });
+  assert_true(el.wamPolicy.outputTokens.includes('style'));
+  assert_true(el.wamPolicy.outputTokens.includes('content'));
+  assert_false(el.wamPolicy.outputTokens.includes('invalid'));
 }, 'Invalid tokens are filtered while valid tokens are preserved');
 
 // =============================================================================
@@ -130,8 +130,8 @@ test(() => {
 // =============================================================================
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-output': 'style style content style' });
-  const styleCount = el.llmPolicy.outputTokens.filter(t => t === 'style').length;
+  const el = createLLMElement('div', { 'wam-policy-output': 'style style content style' });
+  const styleCount = el.wamPolicy.outputTokens.filter(t => t === 'style').length;
   assert_equals(styleCount, 1, 'Duplicates are deduplicated');
 }, 'Duplicate tokens are deduplicated');
 
@@ -140,8 +140,8 @@ test(() => {
 // =============================================================================
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-output': 'style content' });
-  assert_equals(el.llmPolicy.outputAttribute, 'style content');
+  const el = createLLMElement('div', { 'wam-policy-output': 'style content' });
+  assert_equals(el.wamPolicy.outputAttribute, 'style content');
 }, 'outputAttribute reflects the raw attribute value');
 
 // =============================================================================
@@ -149,14 +149,14 @@ test(() => {
 // =============================================================================
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-output': 'style annotation' });
-  assert_true(el.llmPolicy.hasOutputPermission('style'));
-  assert_true(el.llmPolicy.hasOutputPermission('annotation'));
-  assert_false(el.llmPolicy.hasOutputPermission('content'));
-  assert_false(el.llmPolicy.hasOutputPermission('interaction'));
-  assert_false(el.llmPolicy.hasOutputPermission('layout'));
-  assert_false(el.llmPolicy.hasOutputPermission('data'));
-  assert_false(el.llmPolicy.hasOutputPermission('append'));
+  const el = createLLMElement('div', { 'wam-policy-output': 'style annotation' });
+  assert_true(el.wamPolicy.hasOutputPermission('style'));
+  assert_true(el.wamPolicy.hasOutputPermission('annotation'));
+  assert_false(el.wamPolicy.hasOutputPermission('content'));
+  assert_false(el.wamPolicy.hasOutputPermission('interaction'));
+  assert_false(el.wamPolicy.hasOutputPermission('layout'));
+  assert_false(el.wamPolicy.hasOutputPermission('data'));
+  assert_false(el.wamPolicy.hasOutputPermission('append'));
 }, 'hasOutputPermission correctly reports token presence');
 
 // =============================================================================
@@ -164,45 +164,45 @@ test(() => {
 // =============================================================================
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-output': 'style' });
+  const el = createLLMElement('div', { 'wam-policy-output': 'style' });
   // Style should only allow class and style attribute changes
-  assert_true(el.llmPolicy.hasOutputPermission('style'));
-  assert_false(el.llmPolicy.hasOutputPermission('content'));
+  assert_true(el.wamPolicy.hasOutputPermission('style'));
+  assert_false(el.wamPolicy.hasOutputPermission('content'));
 }, "'style' token grants presentation layer only");
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-output': 'layout' });
+  const el = createLLMElement('div', { 'wam-policy-output': 'layout' });
   // Layout should only allow reordering children
-  assert_true(el.llmPolicy.hasOutputPermission('layout'));
-  assert_false(el.llmPolicy.hasOutputPermission('content'));
+  assert_true(el.wamPolicy.hasOutputPermission('layout'));
+  assert_false(el.wamPolicy.hasOutputPermission('content'));
 }, "'layout' token grants structural reordering only");
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-output': 'annotation' });
+  const el = createLLMElement('div', { 'wam-policy-output': 'annotation' });
   // Annotation allows wrapping text but not changing it
-  assert_true(el.llmPolicy.hasOutputPermission('annotation'));
-  assert_false(el.llmPolicy.hasOutputPermission('content'));
+  assert_true(el.wamPolicy.hasOutputPermission('annotation'));
+  assert_false(el.wamPolicy.hasOutputPermission('content'));
 }, "'annotation' token grants non-destructive wrapping only");
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-output': 'content' });
+  const el = createLLMElement('div', { 'wam-policy-output': 'content' });
   // Content allows text modification
-  assert_true(el.llmPolicy.hasOutputPermission('content'));
-  assert_false(el.llmPolicy.hasOutputPermission('style'));
+  assert_true(el.wamPolicy.hasOutputPermission('content'));
+  assert_false(el.wamPolicy.hasOutputPermission('style'));
 }, "'content' token grants text layer only");
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-output': 'data' });
+  const el = createLLMElement('div', { 'wam-policy-output': 'data' });
   // Data allows form values, data-*, meta content
-  assert_true(el.llmPolicy.hasOutputPermission('data'));
-  assert_false(el.llmPolicy.hasOutputPermission('content'));
+  assert_true(el.wamPolicy.hasOutputPermission('data'));
+  assert_false(el.wamPolicy.hasOutputPermission('content'));
 }, "'data' token grants machine-readable payload only");
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-output': 'append' });
+  const el = createLLMElement('div', { 'wam-policy-output': 'append' });
   // Append allows adding new children at end
-  assert_true(el.llmPolicy.hasOutputPermission('append'));
-  assert_false(el.llmPolicy.hasOutputPermission('content'));
+  assert_true(el.wamPolicy.hasOutputPermission('append'));
+  assert_false(el.wamPolicy.hasOutputPermission('content'));
 }, "'append' token grants additive structure only");
 
 // =============================================================================
@@ -210,20 +210,20 @@ test(() => {
 // =============================================================================
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-output': 'readonly' });
-  assert_true(el.llmPolicy.isReadonly);
-  assert_false(el.llmPolicy.isMutable);
+  const el = createLLMElement('div', { 'wam-policy-output': 'readonly' });
+  assert_true(el.wamPolicy.isReadonly);
+  assert_false(el.wamPolicy.isMutable);
 }, 'isReadonly is true for readonly-only element');
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-output': 'style content' });
-  assert_false(el.llmPolicy.isReadonly);
-  assert_false(el.llmPolicy.isMutable);
+  const el = createLLMElement('div', { 'wam-policy-output': 'style content' });
+  assert_false(el.wamPolicy.isReadonly);
+  assert_false(el.wamPolicy.isMutable);
 }, 'isReadonly is false when other permissions are granted');
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-output': 'mutable' });
-  assert_false(el.llmPolicy.isReadonly);
-  assert_true(el.llmPolicy.isMutable);
+  const el = createLLMElement('div', { 'wam-policy-output': 'mutable' });
+  assert_false(el.wamPolicy.isReadonly);
+  assert_true(el.wamPolicy.isMutable);
 }, 'isMutable is true only for mutable token');
 </script>

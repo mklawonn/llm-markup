@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
 <title>LLM Policy Inheritance</title>
-<link rel="help" href="https://example.org/llm-markup#precedence-and-inheritance">
+<link rel="help" href="https://example.org/web-agent-markup#precedence-and-inheritance">
 <script src="/resources/testharness.js"></script>
 <script src="/resources/testharnessreport.js"></script>
-<script src="../../resources/llm-markup-helpers.js"></script>
+<script src="../../resources/web-agent-markup-helpers.js"></script>
 
 <div id="test-container"></div>
 
@@ -18,7 +18,7 @@
 test(() => {
   const container = document.getElementById('test-container');
   container.innerHTML = `
-    <div id="parent" llm-policy-output="style content">
+    <div id="parent" wam-policy-output="style content">
       <div id="child"></div>
     </div>
   `;
@@ -27,8 +27,8 @@ test(() => {
   const child = document.getElementById('child');
 
   // Child should inherit parent's policy
-  assert_true(child.llmPolicy.hasOutputPermission('style'));
-  assert_true(child.llmPolicy.hasOutputPermission('content'));
+  assert_true(child.wamPolicy.hasOutputPermission('style'));
+  assert_true(child.wamPolicy.hasOutputPermission('content'));
 
   container.innerHTML = '';
 }, 'Child elements inherit parent policy attributes');
@@ -36,7 +36,7 @@ test(() => {
 test(() => {
   const container = document.getElementById('test-container');
   container.innerHTML = `
-    <div id="grandparent" llm-policy-output="style">
+    <div id="grandparent" wam-policy-output="style">
       <div id="parent">
         <div id="child"></div>
       </div>
@@ -44,7 +44,7 @@ test(() => {
   `;
 
   const child = document.getElementById('child');
-  assert_true(child.llmPolicy.hasOutputPermission('style'));
+  assert_true(child.wamPolicy.hasOutputPermission('style'));
 
   container.innerHTML = '';
 }, 'Policy inheritance works through multiple levels');
@@ -56,16 +56,16 @@ test(() => {
 test(() => {
   const container = document.getElementById('test-container');
   container.innerHTML = `
-    <div id="parent" llm-policy-output="style content">
-      <div id="child" llm-policy-output="readonly"></div>
+    <div id="parent" wam-policy-output="style content">
+      <div id="child" wam-policy-output="readonly"></div>
     </div>
   `;
 
   const parent = document.getElementById('parent');
   const child = document.getElementById('child');
 
-  assert_true(parent.llmPolicy.hasOutputPermission('style'));
-  assert_true(child.llmPolicy.isReadonly);
+  assert_true(parent.wamPolicy.hasOutputPermission('style'));
+  assert_true(child.wamPolicy.isReadonly);
 
   container.innerHTML = '';
 }, 'Local attribute overrides inherited policy');
@@ -73,16 +73,16 @@ test(() => {
 test(() => {
   const container = document.getElementById('test-container');
   container.innerHTML = `
-    <div id="parent" llm-policy-output="readonly">
-      <div id="child" llm-policy-output="mutable"></div>
+    <div id="parent" wam-policy-output="readonly">
+      <div id="child" wam-policy-output="mutable"></div>
     </div>
   `;
 
   const parent = document.getElementById('parent');
   const child = document.getElementById('child');
 
-  assert_true(parent.llmPolicy.isReadonly);
-  assert_true(child.llmPolicy.isMutable);
+  assert_true(parent.wamPolicy.isReadonly);
+  assert_true(child.wamPolicy.isMutable);
 
   container.innerHTML = '';
 }, 'Child can expand permissions beyond parent');
@@ -94,15 +94,15 @@ test(() => {
 test(() => {
   const container = document.getElementById('test-container');
   container.innerHTML = `
-    <div id="parent" llm-policy-input="structure text">
+    <div id="parent" wam-policy-input="structure text">
       <div id="child"></div>
     </div>
   `;
 
   const child = document.getElementById('child');
-  assert_true(child.llmPolicy.hasInputChannel('structure'));
-  assert_true(child.llmPolicy.hasInputChannel('text'));
-  assert_false(child.llmPolicy.hasInputChannel('attributes'));
+  assert_true(child.wamPolicy.hasInputChannel('structure'));
+  assert_true(child.wamPolicy.hasInputChannel('text'));
+  assert_false(child.wamPolicy.hasInputChannel('attributes'));
 
   container.innerHTML = '';
 }, 'Input visibility is inherited');
@@ -110,8 +110,8 @@ test(() => {
 test(() => {
   const container = document.getElementById('test-container');
   container.innerHTML = `
-    <div id="parent" llm-policy-input="none">
-      <div id="child" llm-policy-input="all"></div>
+    <div id="parent" wam-policy-input="none">
+      <div id="child" wam-policy-input="all"></div>
     </div>
   `;
 
@@ -120,7 +120,7 @@ test(() => {
 
   // Parent is hidden, so child should also be hidden (can't override parent's none)
   // This tests that 'none' on ancestor propagates regardless of child's attribute
-  assert_true(parent.llmPolicy.isHidden);
+  assert_true(parent.wamPolicy.isHidden);
   // Note: Child's effective visibility depends on implementation
   // If parent is hidden, child might be hidden too (node doesn't exist in context)
 
@@ -134,13 +134,13 @@ test(() => {
 test(() => {
   const container = document.getElementById('test-container');
   container.innerHTML = `
-    <div id="parent" llm-policy-memory="session">
+    <div id="parent" wam-policy-memory="session">
       <div id="child"></div>
     </div>
   `;
 
   const child = document.getElementById('child');
-  assert_true(child.llmPolicy.hasMemoryScope('session'));
+  assert_true(child.wamPolicy.hasMemoryScope('session'));
 
   container.innerHTML = '';
 }, 'Memory policy is inherited');
@@ -148,16 +148,16 @@ test(() => {
 test(() => {
   const container = document.getElementById('test-container');
   container.innerHTML = `
-    <div id="parent" llm-policy-memory="session user">
-      <div id="child" llm-policy-memory="none"></div>
+    <div id="parent" wam-policy-memory="session user">
+      <div id="child" wam-policy-memory="none"></div>
     </div>
   `;
 
   const parent = document.getElementById('parent');
   const child = document.getElementById('child');
 
-  assert_true(parent.llmPolicy.hasMemoryScope('session'));
-  assert_true(child.llmPolicy.hasMemoryScope('none'));
+  assert_true(parent.wamPolicy.hasMemoryScope('session'));
+  assert_true(child.wamPolicy.hasMemoryScope('none'));
 
   container.innerHTML = '';
 }, 'Child can restrict memory policy');
@@ -169,13 +169,13 @@ test(() => {
 test(() => {
   const container = document.getElementById('test-container');
   container.innerHTML = `
-    <div id="parent" llm-policy-license="CC-BY-ND">
+    <div id="parent" wam-policy-license="CC-BY-ND">
       <div id="child"></div>
     </div>
   `;
 
   const child = document.getElementById('child');
-  const profile = child.llmPolicy.licenseProfile;
+  const profile = child.wamPolicy.licenseProfile;
   assert_not_equals(profile, null);
   assert_equals(profile.spdxIdentifier, 'CC-BY-ND');
 
@@ -185,8 +185,8 @@ test(() => {
 test(() => {
   const container = document.getElementById('test-container');
   container.innerHTML = `
-    <div id="parent" llm-policy-license="CC-BY-ND">
-      <div id="child" llm-policy-license="CC0"></div>
+    <div id="parent" wam-policy-license="CC-BY-ND">
+      <div id="child" wam-policy-license="CC0"></div>
     </div>
   `;
 
@@ -195,8 +195,8 @@ test(() => {
 
   // Child has its own license, but parent's license still applies to the context
   // The effective license should consider both (intersection or most restrictive)
-  const parentProfile = parent.llmPolicy.licenseProfile;
-  const childProfile = child.llmPolicy.licenseProfile;
+  const parentProfile = parent.wamPolicy.licenseProfile;
+  const childProfile = child.wamPolicy.licenseProfile;
 
   assert_equals(parentProfile.spdxIdentifier, 'CC-BY-ND');
   assert_equals(childProfile.spdxIdentifier, 'CC0');
@@ -211,9 +211,9 @@ test(() => {
 test(() => {
   const container = document.getElementById('test-container');
   container.innerHTML = `
-    <div id="l1" llm-policy-output="style">
+    <div id="l1" wam-policy-output="style">
       <div id="l2">
-        <div id="l3" llm-policy-output="content">
+        <div id="l3" wam-policy-output="content">
           <div id="l4">
             <div id="l5"></div>
           </div>
@@ -226,9 +226,9 @@ test(() => {
   const l4 = document.getElementById('l4');
   const l5 = document.getElementById('l5');
 
-  assert_true(l2.llmPolicy.hasOutputPermission('style'));
-  assert_true(l4.llmPolicy.hasOutputPermission('content'));
-  assert_true(l5.llmPolicy.hasOutputPermission('content'));
+  assert_true(l2.wamPolicy.hasOutputPermission('style'));
+  assert_true(l4.wamPolicy.hasOutputPermission('content'));
+  assert_true(l5.wamPolicy.hasOutputPermission('content'));
 
   container.innerHTML = '';
 }, 'Deep nesting with intermediate overrides works correctly');
@@ -241,8 +241,8 @@ test(() => {
   const container = document.getElementById('test-container');
   container.innerHTML = `
     <div id="parent">
-      <div id="sibling1" llm-policy-output="style"></div>
-      <div id="sibling2" llm-policy-output="content"></div>
+      <div id="sibling1" wam-policy-output="style"></div>
+      <div id="sibling2" wam-policy-output="content"></div>
       <div id="sibling3"></div>
     </div>
   `;
@@ -251,14 +251,14 @@ test(() => {
   const s2 = document.getElementById('sibling2');
   const s3 = document.getElementById('sibling3');
 
-  assert_true(s1.llmPolicy.hasOutputPermission('style'));
-  assert_false(s1.llmPolicy.hasOutputPermission('content'));
+  assert_true(s1.wamPolicy.hasOutputPermission('style'));
+  assert_false(s1.wamPolicy.hasOutputPermission('content'));
 
-  assert_true(s2.llmPolicy.hasOutputPermission('content'));
-  assert_false(s2.llmPolicy.hasOutputPermission('style'));
+  assert_true(s2.wamPolicy.hasOutputPermission('content'));
+  assert_false(s2.wamPolicy.hasOutputPermission('style'));
 
   // s3 inherits from parent (default readonly)
-  assert_true(s3.llmPolicy.isReadonly);
+  assert_true(s3.wamPolicy.isReadonly);
 
   container.innerHTML = '';
 }, 'Sibling elements have independent policies');
@@ -270,7 +270,7 @@ test(() => {
 test(() => {
   const container = document.getElementById('test-container');
   container.innerHTML = `
-    <div id="parent" llm-policy-output="style content">
+    <div id="parent" wam-policy-output="style content">
       <div id="child"></div>
     </div>
   `;
@@ -279,13 +279,13 @@ test(() => {
   const child = document.getElementById('child');
 
   // Parent has local tokens
-  assert_array_equals_unordered(parent.llmPolicy.outputTokens, ['style', 'content']);
+  assert_array_equals_unordered(parent.wamPolicy.outputTokens, ['style', 'content']);
 
   // Child has no local tokens
-  assert_array_equals(child.llmPolicy.outputTokens, []);
+  assert_array_equals(child.wamPolicy.outputTokens, []);
 
   // Child's effective tokens come from inheritance
-  assert_array_equals_unordered(child.llmPolicy.effectiveOutputTokens, ['style', 'content']);
+  assert_array_equals_unordered(child.wamPolicy.effectiveOutputTokens, ['style', 'content']);
 
   container.innerHTML = '';
 }, 'Local tokens vs effective tokens are distinguished');
@@ -297,20 +297,20 @@ test(() => {
 test(() => {
   const container = document.getElementById('test-container');
   container.innerHTML = `
-    <div id="parent" llm-policy-input="structure text" llm-policy-output="style">
-      <div id="child" llm-policy-output="content"></div>
+    <div id="parent" wam-policy-input="structure text" wam-policy-output="style">
+      <div id="child" wam-policy-output="content"></div>
     </div>
   `;
 
   const child = document.getElementById('child');
 
   // Child inherits input from parent
-  assert_true(child.llmPolicy.hasInputChannel('structure'));
-  assert_true(child.llmPolicy.hasInputChannel('text'));
+  assert_true(child.wamPolicy.hasInputChannel('structure'));
+  assert_true(child.wamPolicy.hasInputChannel('text'));
 
   // Child overrides output
-  assert_true(child.llmPolicy.hasOutputPermission('content'));
-  assert_false(child.llmPolicy.hasOutputPermission('style'));
+  assert_true(child.wamPolicy.hasOutputPermission('content'));
+  assert_false(child.wamPolicy.hasOutputPermission('style'));
 
   container.innerHTML = '';
 }, 'Different attributes inherit independently');

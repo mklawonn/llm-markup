@@ -2,18 +2,18 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>LLM Markup: Mutation Control Example</title>
-  <meta name="description" content="Demonstrates llm-policy-output tokens for controlling what the LLM can modify">
+  <title>Web Agent Markup: Mutation Control Example</title>
+  <meta name="description" content="Demonstrates wam-policy-output tokens for controlling what the LLM can modify">
 </head>
 <body>
 
-<h1>Mutation Control with llm-policy-output</h1>
+<h1>Mutation Control with wam-policy-output</h1>
 
 <!--
   READONLY (default)
   No modifications permitted. This is the safest default.
 -->
-<section llm-policy-output="readonly">
+<section wam-policy-output="readonly">
   <h2>Legal Disclaimer</h2>
   <p>
     THIS SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND.
@@ -25,7 +25,7 @@
   STYLE ONLY
   LLM can modify class and style attributes but not content.
 -->
-<section llm-policy-output="style">
+<section wam-policy-output="style">
   <h2>Theme-able Section</h2>
   <p class="neutral">
     The LLM can change this paragraph's class to highlight it,
@@ -40,7 +40,7 @@
   ANNOTATION
   LLM can wrap text in inline elements (highlights, links) without changing words.
 -->
-<section llm-policy-output="annotation">
+<section wam-policy-output="annotation">
   <h2>Annotatable Article</h2>
   <p>
     This paragraph contains important terms that the LLM can wrap
@@ -57,7 +57,7 @@
   CONTENT
   LLM can modify text nodes directly.
 -->
-<section llm-policy-output="content">
+<section wam-policy-output="content">
   <h2>Editable Draft</h2>
   <p>
     This is a rough draft. The LLM can rewrite, summarize, or
@@ -69,7 +69,7 @@
   LAYOUT
   LLM can reorder direct child nodes (e.g., sort a list).
 -->
-<section llm-policy-output="layout">
+<section wam-policy-output="layout">
   <h2>Sortable Task List</h2>
   <ul>
     <li>Buy groceries</li>
@@ -84,7 +84,7 @@
   APPEND
   LLM can add new children but not modify existing content.
 -->
-<section llm-policy-output="append">
+<section wam-policy-output="append">
   <h2>Comment Thread</h2>
   <div class="comments">
     <p class="comment">Great article!</p>
@@ -97,7 +97,7 @@
   DATA
   LLM can modify form values, data attributes, and structured data.
 -->
-<section llm-policy-output="data">
+<section wam-policy-output="data">
   <h2>Smart Form</h2>
   <form>
     <input type="text" name="city" value="" placeholder="City">
@@ -112,7 +112,7 @@
   INTERACTION
   LLM can modify event handlers and ARIA states.
 -->
-<section llm-policy-output="interaction">
+<section wam-policy-output="interaction">
   <h2>Interactive Controls</h2>
   <button aria-pressed="false">Toggle Feature</button>
   <div role="tabpanel" aria-hidden="true">
@@ -125,7 +125,7 @@
   MUTABLE (full access)
   LLM has complete modification rights. Use with caution!
 -->
-<section llm-policy-output="mutable">
+<section wam-policy-output="mutable">
   <h2>Sandbox Area</h2>
   <p>
     The LLM can do anything here: rewrite text, change styles,
@@ -137,7 +137,7 @@
   COMBINED TOKENS
   Multiple tokens can be combined for fine-grained control.
 -->
-<section llm-policy-output="style annotation content">
+<section wam-policy-output="style annotation content">
   <h2>Flexible Editing Zone</h2>
   <p class="draft">
     The LLM can change styling, add annotations, AND edit text,

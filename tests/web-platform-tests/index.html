@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
-<title>LLM Markup Web Platform Tests</title>
+<title>Web Agent Markup Web Platform Tests</title>
 <style>
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -21,11 +21,11 @@
   .count { color: #888; font-size: 0.9em; }
 </style>
 
-<h1>LLM Markup (LLMPM) Web Platform Tests</h1>
+<h1>Web Agent Markup (WAM) Web Platform Tests</h1>
 
 <p>
   This test suite validates conformance with the
-  <a href="../../spec/index.bs">LLM Markup Specification</a>.
+  <a href="../../spec/index.bs">Web Agent Markup Specification</a>.
 </p>
 
 <div class="section">
@@ -33,10 +33,10 @@
 
   <h3>Parsing Tests</h3>
   <ul>
-    <li><a class="test-link" href="policy/parsing/input-tokens.html">input-tokens.html</a> - llm-policy-input token parsing</li>
-    <li><a class="test-link" href="policy/parsing/output-tokens.html">output-tokens.html</a> - llm-policy-output token parsing</li>
-    <li><a class="test-link" href="policy/parsing/memory-tokens.html">memory-tokens.html</a> - llm-policy-memory token parsing</li>
-    <li><a class="test-link" href="policy/parsing/license.html">license.html</a> - llm-policy-license and SPDX profiles</li>
+    <li><a class="test-link" href="policy/parsing/input-tokens.html">input-tokens.html</a> - wam-policy-input token parsing</li>
+    <li><a class="test-link" href="policy/parsing/output-tokens.html">output-tokens.html</a> - wam-policy-output token parsing</li>
+    <li><a class="test-link" href="policy/parsing/memory-tokens.html">memory-tokens.html</a> - wam-policy-memory token parsing</li>
+    <li><a class="test-link" href="policy/parsing/license.html">license.html</a> - wam-policy-license and SPDX profiles</li>
   </ul>
 
   <h3>Enforcement Tests</h3>
@@ -53,7 +53,7 @@
 
   <h3>Parsing Tests</h3>
   <ul>
-    <li><a class="test-link" href="intent/parsing/attributes.html">attributes.html</a> - All llm-intent-* attribute parsing</li>
+    <li><a class="test-link" href="intent/parsing/attributes.html">attributes.html</a> - All wam-intent-* attribute parsing</li>
   </ul>
 
   <h3>Prompt Construction Tests</h3>
@@ -67,7 +67,7 @@
 
   <h3>Parsing Tests</h3>
   <ul>
-    <li><a class="test-link" href="provenance/parsing/attributes.html">attributes.html</a> - All llm-provenance-* attribute parsing</li>
+    <li><a class="test-link" href="provenance/parsing/attributes.html">attributes.html</a> - All wam-provenance-* attribute parsing</li>
   </ul>
 
   <h3>Integrity Tests</h3>
@@ -111,7 +111,7 @@
 
 <h2>Test Resources</h2>
 <ul>
-  <li><a class="test-link" href="resources/llm-markup-helpers.js">llm-markup-helpers.js</a> - Test helper utilities</li>
+  <li><a class="test-link" href="resources/web-agent-markup-helpers.js">web-agent-markup-helpers.js</a> - Test helper utilities</li>
 </ul>
 
 <h2>Running Tests</h2>
@@ -119,7 +119,7 @@
   These tests use the <a href="https://web-platform-tests.org/">Web Platform Tests</a> harness.
   In a WPT environment, run:
 </p>
-<pre><code>./wpt run chrome llm-markup/</code></pre>
+<pre><code>./wpt run chrome web-agent-markup/</code></pre>
 
 <p>
   For local development, serve files over HTTP and open individual test files in a browser.

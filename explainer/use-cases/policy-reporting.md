@@ -3,7 +3,7 @@
 ## Scenario
 A large online encyclopedia (like Wikipedia) wants to enforce a strict `readonly` policy on its articles to prevent LLM hallucinations or accidental defacement. However, thousands of pages have complex interactive widgets (maps, timelines) that might break if the policy is too strict.
 
-The Operations Team is afraid that turning on `llm-policy-output=["readonly"]` will disable these legitimate features for users.
+The Operations Team is afraid that turning on `wam-policy-output=["readonly"]` will disable these legitimate features for users.
 
 ## The Solution: Report-Only Mode
 Instead of enforcing the policy immediately, they deploy it in **Audit Mode**.
@@ -14,7 +14,7 @@ Instead of enforcing the policy immediately, they deploy it in **Audit Mode**.
   "report-only": true,
   "report-to": "https://logs.encyclopedia.org/llm-reports",
   "defaults": {
-    "llm-policy-output": ["readonly"]
+    "wam-policy-output": ["readonly"]
   }
 }
 ```
@@ -38,7 +38,7 @@ Instead of enforcing the policy immediately, they deploy it in **Audit Mode**.
 3.  **The Fix:** The Operations Team reviews the logs and sees thousands of reports for `#map-widget`. They update the policy to explicitly allow interaction for maps:
     ```json
     "category-rules": {
-      "map-widget": { "llm-policy-output": ["interaction"] }
+      "map-widget": { "wam-policy-output": ["interaction"] }
     }
     ```
 

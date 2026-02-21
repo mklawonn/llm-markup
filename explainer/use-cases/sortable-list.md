@@ -9,7 +9,7 @@ If the policy is `mutable`, an LLM might attempt to rewrite the job descriptions
 If the policy is `readonly`, the LLM cannot change the order of the `<li>` elements.
 
 ## The Solution: Layout Policy
-The website tags the list container with `llm-policy-output="layout"`.
+The website tags the list container with `wam-policy-output="layout"`.
 
 ### Policy Definition
 *   **Target:** `<ul id="job-list">`

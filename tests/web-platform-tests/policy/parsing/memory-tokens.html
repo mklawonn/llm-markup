@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
 <title>LLM Policy Memory Token Parsing</title>
-<link rel="help" href="https://example.org/llm-markup#llm-policy-memory">
+<link rel="help" href="https://example.org/web-agent-markup#wam-policy-memory">
 <script src="/resources/testharness.js"></script>
 <script src="/resources/testharnessreport.js"></script>
-<script src="../../resources/llm-markup-helpers.js"></script>
+<script src="../../resources/web-agent-markup-helpers.js"></script>
 
 <div id="test-container"></div>
 
@@ -16,18 +16,18 @@
 // =============================================================================
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-memory': 'session' });
-  assert_array_equals(el.llmPolicy.memoryTokens, ['session']);
+  const el = createLLMElement('div', { 'wam-policy-memory': 'session' });
+  assert_array_equals(el.wamPolicy.memoryTokens, ['session']);
 }, 'Single memory token is parsed correctly');
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-memory': 'session user' });
-  assert_array_equals_unordered(el.llmPolicy.memoryTokens, ['session', 'user']);
+  const el = createLLMElement('div', { 'wam-policy-memory': 'session user' });
+  assert_array_equals_unordered(el.wamPolicy.memoryTokens, ['session', 'user']);
 }, 'Multiple space-separated memory tokens are parsed correctly');
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-memory': 'SESSION USER' });
-  assert_array_equals_unordered(el.llmPolicy.memoryTokens, ['session', 'user']);
+  const el = createLLMElement('div', { 'wam-policy-memory': 'SESSION USER' });
+  assert_array_equals_unordered(el.wamPolicy.memoryTokens, ['session', 'user']);
 }, 'Token parsing is case-insensitive');
 
 // =============================================================================
@@ -36,9 +36,9 @@ test(() => {
 
 for (const token of VALID_MEMORY_TOKENS) {
   test(() => {
-    const el = createLLMElement('div', { 'llm-policy-memory': token });
+    const el = createLLMElement('div', { 'wam-policy-memory': token });
     assert_true(
-      el.llmPolicy.memoryTokens.includes(token),
+      el.wamPolicy.memoryTokens.includes(token),
       `Token '${token}' should be recognized`
     );
   }, `Valid memory token '${token}' is accepted`);
@@ -49,17 +49,17 @@ for (const token of VALID_MEMORY_TOKENS) {
 // =============================================================================
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-memory': 'none' });
-  assert_array_equals(el.llmPolicy.memoryTokens, ['none']);
-  assert_false(el.llmPolicy.hasMemoryScope('session'));
-  assert_false(el.llmPolicy.hasMemoryScope('user'));
-  assert_false(el.llmPolicy.hasMemoryScope('training'));
+  const el = createLLMElement('div', { 'wam-policy-memory': 'none' });
+  assert_array_equals(el.wamPolicy.memoryTokens, ['none']);
+  assert_false(el.wamPolicy.hasMemoryScope('session'));
+  assert_false(el.wamPolicy.hasMemoryScope('user'));
+  assert_false(el.wamPolicy.hasMemoryScope('training'));
 }, "'none' token enforces ephemeral processing only");
 
 test(() => {
   const el = createLLMElement('div', {});
   // Per spec: default is 'none' (Strictly Ephemeral)
-  assert_true(el.llmPolicy.hasMemoryScope('none'));
+  assert_true(el.wamPolicy.hasMemoryScope('none'));
 }, "Default memory policy is 'none'");
 
 // =============================================================================
@@ -67,14 +67,14 @@ test(() => {
 // =============================================================================
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-memory': 'training' });
-  assert_true(el.llmPolicy.hasMemoryScope('training'));
+  const el = createLLMElement('div', { 'wam-policy-memory': 'training' });
+  assert_true(el.wamPolicy.hasMemoryScope('training'));
 }, "'training' token explicitly authorizes model training");
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-memory': 'session user' });
+  const el = createLLMElement('div', { 'wam-policy-memory': 'session user' });
   // Without 'training', should signal Do-Not-Train
-  assert_false(el.llmPolicy.hasMemoryScope('training'));
+  assert_false(el.wamPolicy.hasMemoryScope('training'));
 }, "Absence of 'training' token implies Do-Not-Train");
 
 // =============================================================================
@@ -82,27 +82,27 @@ test(() => {
 // =============================================================================
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-memory': 'session user' });
-  assert_true(el.llmPolicy.hasMemoryScope('session'));
-  assert_true(el.llmPolicy.hasMemoryScope('user'));
-  assert_false(el.llmPolicy.hasMemoryScope('training'));
+  const el = createLLMElement('div', { 'wam-policy-memory': 'session user' });
+  assert_true(el.wamPolicy.hasMemoryScope('session'));
+  assert_true(el.wamPolicy.hasMemoryScope('user'));
+  assert_false(el.wamPolicy.hasMemoryScope('training'));
 }, 'Multiple memory scopes can be combined');
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-memory': 'none session' });
+  const el = createLLMElement('div', { 'wam-policy-memory': 'none session' });
   // Conflicting tokens: per spec, 'none' should be restrictive
   // But this could also be interpreted as 'session' overriding 'none'
   // Test captures current behavior
-  const hasSession = el.llmPolicy.hasMemoryScope('session');
-  const hasNone = el.llmPolicy.hasMemoryScope('none');
+  const hasSession = el.wamPolicy.hasMemoryScope('session');
+  const hasNone = el.wamPolicy.hasMemoryScope('none');
   assert_true(hasSession || hasNone, "Conflicting 'none' and 'session' is resolved");
 }, "Conflicting 'none' and other tokens are resolved");
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-memory': 'session user training' });
-  assert_true(el.llmPolicy.hasMemoryScope('session'));
-  assert_true(el.llmPolicy.hasMemoryScope('user'));
-  assert_true(el.llmPolicy.hasMemoryScope('training'));
+  const el = createLLMElement('div', { 'wam-policy-memory': 'session user training' });
+  assert_true(el.wamPolicy.hasMemoryScope('session'));
+  assert_true(el.wamPolicy.hasMemoryScope('user'));
+  assert_true(el.wamPolicy.hasMemoryScope('training'));
 }, 'All retention scopes can be combined');
 
 // =============================================================================
@@ -110,15 +110,15 @@ test(() => {
 // =============================================================================
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-memory': 'permanent' });
-  assert_false(el.llmPolicy.memoryTokens.includes('permanent'));
+  const el = createLLMElement('div', { 'wam-policy-memory': 'permanent' });
+  assert_false(el.wamPolicy.memoryTokens.includes('permanent'));
 }, 'Invalid tokens are ignored');
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-memory': 'session invalid user' });
-  assert_true(el.llmPolicy.memoryTokens.includes('session'));
-  assert_true(el.llmPolicy.memoryTokens.includes('user'));
-  assert_false(el.llmPolicy.memoryTokens.includes('invalid'));
+  const el = createLLMElement('div', { 'wam-policy-memory': 'session invalid user' });
+  assert_true(el.wamPolicy.memoryTokens.includes('session'));
+  assert_true(el.wamPolicy.memoryTokens.includes('user'));
+  assert_false(el.wamPolicy.memoryTokens.includes('invalid'));
 }, 'Invalid tokens are filtered while valid tokens are preserved');
 
 // =============================================================================
@@ -126,8 +126,8 @@ test(() => {
 // =============================================================================
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-memory': 'session session session' });
-  const sessionCount = el.llmPolicy.memoryTokens.filter(t => t === 'session').length;
+  const el = createLLMElement('div', { 'wam-policy-memory': 'session session session' });
+  const sessionCount = el.wamPolicy.memoryTokens.filter(t => t === 'session').length;
   assert_equals(sessionCount, 1, 'Duplicates are deduplicated');
 }, 'Duplicate tokens are deduplicated');
 
@@ -136,8 +136,8 @@ test(() => {
 // =============================================================================
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-memory': 'session user' });
-  assert_equals(el.llmPolicy.memoryAttribute, 'session user');
+  const el = createLLMElement('div', { 'wam-policy-memory': 'session user' });
+  assert_equals(el.wamPolicy.memoryAttribute, 'session user');
 }, 'memoryAttribute reflects the raw attribute value');
 
 // =============================================================================
@@ -145,11 +145,11 @@ test(() => {
 // =============================================================================
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-memory': 'session user' });
-  assert_true(el.llmPolicy.hasMemoryScope('session'));
-  assert_true(el.llmPolicy.hasMemoryScope('user'));
-  assert_false(el.llmPolicy.hasMemoryScope('training'));
-  assert_false(el.llmPolicy.hasMemoryScope('none'));
+  const el = createLLMElement('div', { 'wam-policy-memory': 'session user' });
+  assert_true(el.wamPolicy.hasMemoryScope('session'));
+  assert_true(el.wamPolicy.hasMemoryScope('user'));
+  assert_false(el.wamPolicy.hasMemoryScope('training'));
+  assert_false(el.wamPolicy.hasMemoryScope('none'));
 }, 'hasMemoryScope correctly reports token presence');
 
 // =============================================================================
@@ -157,15 +157,15 @@ test(() => {
 // =============================================================================
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-memory': 'session' });
+  const el = createLLMElement('div', { 'wam-policy-memory': 'session' });
   // Session scope: data may persist until tab/session closes
-  assert_true(el.llmPolicy.hasMemoryScope('session'));
-  assert_false(el.llmPolicy.hasMemoryScope('user'));
+  assert_true(el.wamPolicy.hasMemoryScope('session'));
+  assert_false(el.wamPolicy.hasMemoryScope('user'));
 }, "'session' scope allows temporary context retention");
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-memory': 'user' });
+  const el = createLLMElement('div', { 'wam-policy-memory': 'user' });
   // User scope: data may persist in long-term profile
-  assert_true(el.llmPolicy.hasMemoryScope('user'));
+  assert_true(el.wamPolicy.hasMemoryScope('user'));
 }, "'user' scope allows long-term profile storage");
 </script>

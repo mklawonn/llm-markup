@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
-<title>LLM Markup Cross-Namespace Integration</title>
-<link rel="help" href="https://example.org/llm-markup">
+<title>Web Agent Markup Cross-Namespace Integration</title>
+<link rel="help" href="https://example.org/web-agent-markup">
 <script src="/resources/testharness.js"></script>
 <script src="/resources/testharnessreport.js"></script>
-<script src="../resources/llm-markup-helpers.js"></script>
+<script src="../resources/web-agent-markup-helpers.js"></script>
 
 <div id="test-container"></div>
 
@@ -17,21 +17,21 @@
 
 test(() => {
   const el = createLLMElement('div', {});
-  assert_true('llmPolicy' in el);
-  assert_true('llmIntent' in el);
-  assert_true('llmProvenance' in el);
+  assert_true('wamPolicy' in el);
+  assert_true('wamIntent' in el);
+  assert_true('wamProvenance' in el);
 }, 'Element has all three namespace interfaces');
 
 test(() => {
   const el = createLLMElement('div', {
-    'llm-policy-output': 'style',
-    'llm-intent-category': 'quote',
-    'llm-provenance-source': 'https://example.com'
+    'wam-policy-output': 'style',
+    'wam-intent-category': 'quote',
+    'wam-provenance-source': 'https://example.com'
   });
 
-  assert_true(el.llmPolicy.hasOutputPermission('style'));
-  assert_equals(el.llmIntent.category, 'quote');
-  assert_equals(el.llmProvenance.source, 'https://example.com');
+  assert_true(el.wamPolicy.hasOutputPermission('style'));
+  assert_equals(el.wamIntent.category, 'quote');
+  assert_equals(el.wamProvenance.source, 'https://example.com');
 }, 'All three namespaces can be used together on one element');
 
 // =============================================================================
@@ -40,27 +40,27 @@ test(() => {
 
 test(() => {
   const el = createLLMElement('div', {
-    'llm-policy-input': 'none',
-    'llm-intent-category': 'quote',
-    'llm-intent-importance': 'critical'
+    'wam-policy-input': 'none',
+    'wam-intent-category': 'quote',
+    'wam-intent-importance': 'critical'
   });
 
   // Even though intent marks it as critical, policy hides it
-  assert_true(el.llmPolicy.isHidden);
+  assert_true(el.wamPolicy.isHidden);
   // Intent data should still be accessible for routing
-  assert_equals(el.llmIntent.category, 'quote');
-  assert_equals(el.llmIntent.importance, 'critical');
+  assert_equals(el.wamIntent.category, 'quote');
+  assert_equals(el.wamIntent.importance, 'critical');
 }, 'Policy takes precedence over intent for visibility');
 
 test(() => {
   const el = createLLMElement('div', {
-    'llm-policy-output': 'readonly',
-    'llm-intent-instruction': 'Rewrite this completely'
+    'wam-policy-output': 'readonly',
+    'wam-intent-instruction': 'Rewrite this completely'
   });
 
   // Intent may say to rewrite, but policy blocks it
-  assert_true(el.llmPolicy.isReadonly);
-  assert_equals(el.llmIntent.instruction, 'Rewrite this completely');
+  assert_true(el.wamPolicy.isReadonly);
+  assert_equals(el.wamIntent.instruction, 'Rewrite this completely');
 }, 'Policy takes precedence over intent for mutations');
 
 // =============================================================================
@@ -70,7 +70,7 @@ test(() => {
 test(() => {
   const container = document.getElementById('test-container');
   container.innerHTML = `
-    <div id="ad" llm-intent-category="advertisement">Ad content</div>
+    <div id="ad" wam-intent-category="advertisement">Ad content</div>
   `;
   const el = document.getElementById('ad');
 
@@ -79,7 +79,7 @@ test(() => {
   if (policy !== null) {
     const rule = policy.constraints.getCategoryRule('advertisement');
     if (rule !== null && rule.inputTokens && rule.inputTokens.includes('none')) {
-      assert_true(el.llmPolicy.isHidden);
+      assert_true(el.wamPolicy.isHidden);
     }
   }
 
@@ -92,13 +92,13 @@ test(() => {
 
 test(() => {
   const el = createLLMElement('div', {
-    'llm-policy-output': 'content'
+    'wam-policy-output': 'content'
   });
 
   // When content can be modified, provenance should be tracked
   // This is the Causal Logging requirement
 
-  const canModify = el.llmPolicy.hasOutputPermission('content');
+  const canModify = el.wamPolicy.hasOutputPermission('content');
   assert_true(canModify);
 
   // After mutation, provenance-operation should be set
@@ -109,16 +109,16 @@ test(() => {
   const container = document.getElementById('test-container');
   container.innerHTML = `
     <div id="tracked"
-         llm-policy-output="content"
-         llm-provenance-operation="content:modified-by-agent">
+         wam-policy-output="content"
+         wam-provenance-operation="content:modified-by-agent">
       Modified content
     </div>
   `;
   const el = document.getElementById('tracked');
 
   // Content permission and provenance operation should align
-  assert_true(el.llmPolicy.hasOutputPermission('content'));
-  const ops = el.llmProvenance.getOperations();
+  assert_true(el.wamPolicy.hasOutputPermission('content'));
+  const ops = el.wamProvenance.getOperations();
   assert_equals(ops[0].layer, 'content');
 
   container.innerHTML = '';
@@ -130,59 +130,59 @@ test(() => {
 
 test(() => {
   const el = createLLMElement('div', {
-    'llm-policy-license': 'CC-BY-ND',
-    'llm-intent-instruction': 'Modify this text freely'
+    'wam-policy-license': 'CC-BY-ND',
+    'wam-intent-instruction': 'Modify this text freely'
   });
 
   // License restricts mutations despite intent
-  assert_false(el.llmPolicy.hasOutputPermission('content'));
+  assert_false(el.wamPolicy.hasOutputPermission('content'));
 
   // License may require attribution (affects provenance)
-  const profile = el.llmPolicy.licenseProfile;
+  const profile = el.wamPolicy.licenseProfile;
   if (profile !== null) {
     assert_true(profile.requiresAttribution);
   }
 }, 'License constraints affect policy and require provenance attribution');
 
 // =============================================================================
-// Document.buildLLMContext Integration
+// Document.buildWAMContext Integration
 // =============================================================================
 
 test(() => {
-  assert_true(typeof document.buildLLMContext === 'function');
-}, 'document.buildLLMContext exists');
+  assert_true(typeof document.buildWAMContext === 'function');
+}, 'document.buildWAMContext exists');
 
 test(() => {
   const container = document.getElementById('test-container');
   container.innerHTML = `
-    <div llm-policy-input="structure text" llm-intent-importance="high">
+    <div wam-policy-input="structure text" wam-intent-importance="high">
       Important content
     </div>
-    <div llm-policy-input="none">
+    <div wam-policy-input="none">
       Hidden content
     </div>
   `;
 
-  const context = document.buildLLMContext({ root: container });
+  const context = document.buildWAMContext({ root: container });
   assert_true(typeof context === 'string');
   assert_true(context.includes('Important content'));
   assert_false(context.includes('Hidden content'));
 
   container.innerHTML = '';
-}, 'buildLLMContext respects policy visibility');
+}, 'buildWAMContext respects policy visibility');
 
 test(() => {
   const container = document.getElementById('test-container');
   container.innerHTML = `
-    <div llm-intent-importance="critical">Critical</div>
-    <div llm-intent-importance="background">Background</div>
+    <div wam-intent-importance="critical">Critical</div>
+    <div wam-intent-importance="background">Background</div>
   `;
 
-  const contextWithBg = document.buildLLMContext({
+  const contextWithBg = document.buildWAMContext({
     root: container,
     includeBackground: true
   });
-  const contextWithoutBg = document.buildLLMContext({
+  const contextWithoutBg = document.buildWAMContext({
     root: container,
     includeBackground: false
   });
@@ -191,7 +191,7 @@ test(() => {
   // Background might be excluded without flag
 
   container.innerHTML = '';
-}, 'buildLLMContext respects intent importance');
+}, 'buildWAMContext respects intent importance');
 
 // =============================================================================
 // getLLMContextRepresentation Integration
@@ -199,7 +199,7 @@ test(() => {
 
 test(() => {
   const el = createLLMElement('div', {
-    'llm-policy-input': 'structure text',
+    'wam-policy-input': 'structure text',
     'data-secret': 'hidden-value'
   });
   el.textContent = 'Visible text';
@@ -216,8 +216,8 @@ test(() => {
 
 test(() => {
   const el = createLLMElement('div', {
-    'llm-policy-output': 'annotation',
-    'llm-intent-category': 'code-block'
+    'wam-policy-output': 'annotation',
+    'wam-intent-category': 'code-block'
   });
 
   // Can annotate but not modify content
@@ -231,8 +231,8 @@ test(() => {
 
 test(() => {
   const el = createLLMElement('div', {
-    'llm-policy-output': 'readonly',
-    'llm-intent-category': 'legal-disclaimer'
+    'wam-policy-output': 'readonly',
+    'wam-intent-category': 'legal-disclaimer'
   });
 
   const violation = el.checkMutationPermission('content');
@@ -280,14 +280,14 @@ test(() => {
 test(() => {
   const container = document.getElementById('test-container');
   container.innerHTML = `
-    <article llm-policy-output="annotation" llm-intent-category="news-article">
-      <header llm-intent-importance="high">
+    <article wam-policy-output="annotation" wam-intent-category="news-article">
+      <header wam-intent-importance="high">
         <h1>Article Title</h1>
       </header>
-      <section llm-policy-output="readonly" llm-intent-category="legal-disclaimer">
+      <section wam-policy-output="readonly" wam-intent-category="legal-disclaimer">
         <p>Legal text that cannot be modified</p>
       </section>
-      <section llm-provenance-source="https://source.com" llm-provenance-confidence="0.95">
+      <section wam-provenance-source="https://source.com" wam-provenance-confidence="0.95">
         <p>Sourced content</p>
       </section>
     </article>
@@ -299,18 +299,18 @@ test(() => {
   const sourced = container.querySelector('section:last-of-type');
 
   // Article allows annotation
-  assert_true(article.llmPolicy.hasOutputPermission('annotation'));
+  assert_true(article.wamPolicy.hasOutputPermission('annotation'));
 
   // Header inherits from article and has high importance
-  assert_equals(header.llmIntent.importance, 'high');
+  assert_equals(header.wamIntent.importance, 'high');
 
   // Legal section overrides to readonly
-  assert_true(legal.llmPolicy.isReadonly);
-  assert_equals(legal.llmIntent.category, 'legal-disclaimer');
+  assert_true(legal.wamPolicy.isReadonly);
+  assert_equals(legal.wamIntent.category, 'legal-disclaimer');
 
   // Sourced section has provenance
-  assert_equals(sourced.llmProvenance.source, 'https://source.com');
-  assert_equals(sourced.llmProvenance.confidence, 0.95);
+  assert_equals(sourced.wamProvenance.source, 'https://source.com');
+  assert_equals(sourced.wamProvenance.confidence, 0.95);
 
   container.innerHTML = '';
 }, 'Complex nested structure with all namespaces works correctly');
@@ -322,22 +322,22 @@ test(() => {
 test(() => {
   const el = createLLMElement('div', {});
 
-  const policy1 = el.llmPolicy;
-  const policy2 = el.llmPolicy;
-  assert_equals(policy1, policy2, 'llmPolicy returns same object');
+  const policy1 = el.wamPolicy;
+  const policy2 = el.wamPolicy;
+  assert_equals(policy1, policy2, 'wamPolicy returns same object');
 
-  const intent1 = el.llmIntent;
-  const intent2 = el.llmIntent;
-  assert_equals(intent1, intent2, 'llmIntent returns same object');
+  const intent1 = el.wamIntent;
+  const intent2 = el.wamIntent;
+  assert_equals(intent1, intent2, 'wamIntent returns same object');
 
-  const prov1 = el.llmProvenance;
-  const prov2 = el.llmProvenance;
-  assert_equals(prov1, prov2, 'llmProvenance returns same object');
+  const prov1 = el.wamProvenance;
+  const prov2 = el.wamProvenance;
+  assert_equals(prov1, prov2, 'wamProvenance returns same object');
 }, '[SameObject] guarantee is maintained');
 
 test(() => {
-  const ledger1 = document.llmProvenanceLedger;
-  const ledger2 = document.llmProvenanceLedger;
-  assert_equals(ledger1, ledger2, 'llmProvenanceLedger returns same object');
-}, '[SameObject] guarantee for document.llmProvenanceLedger');
+  const ledger1 = document.wamProvenanceLedger;
+  const ledger2 = document.wamProvenanceLedger;
+  assert_equals(ledger1, ledger2, 'wamProvenanceLedger returns same object');
+}, '[SameObject] guarantee for document.wamProvenanceLedger');
 </script>

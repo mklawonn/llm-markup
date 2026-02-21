@@ -2,12 +2,12 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>LLM Markup: Provenance Tracking Example</title>
-  <meta name="description" content="Demonstrates llm-provenance-* attributes for tracking content origin and modifications">
+  <title>Web Agent Markup: Provenance Tracking Example</title>
+  <meta name="description" content="Demonstrates wam-provenance-* attributes for tracking content origin and modifications">
 </head>
 <body>
 
-<h1>Provenance Tracking with llm-provenance-*</h1>
+<h1>Provenance Tracking with wam-provenance-*</h1>
 
 <!--
   SOURCE ATTRIBUTION
@@ -17,8 +17,8 @@
   <h2>Source Attribution</h2>
 
   <blockquote
-    llm-provenance-source="https://en.wikipedia.org/wiki/Machine_learning"
-    llm-provenance-citation="Wikipedia, Machine Learning">
+    wam-provenance-source="https://en.wikipedia.org/wiki/Machine_learning"
+    wam-provenance-citation="Wikipedia, Machine Learning">
     <p>
       Machine learning is a subset of artificial intelligence that
       enables systems to learn and improve from experience.
@@ -26,8 +26,8 @@
   </blockquote>
 
   <p
-    llm-provenance-source="https://doi.org/10.1000/example"
-    llm-provenance-citation="Smith et al., Nature 2024">
+    wam-provenance-source="https://doi.org/10.1000/example"
+    wam-provenance-citation="Smith et al., Nature 2024">
     According to recent research, transformer architectures have
     revolutionized natural language processing.
   </p>
@@ -40,17 +40,17 @@
 <section>
   <h2>Confidence Indicators</h2>
 
-  <p llm-provenance-confidence="0.95">
+  <p wam-provenance-confidence="0.95">
     Paris is the capital of France.
     <!-- High confidence: well-established fact -->
   </p>
 
-  <p llm-provenance-confidence="0.7">
+  <p wam-provenance-confidence="0.7">
     The project will likely be completed by Q3 2025.
     <!-- Moderate confidence: prediction based on available data -->
   </p>
 
-  <p llm-provenance-confidence="0.3">
+  <p wam-provenance-confidence="0.3">
     This interpretation of the poem suggests themes of isolation.
     <!-- Low confidence: subjective analysis -->
   </p>
@@ -63,15 +63,15 @@
 <section>
   <h2>Modification History</h2>
 
-  <p llm-provenance-operation="content:summarized-from-original-500-word-article">
+  <p wam-provenance-operation="content:summarized-from-original-500-word-article">
     This is a concise summary of the key points from the original article.
   </p>
 
-  <p llm-provenance-operation="content:translated-from-spanish style:added-emphasis">
+  <p wam-provenance-operation="content:translated-from-spanish style:added-emphasis">
     This paragraph was translated from Spanish and key terms were highlighted.
   </p>
 
-  <div llm-provenance-operation="topology:reordered-by-priority">
+  <div wam-provenance-operation="topology:reordered-by-priority">
     <ol>
       <li>Critical: Fix security vulnerability</li>
       <li>High: Implement user authentication</li>
@@ -88,7 +88,7 @@
 <section>
   <h2>Complex Modifications</h2>
 
-  <article llm-provenance-operation="content:grammar-corrected content:simplified-language style:highlighted-key-terms interaction:added-tooltips">
+  <article wam-provenance-operation="content:grammar-corrected content:simplified-language style:highlighted-key-terms interaction:added-tooltips">
     <p>
       The <mark title="Artificial Intelligence">AI</mark> system
       uses <mark title="Natural Language Processing">NLP</mark>
@@ -112,8 +112,8 @@
   <h2>Policy + Provenance</h2>
 
   <!-- Allow content modification but track all changes -->
-  <div llm-policy-output="content annotation"
-       llm-provenance-source="https://example.com/original">
+  <div wam-policy-output="content annotation"
+       wam-provenance-source="https://example.com/original">
     <p>
       Original content that can be modified. All modifications
       will be logged in the provenance ledger for audit purposes.
@@ -122,9 +122,9 @@
 
   <!-- CC-BY content requires attribution in provenance -->
   <blockquote
-    llm-policy-license="CC-BY-4.0"
-    llm-provenance-source="https://creativecommons.org/example"
-    llm-provenance-citation="Creative Commons, CC BY 4.0">
+    wam-policy-license="CC-BY-4.0"
+    wam-provenance-source="https://creativecommons.org/example"
+    wam-provenance-citation="Creative Commons, CC BY 4.0">
     <p>
       This content is licensed under CC-BY. Any modifications
       must maintain attribution in the provenance metadata.
@@ -141,7 +141,7 @@
 document.addEventListener('DOMContentLoaded', () => {
 
   // Access the provenance ledger
-  const ledger = document.llmProvenanceLedger;
+  const ledger = document.wamProvenanceLedger;
   console.log('Ledger entries:', ledger.length);
 
   // Get entries for a specific element

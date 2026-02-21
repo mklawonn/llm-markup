@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: W3C-SOFTWARE-AND-DOCUMENT
-// LLM Markup (LLMPM) WebIDL Interface Definitions
-// Specification: https://example.org/llm-markup
+// Web Agent Markup (WAM) WebIDL Interface Definitions
+// Specification: https://example.org/web-agent-markup
 
 // =============================================================================
 // ENUMERATIONS
@@ -125,7 +125,7 @@ interface LLMProvenanceLedgerEntry {
   // Timestamp of the modification.
   readonly attribute DOMHighResTimeStamp timestamp;
 
-  // Whether this modification has a corresponding llm-provenance-operation entry.
+  // Whether this modification has a corresponding wam-provenance-operation entry.
   readonly attribute boolean hasAttributeEntry;
 
   // Snapshot of original value before modification (for diff reconstruction).
@@ -192,7 +192,7 @@ interface LLMPolicy {
   readonly attribute FrozenArray<LLMPolicyOutputToken> effectiveOutputTokens;
   readonly attribute FrozenArray<LLMPolicyMemoryToken> effectiveMemoryTokens;
 
-  // License profile derived from llm-policy-license, if any.
+  // License profile derived from wam-policy-license, if any.
   readonly attribute LLMLicenseProfile? licenseProfile;
 
   // Check if a specific output permission is granted.
@@ -223,7 +223,7 @@ interface LLMLicenseProfile {
   // Permissions allowed by this license.
   readonly attribute FrozenArray<LLMPolicyOutputToken> allowedOutputTokens;
 
-  // Whether the license requires attribution (affects llm-provenance-citation).
+  // Whether the license requires attribution (affects wam-provenance-citation).
   readonly attribute boolean requiresAttribution;
 
   // Whether the license has copyleft/viral requirements.
@@ -352,10 +352,10 @@ interface LLMPolicyConstraints {
 
 // Source type for global policy delivery.
 enum LLMGlobalPolicySource {
-  "http-header",      // Delivered via LLM-Policy HTTP header
-  "http-header-src",  // Referenced via LLM-Policy-Src HTTP header
-  "meta-tag",         // Delivered via <meta name="llm-policy">
-  "meta-tag-src",     // Referenced via <meta name="llm-policy-src">
+  "http-header",      // Delivered via WAM-Policy HTTP header
+  "http-header-src",  // Referenced via WAM-Policy-Src HTTP header
+  "meta-tag",         // Delivered via <meta name="wam-policy">
+  "meta-tag-src",     // Referenced via <meta name="wam-policy-src">
   "none"              // No global policy (using spec defaults)
 };
 
@@ -472,23 +472,23 @@ enum LLMPolicyViolationType {
 // ELEMENT EXTENSION
 // =============================================================================
 
-// Extends Element with LLM Markup properties.
+// Extends Element with Web Agent Markup properties.
 partial interface Element {
   // Read-only access to the computed policy state for this element.
-  [SameObject] readonly attribute LLMPolicy llmPolicy;
+  [SameObject] readonly attribute LLMPolicy wamPolicy;
 
   // Read-only access to the intent attributes for this element.
-  [SameObject] readonly attribute LLMIntent llmIntent;
+  [SameObject] readonly attribute LLMIntent wamIntent;
 
   // Read-only access to the provenance data for this element.
-  [SameObject] readonly attribute LLMProvenance llmProvenance;
+  [SameObject] readonly attribute LLMProvenance wamProvenance;
 
   // Check if a specific mutation would be allowed on this element.
   // Returns null if allowed, or a violation object if denied.
   LLMPolicyViolation? checkMutationPermission(LLMPolicyOutputToken permission);
 
   // Get the effective visibility representation of this element for LLM context.
-  // Returns the filtered DOM representation based on llm-policy-input.
+  // Returns the filtered DOM representation based on wam-policy-input.
   DOMString getLLMContextRepresentation();
 };
 
@@ -496,7 +496,7 @@ partial interface Element {
 // DOCUMENT EXTENSION
 // =============================================================================
 
-// Extends Document with LLM Markup properties.
+// Extends Document with Web Agent Markup properties.
 partial interface Document {
   // The Global Policy for this document (from header and/or meta tag).
   // Returns the effective policy after intersection of all sources.
@@ -505,15 +505,15 @@ partial interface Document {
 
   // Whether the global policy has been fully resolved.
   // LLM interaction MUST NOT begin until this is true.
-  readonly attribute boolean llmPolicyResolved;
+  readonly attribute boolean wamPolicyResolved;
 
   // The User Agent's internal provenance ledger for this document.
-  [SameObject] readonly attribute LLMProvenanceLedger llmProvenanceLedger;
+  [SameObject] readonly attribute LLMProvenanceLedger wamProvenanceLedger;
 
   // Build the LLM context representation for the entire document.
   // Applies visibility filtering, dependency resolution, and importance ranking.
-  // Throws InvalidStateError if called before llmPolicyResolved is true.
-  DOMString buildLLMContext(optional LLMContextOptions options = {});
+  // Throws InvalidStateError if called before wamPolicyResolved is true.
+  DOMString buildWAMContext(optional LLMContextOptions options = {});
 
   // Get all elements with integrity violations (mutations without provenance).
   sequence<Element> getIntegrityViolations();
@@ -552,7 +552,7 @@ dictionary LLMContextOptions {
   boolean resolveDependencies = true;
 
   // Whether to return metadata along with the context.
-  // If true, buildLLMContext returns LLMContextResult instead of DOMString.
+  // If true, buildWAMContext returns LLMContextResult instead of DOMString.
   boolean includeMetadata = false;
 };
 
@@ -565,7 +565,7 @@ enum LLMContextFormat {
   "a11y-tree"   // Accessibility tree representation (implementation-defined)
 };
 
-// Result object when buildLLMContext is called with includeMetadata: true.
+// Result object when buildWAMContext is called with includeMetadata: true.
 [Exposed=Window]
 interface LLMContextResult {
   // The context representation string.
@@ -696,39 +696,39 @@ dictionary LLMIntegrityViolationEventInit : EventInit {
 
 // Policy namespaces that can be individually inherited across shadow boundaries.
 enum LLMPolicyNamespace {
-  "input",   // llm-policy-input visibility
-  "output",  // llm-policy-output mutability
-  "memory"   // llm-policy-memory retention
+  "input",   // wam-policy-input visibility
+  "output",  // wam-policy-output mutability
+  "memory"   // wam-policy-memory retention
 };
 
-// Extension to ShadowRootInit for LLM Markup policy inheritance.
+// Extension to ShadowRootInit for Web Agent Markup policy inheritance.
 // These options control how policies cross shadow DOM boundaries.
 partial dictionary ShadowRootInit {
   // Whether to inherit LLM policies from the host element's context.
   // - false (default): Shadow root is a policy boundary; no inheritance.
   // - true: Inherit all policy namespaces (input, output, memory).
   // - sequence<LLMPolicyNamespace>: Inherit only specified namespaces.
-  (boolean or sequence<LLMPolicyNamespace>) llmPolicyInherit = false;
+  (boolean or sequence<LLMPolicyNamespace>) wamPolicyInherit = false;
 
   // Whether to report full provenance details to the document ledger.
   // - false (default): Report aggregated mutation counts per layer.
   // - true: Report full mutation details (element, layer, explanation).
-  boolean llmProvenanceTransparent = false;
+  boolean wamProvenanceTransparent = false;
 };
 
 // Extension to ShadowRoot for accessing LLM policy inheritance state.
 partial interface ShadowRoot {
   // Whether this shadow root inherits LLM policies from its host context.
-  readonly attribute boolean llmPolicyInherits;
+  readonly attribute boolean wamPolicyInherits;
 
-  // Which policy namespaces are inherited (empty if llmPolicyInherits is false).
+  // Which policy namespaces are inherited (empty if wamPolicyInherits is false).
   readonly attribute FrozenArray<LLMPolicyNamespace> llmInheritedNamespaces;
 
   // Whether full provenance details are reported to document ledger.
-  readonly attribute boolean llmProvenanceTransparent;
+  readonly attribute boolean wamProvenanceTransparent;
 
   // The effective inherited policy from the host element's context.
-  // Returns null if llmPolicyInherits is false.
+  // Returns null if wamPolicyInherits is false.
   readonly attribute LLMPolicy? llmInheritedPolicy;
 
   // Computes the effective policy for an element within this shadow tree,
@@ -737,7 +737,7 @@ partial interface ShadowRoot {
 };
 
 // Represents aggregated provenance information for a shadow root.
-// Used when llmProvenanceTransparent is false.
+// Used when wamProvenanceTransparent is false.
 [Exposed=Window]
 interface LLMShadowProvenanceSummary {
   // The shadow root this summary describes.
@@ -760,7 +760,7 @@ interface LLMShadowProvenanceSummary {
 // Extension to LLMProvenanceLedger for shadow DOM support.
 partial interface LLMProvenanceLedger {
   // Get aggregated provenance summary for a shadow root.
-  // Returns null if the shadow root has llmProvenanceTransparent=true
+  // Returns null if the shadow root has wamProvenanceTransparent=true
   // (in which case, use getEntriesForElement on shadow content directly).
   LLMShadowProvenanceSummary? getShadowSummary(ShadowRoot shadowRoot);
 

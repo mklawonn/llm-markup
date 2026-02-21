@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
 <title>LLM Policy Shadow DOM Boundaries</title>
-<link rel="help" href="https://example.org/llm-markup#shadow-dom-policy-boundaries">
+<link rel="help" href="https://example.org/web-agent-markup#shadow-dom-policy-boundaries">
 <script src="/resources/testharness.js"></script>
 <script src="/resources/testharnessreport.js"></script>
-<script src="../../resources/llm-markup-helpers.js"></script>
+<script src="../../resources/web-agent-markup-helpers.js"></script>
 
 <div id="test-container"></div>
 
@@ -17,8 +17,8 @@
 
 test(() => {
   const host = document.createElement('div');
-  host.setAttribute('llm-policy-input', 'none');
-  host.setAttribute('llm-policy-output', 'readonly');
+  host.setAttribute('wam-policy-input', 'none');
+  host.setAttribute('wam-policy-output', 'readonly');
 
   const shadow = host.attachShadow({ mode: 'open' });
   const inner = document.createElement('div');
@@ -26,28 +26,28 @@ test(() => {
 
   // Shadow content should NOT inherit host's policies by default
   // Should fall back to spec defaults (input=all, output=readonly)
-  assert_false(inner.llmPolicy.isHidden, 'Shadow content should not inherit input=none');
+  assert_false(inner.wamPolicy.isHidden, 'Shadow content should not inherit input=none');
 }, 'Shadow boundary blocks policy inheritance by default');
 
 test(() => {
   const host = document.createElement('div');
-  host.setAttribute('llm-policy-output', 'mutable');
+  host.setAttribute('wam-policy-output', 'mutable');
 
   const shadow = host.attachShadow({ mode: 'open' });
   const inner = document.createElement('div');
   shadow.appendChild(inner);
 
   // Shadow content should use spec default (readonly), not host's mutable
-  assert_true(inner.llmPolicy.isReadonly, 'Shadow content should not inherit mutable');
+  assert_true(inner.wamPolicy.isReadonly, 'Shadow content should not inherit mutable');
 }, 'Shadow content uses spec defaults, not host policies');
 
 test(() => {
   const host = document.createElement('div');
   const shadow = host.attachShadow({ mode: 'open' });
 
-  assert_false(shadow.llmPolicyInherits, 'Default shadow root does not inherit');
+  assert_false(shadow.wamPolicyInherits, 'Default shadow root does not inherit');
   assert_array_equals(shadow.llmInheritedNamespaces, [], 'No inherited namespaces');
-}, 'ShadowRoot.llmPolicyInherits is false by default');
+}, 'ShadowRoot.wamPolicyInherits is false by default');
 
 // =============================================================================
 // Opt-In Policy Inheritance
@@ -55,29 +55,29 @@ test(() => {
 
 test(() => {
   const host = document.createElement('div');
-  host.setAttribute('llm-policy-output', 'style content');
+  host.setAttribute('wam-policy-output', 'style content');
 
   const shadow = host.attachShadow({
     mode: 'open',
-    llmPolicyInherit: true
+    wamPolicyInherit: true
   });
   const inner = document.createElement('div');
   shadow.appendChild(inner);
 
-  assert_true(shadow.llmPolicyInherits, 'Shadow root inherits with opt-in');
-  assert_true(inner.llmPolicy.hasOutputPermission('style'), 'Inherits style permission');
-  assert_true(inner.llmPolicy.hasOutputPermission('content'), 'Inherits content permission');
-}, 'llmPolicyInherit: true enables full inheritance');
+  assert_true(shadow.wamPolicyInherits, 'Shadow root inherits with opt-in');
+  assert_true(inner.wamPolicy.hasOutputPermission('style'), 'Inherits style permission');
+  assert_true(inner.wamPolicy.hasOutputPermission('content'), 'Inherits content permission');
+}, 'wamPolicyInherit: true enables full inheritance');
 
 test(() => {
   const host = document.createElement('div');
-  host.setAttribute('llm-policy-input', 'structure text');
-  host.setAttribute('llm-policy-output', 'mutable');
-  host.setAttribute('llm-policy-memory', 'session');
+  host.setAttribute('wam-policy-input', 'structure text');
+  host.setAttribute('wam-policy-output', 'mutable');
+  host.setAttribute('wam-policy-memory', 'session');
 
   const shadow = host.attachShadow({
     mode: 'open',
-    llmPolicyInherit: ['input', 'memory']  // Only inherit input and memory
+    wamPolicyInherit: ['input', 'memory']  // Only inherit input and memory
   });
   const inner = document.createElement('div');
   shadow.appendChild(inner);
@@ -89,14 +89,14 @@ test(() => {
   );
 
   // Input should be inherited
-  assert_true(inner.llmPolicy.hasInputChannel('structure'));
-  assert_true(inner.llmPolicy.hasInputChannel('text'));
+  assert_true(inner.wamPolicy.hasInputChannel('structure'));
+  assert_true(inner.wamPolicy.hasInputChannel('text'));
 
   // Memory should be inherited
-  assert_true(inner.llmPolicy.hasMemoryScope('session'));
+  assert_true(inner.wamPolicy.hasMemoryScope('session'));
 
   // Output should NOT be inherited (falls back to readonly)
-  assert_true(inner.llmPolicy.isReadonly, 'Output not inherited');
+  assert_true(inner.wamPolicy.isReadonly, 'Output not inherited');
 }, 'Partial inheritance with specific namespaces');
 
 // =============================================================================
@@ -105,58 +105,58 @@ test(() => {
 
 test(() => {
   const host = document.createElement('div');
-  host.setAttribute('llm-policy-output', 'mutable');  // Host allows everything
+  host.setAttribute('wam-policy-output', 'mutable');  // Host allows everything
 
   const shadow = host.attachShadow({
     mode: 'open',
-    llmPolicyInherit: true
+    wamPolicyInherit: true
   });
   const inner = document.createElement('div');
-  inner.setAttribute('llm-policy-output', 'style annotation');  // Local restricts
+  inner.setAttribute('wam-policy-output', 'style annotation');  // Local restricts
   shadow.appendChild(inner);
 
   // Effective = mutable ∩ (style annotation) = style annotation
-  assert_true(inner.llmPolicy.hasOutputPermission('style'));
-  assert_true(inner.llmPolicy.hasOutputPermission('annotation'));
-  assert_false(inner.llmPolicy.hasOutputPermission('content'), 'Intersection restricts');
-  assert_false(inner.llmPolicy.isMutable, 'Local policy restricts inherited');
+  assert_true(inner.wamPolicy.hasOutputPermission('style'));
+  assert_true(inner.wamPolicy.hasOutputPermission('annotation'));
+  assert_false(inner.wamPolicy.hasOutputPermission('content'), 'Intersection restricts');
+  assert_false(inner.wamPolicy.isMutable, 'Local policy restricts inherited');
 }, 'Intersection: local policy restricts inherited permissions');
 
 test(() => {
   const host = document.createElement('div');
-  host.setAttribute('llm-policy-output', 'style annotation');  // Host restricts
+  host.setAttribute('wam-policy-output', 'style annotation');  // Host restricts
 
   const shadow = host.attachShadow({
     mode: 'open',
-    llmPolicyInherit: true
+    wamPolicyInherit: true
   });
   const inner = document.createElement('div');
-  inner.setAttribute('llm-policy-output', 'mutable');  // Local wants everything
+  inner.setAttribute('wam-policy-output', 'mutable');  // Local wants everything
   shadow.appendChild(inner);
 
   // Effective = (style annotation) ∩ mutable = style annotation
   // Inherited restriction wins via intersection
-  assert_true(inner.llmPolicy.hasOutputPermission('style'));
-  assert_true(inner.llmPolicy.hasOutputPermission('annotation'));
-  assert_false(inner.llmPolicy.hasOutputPermission('content'), 'Inherited restricts');
+  assert_true(inner.wamPolicy.hasOutputPermission('style'));
+  assert_true(inner.wamPolicy.hasOutputPermission('annotation'));
+  assert_false(inner.wamPolicy.hasOutputPermission('content'), 'Inherited restricts');
 }, 'Intersection: inherited policy restricts local permissions');
 
 test(() => {
   const host = document.createElement('div');
-  host.setAttribute('llm-policy-output', 'content annotation');
+  host.setAttribute('wam-policy-output', 'content annotation');
 
   const shadow = host.attachShadow({
     mode: 'open',
-    llmPolicyInherit: true
+    wamPolicyInherit: true
   });
   const inner = document.createElement('div');
-  inner.setAttribute('llm-policy-output', 'style annotation');
+  inner.setAttribute('wam-policy-output', 'style annotation');
   shadow.appendChild(inner);
 
   // Effective = (content annotation) ∩ (style annotation) = annotation
-  assert_true(inner.llmPolicy.hasOutputPermission('annotation'), 'Common permission');
-  assert_false(inner.llmPolicy.hasOutputPermission('content'), 'Not in local');
-  assert_false(inner.llmPolicy.hasOutputPermission('style'), 'Not in inherited');
+  assert_true(inner.wamPolicy.hasOutputPermission('annotation'), 'Common permission');
+  assert_false(inner.wamPolicy.hasOutputPermission('content'), 'Not in local');
+  assert_false(inner.wamPolicy.hasOutputPermission('style'), 'Not in inherited');
 }, 'Intersection: only common permissions granted');
 
 // =============================================================================
@@ -167,7 +167,7 @@ test(() => {
   const container = document.getElementById('test-container');
   container.innerHTML = `
     <div id="host">
-      <p id="slotted" slot="content" llm-policy-output="mutable">
+      <p id="slotted" slot="content" wam-policy-output="mutable">
         Slotted content
       </p>
     </div>
@@ -176,7 +176,7 @@ test(() => {
   const host = document.getElementById('host');
   const shadow = host.attachShadow({ mode: 'open' });
   shadow.innerHTML = `
-    <div llm-policy-output="readonly annotation">
+    <div wam-policy-output="readonly annotation">
       <slot name="content"></slot>
     </div>
   `;
@@ -184,9 +184,9 @@ test(() => {
   const slotted = document.getElementById('slotted');
 
   // Effective = page(mutable) ∩ slot-context(readonly annotation) = annotation
-  assert_true(slotted.llmPolicy.hasOutputPermission('annotation'));
-  assert_false(slotted.llmPolicy.hasOutputPermission('content'));
-  assert_false(slotted.llmPolicy.isMutable);
+  assert_true(slotted.wamPolicy.hasOutputPermission('annotation'));
+  assert_false(slotted.wamPolicy.hasOutputPermission('content'));
+  assert_false(slotted.wamPolicy.isMutable);
 
   container.innerHTML = '';
 }, 'Slotted content: intersection of light DOM and slot context');
@@ -195,7 +195,7 @@ test(() => {
   const container = document.getElementById('test-container');
   container.innerHTML = `
     <div id="host">
-      <p id="slotted" slot="content" llm-policy-output="annotation">
+      <p id="slotted" slot="content" wam-policy-output="annotation">
         Slotted content
       </p>
     </div>
@@ -204,7 +204,7 @@ test(() => {
   const host = document.getElementById('host');
   const shadow = host.attachShadow({ mode: 'open' });
   shadow.innerHTML = `
-    <div llm-policy-output="mutable">
+    <div wam-policy-output="mutable">
       <slot name="content"></slot>
     </div>
   `;
@@ -213,8 +213,8 @@ test(() => {
 
   // Component cannot expand page author's permissions
   // Effective = page(annotation) ∩ slot-context(mutable) = annotation
-  assert_true(slotted.llmPolicy.hasOutputPermission('annotation'));
-  assert_false(slotted.llmPolicy.hasOutputPermission('content'));
+  assert_true(slotted.wamPolicy.hasOutputPermission('annotation'));
+  assert_false(slotted.wamPolicy.hasOutputPermission('content'));
 
   container.innerHTML = '';
 }, 'Slotted content: component cannot expand page permissions');
@@ -230,7 +230,7 @@ test(() => {
   const host = document.getElementById('host');
   const shadow = host.attachShadow({ mode: 'open' });
   shadow.innerHTML = `
-    <div llm-policy-output="style">
+    <div wam-policy-output="style">
       <slot name="content"></slot>
     </div>
   `;
@@ -239,7 +239,7 @@ test(() => {
 
   // Slotted element has no explicit policy, inherits from light DOM (defaults)
   // Slot context restricts to style only
-  assert_not_equals(slotted.llmPolicy.slotContextPolicy, null);
+  assert_not_equals(slotted.wamPolicy.slotContextPolicy, null);
 
   container.innerHTML = '';
 }, 'Slotted element has slotContextPolicy');
@@ -250,7 +250,7 @@ test(() => {
 
 test(() => {
   const host = document.createElement('div');
-  host.setAttribute('llm-intent-category', 'advertisement');
+  host.setAttribute('wam-intent-category', 'advertisement');
 
   const shadow = host.attachShadow({ mode: 'open' });
   const inner = document.createElement('div');
@@ -258,23 +258,23 @@ test(() => {
 
   // Without inheritance, category should not propagate
   // Global policy category rules should not apply inside shadow
-  assert_equals(inner.llmIntent.category, null);
+  assert_equals(inner.wamIntent.category, null);
 }, 'Category does not propagate without inheritance');
 
 test(() => {
   const host = document.createElement('div');
-  host.setAttribute('llm-intent-category', 'advertisement');
+  host.setAttribute('wam-intent-category', 'advertisement');
 
   const shadow = host.attachShadow({
     mode: 'open',
-    llmPolicyInherit: true
+    wamPolicyInherit: true
   });
   const inner = document.createElement('div');
   shadow.appendChild(inner);
 
   // With inheritance, category should propagate from host
   // Note: This tests intent inheritance which follows same pattern
-  assert_equals(inner.llmIntent.category, 'advertisement');
+  assert_equals(inner.wamIntent.category, 'advertisement');
 }, 'Category propagates with inheritance opt-in');
 
 // =============================================================================
@@ -285,30 +285,30 @@ test(() => {
   const host = document.createElement('div');
   const shadow = host.attachShadow({ mode: 'open' });
 
-  assert_false(shadow.llmProvenanceTransparent);
+  assert_false(shadow.wamProvenanceTransparent);
 }, 'Default provenance transparency is false');
 
 test(() => {
   const host = document.createElement('div');
   const shadow = host.attachShadow({
     mode: 'open',
-    llmProvenanceTransparent: true
+    wamProvenanceTransparent: true
   });
 
-  assert_true(shadow.llmProvenanceTransparent);
+  assert_true(shadow.wamProvenanceTransparent);
 }, 'Provenance transparency can be enabled');
 
 test(() => {
   const host = document.createElement('div');
   const shadow = host.attachShadow({ mode: 'open' });
 
-  const summary = document.llmProvenanceLedger.getShadowSummary(shadow);
+  const summary = document.wamProvenanceLedger.getShadowSummary(shadow);
   // May be null if no mutations, or a summary object
   assert_true(summary === null || typeof summary === 'object');
 }, 'getShadowSummary returns summary or null');
 
 test(() => {
-  const shadows = document.llmProvenanceLedger.getShadowRootsWithMutations();
+  const shadows = document.wamProvenanceLedger.getShadowRootsWithMutations();
   assert_true(Array.isArray(shadows));
 }, 'getShadowRootsWithMutations returns array');
 
@@ -318,11 +318,11 @@ test(() => {
 
 test(() => {
   const hostA = document.createElement('div');
-  hostA.setAttribute('llm-policy-output', 'mutable');
+  hostA.setAttribute('wam-policy-output', 'mutable');
 
   const shadowA = hostA.attachShadow({
     mode: 'open',
-    llmPolicyInherit: true
+    wamPolicyInherit: true
   });
 
   const hostB = document.createElement('div');
@@ -334,27 +334,27 @@ test(() => {
 
   // A inherits from hostA (mutable)
   // B does NOT auto-inherit from A
-  assert_true(shadowA.llmPolicyInherits);
-  assert_false(shadowB.llmPolicyInherits);
-  assert_true(innerB.llmPolicy.isReadonly, 'Nested shadow uses defaults');
+  assert_true(shadowA.wamPolicyInherits);
+  assert_false(shadowB.wamPolicyInherits);
+  assert_true(innerB.wamPolicy.isReadonly, 'Nested shadow uses defaults');
 }, 'Nested shadow does not auto-inherit');
 
 test(() => {
   const hostA = document.createElement('div');
-  hostA.setAttribute('llm-policy-output', 'style content');
+  hostA.setAttribute('wam-policy-output', 'style content');
 
   const shadowA = hostA.attachShadow({
     mode: 'open',
-    llmPolicyInherit: true
+    wamPolicyInherit: true
   });
 
   const hostB = document.createElement('div');
-  hostB.setAttribute('llm-policy-output', 'annotation');  // B's host restricts
+  hostB.setAttribute('wam-policy-output', 'annotation');  // B's host restricts
   shadowA.appendChild(hostB);
 
   const shadowB = hostB.attachShadow({
     mode: 'open',
-    llmPolicyInherit: true  // B also inherits
+    wamPolicyInherit: true  // B also inherits
   });
   const innerB = document.createElement('div');
   shadowB.appendChild(innerB);
@@ -368,7 +368,7 @@ test(() => {
 
   // The exact result depends on whether hostB's attribute is intersected with
   // what it inherits from A's context
-  assert_true(innerB.llmPolicy.hasInheritedPolicy);
+  assert_true(innerB.wamPolicy.hasInheritedPolicy);
 }, 'Nested shadow with explicit inheritance forms intersection chain');
 
 // =============================================================================
@@ -377,11 +377,11 @@ test(() => {
 
 test(() => {
   const host = document.createElement('div');
-  host.setAttribute('llm-policy-output', 'style content');
+  host.setAttribute('wam-policy-output', 'style content');
 
   const shadow = host.attachShadow({
     mode: 'open',
-    llmPolicyInherit: true
+    wamPolicyInherit: true
   });
 
   const inherited = shadow.llmInheritedPolicy;
@@ -400,15 +400,15 @@ test(() => {
 
 test(() => {
   const host = document.createElement('div');
-  host.setAttribute('llm-policy-output', 'mutable');
+  host.setAttribute('wam-policy-output', 'mutable');
 
   const shadow = host.attachShadow({
     mode: 'open',
-    llmPolicyInherit: true
+    wamPolicyInherit: true
   });
 
   const inner = document.createElement('div');
-  inner.setAttribute('llm-policy-output', 'style');
+  inner.setAttribute('wam-policy-output', 'style');
   shadow.appendChild(inner);
 
   const effective = shadow.getEffectivePolicy(inner);
@@ -424,18 +424,18 @@ test(() => {
   const host = document.createElement('div');
   const shadow = host.attachShadow({
     mode: 'open',
-    llmPolicyInherit: true
+    wamPolicyInherit: true
   });
   const inner = document.createElement('div');
   shadow.appendChild(inner);
 
-  assert_true(inner.llmPolicy.hasInheritedPolicy);
-  assert_equals(inner.llmPolicy.containingShadowRoot, shadow);
+  assert_true(inner.wamPolicy.hasInheritedPolicy);
+  assert_equals(inner.wamPolicy.containingShadowRoot, shadow);
 }, 'LLMPolicy indicates inherited policy and containing shadow root');
 
 test(() => {
   const el = document.createElement('div');
-  assert_false(el.llmPolicy.hasInheritedPolicy);
-  assert_equals(el.llmPolicy.containingShadowRoot, null);
+  assert_false(el.wamPolicy.hasInheritedPolicy);
+  assert_equals(el.wamPolicy.containingShadowRoot, null);
 }, 'Light DOM element has no containing shadow root');
 </script>

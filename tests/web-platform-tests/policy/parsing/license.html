@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
 <title>LLM Policy License Parsing</title>
-<link rel="help" href="https://example.org/llm-markup#llm-policy-license">
+<link rel="help" href="https://example.org/web-agent-markup#wam-policy-license">
 <script src="/resources/testharness.js"></script>
 <script src="/resources/testharnessreport.js"></script>
-<script src="../../resources/llm-markup-helpers.js"></script>
+<script src="../../resources/web-agent-markup-helpers.js"></script>
 
 <div id="test-container"></div>
 
@@ -16,18 +16,18 @@
 // =============================================================================
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-license': 'MIT' });
-  assert_equals(el.llmPolicy.licenseAttribute, 'MIT');
+  const el = createLLMElement('div', { 'wam-policy-license': 'MIT' });
+  assert_equals(el.wamPolicy.licenseAttribute, 'MIT');
 }, 'License attribute value is parsed correctly');
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-license': 'CC-BY-4.0' });
-  assert_equals(el.llmPolicy.licenseAttribute, 'CC-BY-4.0');
+  const el = createLLMElement('div', { 'wam-policy-license': 'CC-BY-4.0' });
+  assert_equals(el.wamPolicy.licenseAttribute, 'CC-BY-4.0');
 }, 'SPDX identifier with version is parsed correctly');
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-license': 'GPL-3.0-or-later' });
-  assert_equals(el.llmPolicy.licenseAttribute, 'GPL-3.0-or-later');
+  const el = createLLMElement('div', { 'wam-policy-license': 'GPL-3.0-or-later' });
+  assert_equals(el.wamPolicy.licenseAttribute, 'GPL-3.0-or-later');
 }, 'Complex SPDX identifier is parsed correctly');
 
 // =============================================================================
@@ -35,15 +35,15 @@ test(() => {
 // =============================================================================
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-license': 'CC-BY-ND' });
-  const profile = el.llmPolicy.licenseProfile;
+  const el = createLLMElement('div', { 'wam-policy-license': 'CC-BY-ND' });
+  const profile = el.wamPolicy.licenseProfile;
   assert_not_equals(profile, null, 'License profile should be resolved');
   assert_equals(profile.spdxIdentifier, 'CC-BY-ND');
 }, 'CC-BY-ND license profile is resolved');
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-license': 'CC0' });
-  const profile = el.llmPolicy.licenseProfile;
+  const el = createLLMElement('div', { 'wam-policy-license': 'CC0' });
+  const profile = el.wamPolicy.licenseProfile;
   assert_not_equals(profile, null);
   assert_true(profile.allowedOutputTokens.includes('mutable') ||
               profile.allowedOutputTokens.length > 5,
@@ -51,8 +51,8 @@ test(() => {
 }, 'CC0/Public Domain allows full mutability');
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-license': 'CC-BY-ND' });
-  const profile = el.llmPolicy.licenseProfile;
+  const el = createLLMElement('div', { 'wam-policy-license': 'CC-BY-ND' });
+  const profile = el.wamPolicy.licenseProfile;
   assert_true(profile.allowedOutputTokens.includes('readonly'));
   assert_true(profile.allowedOutputTokens.includes('annotation'));
   assert_false(profile.allowedOutputTokens.includes('content'));
@@ -60,14 +60,14 @@ test(() => {
 }, 'CC-BY-ND restricts to readonly and annotation');
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-license': 'GPL-3.0' });
-  const profile = el.llmPolicy.licenseProfile;
+  const el = createLLMElement('div', { 'wam-policy-license': 'GPL-3.0' });
+  const profile = el.wamPolicy.licenseProfile;
   assert_true(profile.isCopyleft);
 }, 'GPL licenses are marked as copyleft');
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-license': 'MIT' });
-  const profile = el.llmPolicy.licenseProfile;
+  const el = createLLMElement('div', { 'wam-policy-license': 'MIT' });
+  const profile = el.wamPolicy.licenseProfile;
   assert_false(profile.isCopyleft);
 }, 'MIT license is not copyleft');
 
@@ -76,20 +76,20 @@ test(() => {
 // =============================================================================
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-license': 'CC-BY-4.0' });
-  const profile = el.llmPolicy.licenseProfile;
+  const el = createLLMElement('div', { 'wam-policy-license': 'CC-BY-4.0' });
+  const profile = el.wamPolicy.licenseProfile;
   assert_true(profile.requiresAttribution);
 }, 'CC-BY licenses require attribution');
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-license': 'CC0' });
-  const profile = el.llmPolicy.licenseProfile;
+  const el = createLLMElement('div', { 'wam-policy-license': 'CC0' });
+  const profile = el.wamPolicy.licenseProfile;
   assert_false(profile.requiresAttribution);
 }, 'CC0 does not require attribution');
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-license': 'MIT' });
-  const profile = el.llmPolicy.licenseProfile;
+  const el = createLLMElement('div', { 'wam-policy-license': 'MIT' });
+  const profile = el.wamPolicy.licenseProfile;
   assert_true(profile.requiresAttribution);
 }, 'MIT license requires attribution');
 
@@ -99,31 +99,31 @@ test(() => {
 
 test(() => {
   const el = createLLMElement('div', {
-    'llm-policy-license': 'CC-BY-ND',
-    'llm-policy-output': 'mutable'
+    'wam-policy-license': 'CC-BY-ND',
+    'wam-policy-output': 'mutable'
   });
   // License should take precedence (intersection logic)
-  assert_false(el.llmPolicy.hasOutputPermission('content'));
-  assert_false(el.llmPolicy.hasOutputPermission('mutable'));
+  assert_false(el.wamPolicy.hasOutputPermission('content'));
+  assert_false(el.wamPolicy.hasOutputPermission('mutable'));
 }, 'License profile restricts explicit mutable permission');
 
 test(() => {
   const el = createLLMElement('div', {
-    'llm-policy-license': 'CC0',
-    'llm-policy-output': 'style'
+    'wam-policy-license': 'CC0',
+    'wam-policy-output': 'style'
   });
   // CC0 allows all, but explicit attribute restricts to style only
-  assert_true(el.llmPolicy.hasOutputPermission('style'));
+  assert_true(el.wamPolicy.hasOutputPermission('style'));
   // This tests whether intersection works both ways
 }, 'Explicit output restriction intersects with permissive license');
 
 test(() => {
   const el = createLLMElement('div', {
-    'llm-policy-license': 'CC-BY-ND',
-    'llm-policy-output': 'annotation'
+    'wam-policy-license': 'CC-BY-ND',
+    'wam-policy-output': 'annotation'
   });
   // Both allow annotation, so intersection should preserve it
-  assert_true(el.llmPolicy.hasOutputPermission('annotation'));
+  assert_true(el.wamPolicy.hasOutputPermission('annotation'));
 }, 'Intersection preserves common permissions');
 
 // =============================================================================
@@ -131,17 +131,17 @@ test(() => {
 // =============================================================================
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-license': 'UNKNOWN-LICENSE' });
+  const el = createLLMElement('div', { 'wam-policy-license': 'UNKNOWN-LICENSE' });
   // Unknown license should be handled gracefully
   // Could either return null profile or a conservative default
-  const profile = el.llmPolicy.licenseProfile;
+  const profile = el.wamPolicy.licenseProfile;
   // Test that it doesn't throw and has some defined behavior
   assert_true(profile === null || typeof profile === 'object');
 }, 'Unknown license identifier is handled gracefully');
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-license': '' });
-  assert_equals(el.llmPolicy.licenseProfile, null);
+  const el = createLLMElement('div', { 'wam-policy-license': '' });
+  assert_equals(el.wamPolicy.licenseProfile, null);
 }, 'Empty license attribute results in null profile');
 
 // =============================================================================
@@ -149,8 +149,8 @@ test(() => {
 // =============================================================================
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-license': 'MIT' });
-  const profile = el.llmPolicy.licenseProfile;
+  const el = createLLMElement('div', { 'wam-policy-license': 'MIT' });
+  const profile = el.wamPolicy.licenseProfile;
   if (profile && profile.licenseName) {
     assert_true(profile.licenseName.includes('MIT'));
   }
@@ -162,14 +162,14 @@ test(() => {
 
 test(() => {
   const el = createLLMElement('div', {});
-  assert_equals(el.llmPolicy.licenseAttribute, null);
-  assert_equals(el.llmPolicy.licenseProfile, null);
+  assert_equals(el.wamPolicy.licenseAttribute, null);
+  assert_equals(el.wamPolicy.licenseProfile, null);
 }, 'Element without license attribute has null profile');
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-output': 'content' });
+  const el = createLLMElement('div', { 'wam-policy-output': 'content' });
   // Without license, explicit output should apply fully
-  assert_true(el.llmPolicy.hasOutputPermission('content'));
+  assert_true(el.wamPolicy.hasOutputPermission('content'));
 }, 'Output permissions apply fully without license restriction');
 
 // =============================================================================
@@ -177,20 +177,20 @@ test(() => {
 // =============================================================================
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-license': 'CC-BY-4.0' });
-  const profile = el.llmPolicy.licenseProfile;
+  const el = createLLMElement('div', { 'wam-policy-license': 'CC-BY-4.0' });
+  const profile = el.wamPolicy.licenseProfile;
   assert_true(profile.commercialUse);
 }, 'CC-BY-4.0 allows commercial use');
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-license': 'CC-BY-NC-4.0' });
-  const profile = el.llmPolicy.licenseProfile;
+  const el = createLLMElement('div', { 'wam-policy-license': 'CC-BY-NC-4.0' });
+  const profile = el.wamPolicy.licenseProfile;
   assert_false(profile.commercialUse);
 }, 'CC-BY-NC-4.0 does not allow commercial use');
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-license': 'MIT' });
-  const profile = el.llmPolicy.licenseProfile;
+  const el = createLLMElement('div', { 'wam-policy-license': 'MIT' });
+  const profile = el.wamPolicy.licenseProfile;
   assert_true(profile.commercialUse);
 }, 'MIT allows commercial use');
 
@@ -199,20 +199,20 @@ test(() => {
 // =============================================================================
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-license': 'CC-BY-SA-4.0' });
-  const profile = el.llmPolicy.licenseProfile;
+  const el = createLLMElement('div', { 'wam-policy-license': 'CC-BY-SA-4.0' });
+  const profile = el.wamPolicy.licenseProfile;
   assert_true(profile.shareAlike);
 }, 'CC-BY-SA-4.0 has ShareAlike requirement');
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-license': 'CC-BY-4.0' });
-  const profile = el.llmPolicy.licenseProfile;
+  const el = createLLMElement('div', { 'wam-policy-license': 'CC-BY-4.0' });
+  const profile = el.wamPolicy.licenseProfile;
   assert_false(profile.shareAlike);
 }, 'CC-BY-4.0 does not have ShareAlike requirement');
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-license': 'GPL-3.0-only' });
-  const profile = el.llmPolicy.licenseProfile;
+  const el = createLLMElement('div', { 'wam-policy-license': 'GPL-3.0-only' });
+  const profile = el.wamPolicy.licenseProfile;
   assert_true(profile.shareAlike);
   assert_true(profile.isCopyleft);
 }, 'GPL-3.0 has both copyleft and shareAlike');
@@ -222,16 +222,16 @@ test(() => {
 // =============================================================================
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-license': 'CC0-1.0' });
-  const profile = el.llmPolicy.licenseProfile;
+  const el = createLLMElement('div', { 'wam-policy-license': 'CC0-1.0' });
+  const profile = el.wamPolicy.licenseProfile;
   assert_false(profile.requiresAttribution);
   assert_true(profile.commercialUse);
   assert_false(profile.isCopyleft);
 }, 'CC0-1.0 has no restrictions');
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-license': 'Unlicense' });
-  const profile = el.llmPolicy.licenseProfile;
+  const el = createLLMElement('div', { 'wam-policy-license': 'Unlicense' });
+  const profile = el.wamPolicy.licenseProfile;
   assert_false(profile.requiresAttribution);
   assert_true(profile.allowedOutputTokens.includes('mutable'));
 }, 'Unlicense allows full mutability');
@@ -241,16 +241,16 @@ test(() => {
 // =============================================================================
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-license': 'proprietary' });
-  const profile = el.llmPolicy.licenseProfile;
+  const el = createLLMElement('div', { 'wam-policy-license': 'proprietary' });
+  const profile = el.wamPolicy.licenseProfile;
   assert_true(profile.allowedOutputTokens.includes('readonly'));
   assert_false(profile.allowedOutputTokens.includes('mutable'));
   assert_false(profile.allowedOutputTokens.includes('content'));
 }, 'proprietary restricts to readonly only');
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-license': 'all-rights-reserved' });
-  const profile = el.llmPolicy.licenseProfile;
+  const el = createLLMElement('div', { 'wam-policy-license': 'all-rights-reserved' });
+  const profile = el.wamPolicy.licenseProfile;
   assert_true(profile.allowedOutputTokens.includes('readonly'));
   assert_equals(profile.allowedOutputTokens.length, 1);
 }, 'all-rights-reserved restricts to readonly only');
@@ -260,15 +260,15 @@ test(() => {
 // =============================================================================
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-license': 'BSD-2-Clause' });
-  const profile = el.llmPolicy.licenseProfile;
+  const el = createLLMElement('div', { 'wam-policy-license': 'BSD-2-Clause' });
+  const profile = el.wamPolicy.licenseProfile;
   assert_true(profile.requiresAttribution);
   assert_true(profile.allowedOutputTokens.includes('mutable'));
 }, 'BSD-2-Clause allows mutable with attribution');
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-license': 'BSD-3-Clause' });
-  const profile = el.llmPolicy.licenseProfile;
+  const el = createLLMElement('div', { 'wam-policy-license': 'BSD-3-Clause' });
+  const profile = el.wamPolicy.licenseProfile;
   assert_true(profile.requiresAttribution);
   assert_false(profile.isCopyleft);
 }, 'BSD-3-Clause is not copyleft');
@@ -278,8 +278,8 @@ test(() => {
 // =============================================================================
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-license': 'Apache-2.0' });
-  const profile = el.llmPolicy.licenseProfile;
+  const el = createLLMElement('div', { 'wam-policy-license': 'Apache-2.0' });
+  const profile = el.wamPolicy.licenseProfile;
   assert_true(profile.requiresAttribution);
   assert_true(profile.commercialUse);
   assert_false(profile.isCopyleft);
@@ -291,15 +291,15 @@ test(() => {
 // =============================================================================
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-license': 'LGPL-3.0-only' });
-  const profile = el.llmPolicy.licenseProfile;
+  const el = createLLMElement('div', { 'wam-policy-license': 'LGPL-3.0-only' });
+  const profile = el.wamPolicy.licenseProfile;
   assert_true(profile.isCopyleft);
   assert_true(profile.allowedOutputTokens.includes('mutable'));
 }, 'LGPL-3.0 is copyleft but allows mutable');
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-license': 'AGPL-3.0-only' });
-  const profile = el.llmPolicy.licenseProfile;
+  const el = createLLMElement('div', { 'wam-policy-license': 'AGPL-3.0-only' });
+  const profile = el.wamPolicy.licenseProfile;
   assert_true(profile.isCopyleft);
 }, 'AGPL-3.0 is copyleft');
 
@@ -308,16 +308,16 @@ test(() => {
 // =============================================================================
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-license': 'MIT AND CC-BY-4.0' });
-  const profile = el.llmPolicy.licenseProfile;
+  const el = createLLMElement('div', { 'wam-policy-license': 'MIT AND CC-BY-4.0' });
+  const profile = el.wamPolicy.licenseProfile;
   assert_true(profile.isCompoundExpression);
   assert_true(profile.componentLicenses.includes('MIT'));
   assert_true(profile.componentLicenses.includes('CC-BY-4.0'));
 }, 'AND expression is parsed as compound');
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-license': 'MIT AND CC-BY-4.0' });
-  const profile = el.llmPolicy.licenseProfile;
+  const el = createLLMElement('div', { 'wam-policy-license': 'MIT AND CC-BY-4.0' });
+  const profile = el.wamPolicy.licenseProfile;
   // Both allow mutable, so intersection allows mutable
   assert_true(profile.allowedOutputTokens.includes('mutable'));
   // Either requires attribution, so attribution is required
@@ -325,8 +325,8 @@ test(() => {
 }, 'AND expression uses intersection for tokens');
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-license': 'MIT AND CC-BY-ND-4.0' });
-  const profile = el.llmPolicy.licenseProfile;
+  const el = createLLMElement('div', { 'wam-policy-license': 'MIT AND CC-BY-ND-4.0' });
+  const profile = el.wamPolicy.licenseProfile;
   // MIT allows mutable, CC-BY-ND allows readonly+annotation
   // Intersection: readonly, annotation (most restrictive)
   assert_true(profile.allowedOutputTokens.includes('readonly'));
@@ -338,14 +338,14 @@ test(() => {
 // =============================================================================
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-license': 'GPL-3.0-only OR MIT' });
-  const profile = el.llmPolicy.licenseProfile;
+  const el = createLLMElement('div', { 'wam-policy-license': 'GPL-3.0-only OR MIT' });
+  const profile = el.wamPolicy.licenseProfile;
   assert_true(profile.isCompoundExpression);
 }, 'OR expression is parsed as compound');
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-license': 'GPL-3.0-only OR MIT' });
-  const profile = el.llmPolicy.licenseProfile;
+  const el = createLLMElement('div', { 'wam-policy-license': 'GPL-3.0-only OR MIT' });
+  const profile = el.wamPolicy.licenseProfile;
   // OR allows choosing less restrictive, so mutable is available
   assert_true(profile.allowedOutputTokens.includes('mutable'));
 }, 'OR expression uses union for tokens');
@@ -355,8 +355,8 @@ test(() => {
 // =============================================================================
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-license': 'GPL-2.0-only WITH Classpath-exception-2.0' });
-  const profile = el.llmPolicy.licenseProfile;
+  const el = createLLMElement('div', { 'wam-policy-license': 'GPL-2.0-only WITH Classpath-exception-2.0' });
+  const profile = el.wamPolicy.licenseProfile;
   assert_true(profile.isCompoundExpression || profile.spdxIdentifier.includes('WITH'));
 }, 'WITH exception is recognized');
 
@@ -365,8 +365,8 @@ test(() => {
 // =============================================================================
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-license': '(MIT OR Apache-2.0) AND CC-BY-4.0' });
-  const profile = el.llmPolicy.licenseProfile;
+  const el = createLLMElement('div', { 'wam-policy-license': '(MIT OR Apache-2.0) AND CC-BY-4.0' });
+  const profile = el.wamPolicy.licenseProfile;
   assert_true(profile.isCompoundExpression);
 }, 'Parenthesized expression is parsed');
 
@@ -375,8 +375,8 @@ test(() => {
 // =============================================================================
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-license': 'UNKNOWN-LICENSE-XYZ' });
-  const profile = el.llmPolicy.licenseProfile;
+  const el = createLLMElement('div', { 'wam-policy-license': 'UNKNOWN-LICENSE-XYZ' });
+  const profile = el.wamPolicy.licenseProfile;
   // Unknown licenses should be handled conservatively
   if (profile !== null) {
     assert_false(profile.isRecognized);
@@ -389,8 +389,8 @@ test(() => {
 }, 'Unknown license uses conservative defaults');
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-license': 'LicenseRef-MyCompany' });
-  const profile = el.llmPolicy.licenseProfile;
+  const el = createLLMElement('div', { 'wam-policy-license': 'LicenseRef-MyCompany' });
+  const profile = el.wamPolicy.licenseProfile;
   // LicenseRef-* is a valid SPDX pattern for custom licenses
   if (profile !== null) {
     assert_true(profile.spdxIdentifier.startsWith('LicenseRef-'));
@@ -402,14 +402,14 @@ test(() => {
 // =============================================================================
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-license': 'MIT' });
-  const profile = el.llmPolicy.licenseProfile;
+  const el = createLLMElement('div', { 'wam-policy-license': 'MIT' });
+  const profile = el.wamPolicy.licenseProfile;
   assert_true(profile.isRecognized);
 }, 'MIT is a recognized license');
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-license': 'CC-BY-4.0' });
-  const profile = el.llmPolicy.licenseProfile;
+  const el = createLLMElement('div', { 'wam-policy-license': 'CC-BY-4.0' });
+  const profile = el.wamPolicy.licenseProfile;
   assert_true(profile.isRecognized);
 }, 'CC-BY-4.0 is a recognized license');
 
@@ -418,14 +418,14 @@ test(() => {
 // =============================================================================
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-license': 'Apache-2.0' });
-  const profile = el.llmPolicy.licenseProfile;
+  const el = createLLMElement('div', { 'wam-policy-license': 'Apache-2.0' });
+  const profile = el.wamPolicy.licenseProfile;
   assert_true(profile.licenseName.includes('Apache'));
 }, 'Apache-2.0 has correct license name');
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-license': 'GPL-3.0-only' });
-  const profile = el.llmPolicy.licenseProfile;
+  const el = createLLMElement('div', { 'wam-policy-license': 'GPL-3.0-only' });
+  const profile = el.wamPolicy.licenseProfile;
   assert_true(profile.licenseName.includes('GNU') || profile.licenseName.includes('GPL'));
 }, 'GPL-3.0-only has correct license name');
 
@@ -434,10 +434,10 @@ test(() => {
 // =============================================================================
 
 test(() => {
-  const el3 = createLLMElement('div', { 'llm-policy-license': 'CC-BY-3.0' });
-  const el4 = createLLMElement('div', { 'llm-policy-license': 'CC-BY-4.0' });
-  const profile3 = el3.llmPolicy.licenseProfile;
-  const profile4 = el4.llmPolicy.licenseProfile;
+  const el3 = createLLMElement('div', { 'wam-policy-license': 'CC-BY-3.0' });
+  const el4 = createLLMElement('div', { 'wam-policy-license': 'CC-BY-4.0' });
+  const profile3 = el3.wamPolicy.licenseProfile;
+  const profile4 = el4.wamPolicy.licenseProfile;
   // Both versions should have same basic permissions
   assert_equals(
     profile3.allowedOutputTokens.includes('mutable'),
@@ -446,8 +446,8 @@ test(() => {
 }, 'CC-BY version 3.0 and 4.0 have same permissions');
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-license': 'GPL-2.0-or-later' });
-  const profile = el.llmPolicy.licenseProfile;
+  const el = createLLMElement('div', { 'wam-policy-license': 'GPL-2.0-or-later' });
+  const profile = el.wamPolicy.licenseProfile;
   assert_true(profile.isCopyleft);
   assert_true(profile.spdxIdentifier.includes('or-later'));
 }, 'GPL-2.0-or-later is recognized');
@@ -458,14 +458,14 @@ test(() => {
 
 test(() => {
   const el = createLLMElement('div', {
-    'llm-policy-license': 'CC-BY-NC-4.0',
-    'llm-policy-output': 'mutable'
+    'wam-policy-license': 'CC-BY-NC-4.0',
+    'wam-policy-output': 'mutable'
   });
   // NC doesn't restrict output tokens, only commercial context
-  assert_true(el.llmPolicy.hasOutputPermission('mutable') ||
-              el.llmPolicy.hasOutputPermission('content'));
+  assert_true(el.wamPolicy.hasOutputPermission('mutable') ||
+              el.wamPolicy.hasOutputPermission('content'));
   // But commercialUse should be false
-  assert_false(el.llmPolicy.licenseProfile.commercialUse);
+  assert_false(el.wamPolicy.licenseProfile.commercialUse);
 }, 'NC license allows modification but flags non-commercial');
 
 // =============================================================================
@@ -474,17 +474,17 @@ test(() => {
 
 test(() => {
   const el = createLLMElement('div', {
-    'llm-policy-license': 'CC-BY-ND-4.0',
-    'llm-policy-output': 'content'
+    'wam-policy-license': 'CC-BY-ND-4.0',
+    'wam-policy-output': 'content'
   });
   // ND should override content permission
-  assert_false(el.llmPolicy.hasOutputPermission('content'));
-  assert_true(el.llmPolicy.hasOutputPermission('readonly'));
+  assert_false(el.wamPolicy.hasOutputPermission('content'));
+  assert_true(el.wamPolicy.hasOutputPermission('readonly'));
 }, 'ND license strictly prevents content modification');
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-license': 'CC-BY-NC-ND-4.0' });
-  const profile = el.llmPolicy.licenseProfile;
+  const el = createLLMElement('div', { 'wam-policy-license': 'CC-BY-NC-ND-4.0' });
+  const profile = el.wamPolicy.licenseProfile;
   assert_false(profile.commercialUse);
   assert_true(profile.allowedOutputTokens.includes('readonly'));
   assert_true(profile.allowedOutputTokens.includes('annotation'));

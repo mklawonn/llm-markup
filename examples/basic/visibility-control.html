@@ -2,16 +2,16 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>LLM Markup: Visibility Control Example</title>
-  <meta name="description" content="Demonstrates llm-policy-input tokens for controlling what the LLM can see">
+  <title>Web Agent Markup: Visibility Control Example</title>
+  <meta name="description" content="Demonstrates wam-policy-input tokens for controlling what the LLM can see">
 </head>
 <body>
 
-<h1>Visibility Control with llm-policy-input</h1>
+<h1>Visibility Control with wam-policy-input</h1>
 
 <!--
   DEFAULT BEHAVIOR (all)
-  When no llm-policy-input is specified, the LLM sees everything.
+  When no wam-policy-input is specified, the LLM sees everything.
 -->
 <section>
   <h2>Public Content (Default)</h2>
@@ -23,7 +23,7 @@
   COMPLETE HIDING (none)
   The element and all descendants are completely omitted from LLM context.
 -->
-<section llm-policy-input="none">
+<section wam-policy-input="none">
   <h2>Admin Panel (Hidden)</h2>
   <p>The LLM cannot see any of this content.</p>
   <form>
@@ -36,7 +36,7 @@
   STRUCTURE ONLY (structure)
   Element tags are preserved, but text is replaced with [REDACTED].
 -->
-<section llm-policy-input="structure">
+<section wam-policy-input="structure">
   <h2>User Profile</h2>
   <p>Name: John Doe</p>
   <p>Email: john@example.com</p>
@@ -51,7 +51,7 @@
   STRUCTURE + TEXT (structure text)
   Text is visible but custom data attributes are hidden.
 -->
-<section llm-policy-input="structure text">
+<section wam-policy-input="structure text">
   <h2>Product Listing</h2>
   <div data-internal-sku="SKU-7890" data-margin="45%">
     <p>Widget Pro - $99.99</p>
@@ -66,7 +66,7 @@
   FULL VISIBILITY (all)
   Explicit full visibility, including all attributes.
 -->
-<section llm-policy-input="all">
+<section wam-policy-input="all">
   <h2>Open Source Documentation</h2>
   <p data-version="2.0" data-author="Community">
     This documentation is completely open to LLM analysis.
@@ -81,12 +81,12 @@
   <h3>Media Examples</h3>
 
   <!-- With media token: LLM sees src and alt -->
-  <img llm-policy-input="structure media"
+  <img wam-policy-input="structure media"
        src="public-photo.jpg"
        alt="A scenic mountain view">
 
   <!-- Without media token: LLM sees [image] placeholder -->
-  <img llm-policy-input="structure"
+  <img wam-policy-input="structure"
        src="private-photo.jpg"
        alt="Private family photo">
 </section>

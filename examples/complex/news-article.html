@@ -2,15 +2,15 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>LLM Markup: Complex News Article Example</title>
-  <meta name="description" content="A complete news article demonstrating all LLM Markup features">
+  <title>Web Agent Markup: Complex News Article Example</title>
+  <meta name="description" content="A complete news article demonstrating all Web Agent Markup features">
 
   <!-- Global Policy via meta tag (alternative to HTTP header) -->
-  <meta name="llm-policy" content='{
+  <meta name="wam-policy" content='{
     "defaults": {
-      "llm-policy-input": ["structure", "text", "attributes"],
-      "llm-policy-output": ["readonly"],
-      "llm-policy-memory": ["session"]
+      "wam-policy-input": ["structure", "text", "attributes"],
+      "wam-policy-output": ["readonly"],
+      "wam-policy-memory": ["session"]
     },
     "constraints": {
       "block-selectors": [".paywall-content", "[data-subscriber-only]"]
@@ -20,7 +20,7 @@
 <body>
 
 <!-- Site Header: Visible but not editable -->
-<header llm-policy-output="readonly">
+<header wam-policy-output="readonly">
   <nav>
     <a href="/">TechNews Daily</a>
     <a href="/tech">Technology</a>
@@ -29,7 +29,7 @@
   </nav>
 
   <!-- User info hidden from LLM -->
-  <div class="user-menu" llm-policy-input="none">
+  <div class="user-menu" wam-policy-input="none">
     <span>Welcome, john@example.com</span>
     <a href="/logout">Logout</a>
   </div>
@@ -37,24 +37,24 @@
 
 <!-- Main Article -->
 <article
-  llm-provenance-source="https://technews.example/articles/ai-breakthrough-2024"
-  llm-provenance-citation="TechNews Daily, Jan 15, 2024">
+  wam-provenance-source="https://technews.example/articles/ai-breakthrough-2024"
+  wam-provenance-citation="TechNews Daily, Jan 15, 2024">
 
   <!-- Article Header -->
   <header>
-    <h1 llm-intent-importance="critical">
+    <h1 wam-intent-importance="critical">
       Major AI Breakthrough Announced at Global Tech Summit
     </h1>
 
-    <div class="byline" llm-policy-output="readonly">
-      <span llm-intent-entity="https://technews.example/authors/jane-smith">
+    <div class="byline" wam-policy-output="readonly">
+      <span wam-intent-entity="https://technews.example/authors/jane-smith">
         By Jane Smith
       </span>
       <time datetime="2024-01-15">January 15, 2024</time>
     </div>
 
     <!-- Summary for quick context -->
-    <div class="article-summary" llm-intent-category="summary" llm-intent-importance="high">
+    <div class="article-summary" wam-intent-category="summary" wam-intent-importance="high">
       <p>
         Researchers at OpenTech Labs have unveiled a new AI architecture
         that achieves state-of-the-art performance while using 90% less
@@ -64,9 +64,9 @@
   </header>
 
   <!-- Article Body: Allow annotation but not content changes -->
-  <div class="article-body" llm-policy-output="annotation style">
+  <div class="article-body" wam-policy-output="annotation style">
 
-    <p llm-intent-category="introduction">
+    <p wam-intent-category="introduction">
       In a landmark announcement at the Global Tech Summit yesterday,
       researchers from OpenTech Labs revealed what they're calling
       "the most significant advancement in AI efficiency in a decade."
@@ -74,10 +74,10 @@
 
     <!-- Quote: Read-only, high importance -->
     <blockquote
-      llm-policy-output="readonly"
-      llm-intent-category="quote"
-      llm-intent-importance="high"
-      llm-provenance-citation="Dr. Sarah Chen, OpenTech Labs">
+      wam-policy-output="readonly"
+      wam-intent-category="quote"
+      wam-intent-importance="high"
+      wam-provenance-citation="Dr. Sarah Chen, OpenTech Labs">
       <p>
         "We've achieved something we thought was years away. This
         architecture fundamentally changes what's possible with
@@ -92,10 +92,10 @@
     </p>
 
     <!-- Technical Details -->
-    <section llm-intent-category="api-spec">
+    <section wam-intent-category="api-spec">
       <h2>Technical Specifications</h2>
 
-      <table llm-policy-output="readonly">
+      <table wam-policy-output="readonly">
         <thead>
           <tr>
             <th>Metric</th>
@@ -128,16 +128,16 @@
       <h2>Industry Reaction</h2>
 
       <blockquote
-        llm-intent-category="opinion"
-        llm-provenance-source="https://university.edu/faculty/johnson"
-        llm-provenance-citation="Prof. Michael Johnson, Stanford AI Lab">
+        wam-intent-category="opinion"
+        wam-provenance-source="https://university.edu/faculty/johnson"
+        wam-provenance-citation="Prof. Michael Johnson, Stanford AI Lab">
         <p>
           "If these results hold up to peer review, this could be
           transformative. It's exactly what the field needs."
         </p>
       </blockquote>
 
-      <p llm-intent-category="counter-argument">
+      <p wam-intent-category="counter-argument">
         However, not everyone is convinced. Critics point out that
         the benchmarks used may not reflect real-world performance,
         and independent verification is still pending.
@@ -145,7 +145,7 @@
     </section>
 
     <!-- Warning about speculation -->
-    <aside llm-intent-category="warning" llm-intent-importance="high">
+    <aside wam-intent-category="warning" wam-intent-importance="high">
       <p>
         <strong>Editor's Note:</strong> This article discusses
         preliminary research findings. Results have not yet been
@@ -154,7 +154,7 @@
     </aside>
 
     <!-- Conclusion -->
-    <section llm-intent-category="conclusion">
+    <section wam-intent-category="conclusion">
       <h2>Looking Ahead</h2>
       <p>
         OpenTech Labs plans to release the model weights and training
@@ -166,7 +166,7 @@
   </div>
 
   <!-- Related Content: Allow LLM to suggest ordering -->
-  <aside class="related-articles" llm-policy-output="layout">
+  <aside class="related-articles" wam-policy-output="layout">
     <h2>Related Articles</h2>
     <ul>
       <li><a href="/article/1">The Evolution of Transformer Architectures</a></li>
@@ -176,16 +176,16 @@
   </aside>
 
   <!-- Comments Section: Allow append only -->
-  <section class="comments" llm-policy-output="append">
+  <section class="comments" wam-policy-output="append">
     <h2>Comments</h2>
 
-    <div class="comment" llm-policy-output="readonly">
+    <div class="comment" wam-policy-output="readonly">
       <span class="author">TechEnthusiast42</span>
       <p>This is incredible! Can't wait to try it out.</p>
       <time>2 hours ago</time>
     </div>
 
-    <div class="comment" llm-policy-output="readonly">
+    <div class="comment" wam-policy-output="readonly">
       <span class="author">SkepticalResearcher</span>
       <p>I'll believe it when I see the peer review.</p>
       <time>1 hour ago</time>
@@ -199,20 +199,20 @@
 <aside class="sidebar">
 
   <!-- Ad: Completely hidden from LLM -->
-  <div class="advertisement" llm-policy-input="none">
+  <div class="advertisement" wam-policy-input="none">
     <img src="/ads/banner.jpg" alt="Advertisement">
     <script>trackAdImpression('banner-1234');</script>
   </div>
 
   <!-- Newsletter Signup: Hidden from context, data can be modified -->
-  <form class="newsletter" llm-policy-input="structure" llm-policy-output="data">
+  <form class="newsletter" wam-policy-input="structure" wam-policy-output="data">
     <h3>Subscribe to Newsletter</h3>
     <input type="email" name="email" placeholder="Enter your email">
     <button type="submit">Subscribe</button>
   </form>
 
   <!-- Trending: Visible, layout can be reordered -->
-  <section class="trending" llm-policy-output="layout">
+  <section class="trending" wam-policy-output="layout">
     <h3>Trending Now</h3>
     <ol>
       <li><a href="#">AI Ethics Guidelines Updated</a></li>
@@ -223,15 +223,15 @@
 </aside>
 
 <!-- Footer: Legal content, strictly readonly -->
-<footer llm-policy-output="readonly">
-  <p llm-intent-category="legal-disclaimer">
+<footer wam-policy-output="readonly">
+  <p wam-intent-category="legal-disclaimer">
     &copy; 2024 TechNews Daily. All rights reserved.
     <a href="/terms">Terms of Service</a> |
     <a href="/privacy">Privacy Policy</a>
   </p>
 
   <!-- Analytics: Hidden -->
-  <div llm-policy-input="none">
+  <div wam-policy-input="none">
     <script>analytics.track('pageview', {article: 'ai-breakthrough-2024'});</script>
   </div>
 </footer>

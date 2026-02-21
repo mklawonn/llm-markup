@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
 <title>LLM Policy Mutation Validation</title>
-<link rel="help" href="https://example.org/llm-markup#token-based-enforcement">
+<link rel="help" href="https://example.org/web-agent-markup#token-based-enforcement">
 <script src="/resources/testharness.js"></script>
 <script src="/resources/testharnessreport.js"></script>
-<script src="../../resources/llm-markup-helpers.js"></script>
+<script src="../../resources/web-agent-markup-helpers.js"></script>
 
 <div id="test-container"></div>
 
@@ -16,7 +16,7 @@
 // =============================================================================
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-output': 'readonly' });
+  const el = createLLMElement('div', { 'wam-policy-output': 'readonly' });
   const violation = el.checkMutationPermission('style');
   assert_not_equals(violation, null, 'Should return violation object');
   assert_equals(violation.violationType, 'permission-denied');
@@ -24,13 +24,13 @@ test(() => {
 }, 'checkMutationPermission returns violation for denied permission');
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-output': 'style' });
+  const el = createLLMElement('div', { 'wam-policy-output': 'style' });
   const violation = el.checkMutationPermission('style');
   assert_equals(violation, null, 'Should return null for allowed permission');
 }, 'checkMutationPermission returns null for allowed permission');
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-output': 'mutable' });
+  const el = createLLMElement('div', { 'wam-policy-output': 'mutable' });
   for (const token of VALID_OUTPUT_TOKENS) {
     if (token !== 'readonly') {
       const violation = el.checkMutationPermission(token);
@@ -44,7 +44,7 @@ test(() => {
 // =============================================================================
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-output': 'style' });
+  const el = createLLMElement('div', { 'wam-policy-output': 'style' });
   assert_equals(el.checkMutationPermission('style'), null);
   assert_not_equals(el.checkMutationPermission('content'), null);
   assert_not_equals(el.checkMutationPermission('data'), null);
@@ -52,7 +52,7 @@ test(() => {
 
 test(() => {
   const el = createLLMElement('div', {
-    'llm-policy-output': 'style',
+    'wam-policy-output': 'style',
     'class': 'original'
   });
   // Simulate checking if class attribute can be modified
@@ -65,7 +65,7 @@ test(() => {
 // =============================================================================
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-output': 'content' });
+  const el = createLLMElement('div', { 'wam-policy-output': 'content' });
   assert_equals(el.checkMutationPermission('content'), null);
   assert_not_equals(el.checkMutationPermission('style'), null);
   assert_not_equals(el.checkMutationPermission('append'), null);
@@ -76,7 +76,7 @@ test(() => {
 // =============================================================================
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-output': 'annotation' });
+  const el = createLLMElement('div', { 'wam-policy-output': 'annotation' });
   assert_equals(el.checkMutationPermission('annotation'), null);
   assert_not_equals(el.checkMutationPermission('content'), null);
 }, "'annotation' token allows wrapping but not text modification");
@@ -86,7 +86,7 @@ test(() => {
 // =============================================================================
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-output': 'layout' });
+  const el = createLLMElement('div', { 'wam-policy-output': 'layout' });
   assert_equals(el.checkMutationPermission('layout'), null);
   assert_not_equals(el.checkMutationPermission('content'), null);
   assert_not_equals(el.checkMutationPermission('append'), null);
@@ -97,7 +97,7 @@ test(() => {
 // =============================================================================
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-output': 'data' });
+  const el = createLLMElement('div', { 'wam-policy-output': 'data' });
   assert_equals(el.checkMutationPermission('data'), null);
   assert_not_equals(el.checkMutationPermission('content'), null);
 }, "'data' token allows data attributes but not text content");
@@ -107,7 +107,7 @@ test(() => {
 // =============================================================================
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-output': 'append' });
+  const el = createLLMElement('div', { 'wam-policy-output': 'append' });
   assert_equals(el.checkMutationPermission('append'), null);
   assert_not_equals(el.checkMutationPermission('content'), null);
   assert_not_equals(el.checkMutationPermission('layout'), null);
@@ -118,7 +118,7 @@ test(() => {
 // =============================================================================
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-output': 'interaction' });
+  const el = createLLMElement('div', { 'wam-policy-output': 'interaction' });
   assert_equals(el.checkMutationPermission('interaction'), null);
   assert_not_equals(el.checkMutationPermission('content'), null);
 }, "'interaction' token allows behavioral layer modifications");
@@ -128,7 +128,7 @@ test(() => {
 // =============================================================================
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-output': 'readonly' });
+  const el = createLLMElement('div', { 'wam-policy-output': 'readonly' });
   for (const token of VALID_OUTPUT_TOKENS) {
     if (token !== 'readonly') {
       const violation = el.checkMutationPermission(token);
@@ -142,14 +142,14 @@ test(() => {
 // =============================================================================
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-output': 'style annotation' });
+  const el = createLLMElement('div', { 'wam-policy-output': 'style annotation' });
   assert_equals(el.checkMutationPermission('style'), null);
   assert_equals(el.checkMutationPermission('annotation'), null);
   assert_not_equals(el.checkMutationPermission('content'), null);
 }, 'Combined tokens grant union of permissions');
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-output': 'content data append' });
+  const el = createLLMElement('div', { 'wam-policy-output': 'content data append' });
   assert_equals(el.checkMutationPermission('content'), null);
   assert_equals(el.checkMutationPermission('data'), null);
   assert_equals(el.checkMutationPermission('append'), null);
@@ -161,7 +161,7 @@ test(() => {
 // =============================================================================
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-output': 'readonly' });
+  const el = createLLMElement('div', { 'wam-policy-output': 'readonly' });
   const violation = el.checkMutationPermission('content');
 
   assert_true('target' in violation);
@@ -172,7 +172,7 @@ test(() => {
 }, 'Violation object has required properties');
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-output': 'readonly' });
+  const el = createLLMElement('div', { 'wam-policy-output': 'readonly' });
   const violation = el.checkMutationPermission('content');
 
   assert_equals(violation.target, el);
@@ -182,7 +182,7 @@ test(() => {
 }, 'Violation object properties have correct values');
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-policy-output': 'readonly' });
+  const el = createLLMElement('div', { 'wam-policy-output': 'readonly' });
   const violation = el.checkMutationPermission('content');
   const json = violation.toJSON();
 
@@ -197,7 +197,7 @@ test(() => {
 
 test(() => {
   const el = createLLMElement('a', {
-    'llm-policy-output': 'content',
+    'wam-policy-output': 'content',
     'href': 'https://example.com'
   });
   // Even with 'content' permission, 'href' should be immutable
@@ -208,22 +208,22 @@ test(() => {
 
 test(() => {
   const el = createLLMElement('img', {
-    'llm-policy-output': 'style content',
+    'wam-policy-output': 'style content',
     'src': 'image.png'
   });
   // 'src' is a payload attribute, should require 'mutable'
   // Test that style+content doesn't allow src modification
-  assert_false(el.llmPolicy.hasOutputPermission('mutable'));
+  assert_false(el.wamPolicy.hasOutputPermission('mutable'));
 }, 'src attribute requires mutable permission');
 
 test(() => {
   const el = createLLMElement('form', {
-    'llm-policy-output': 'data',
+    'wam-policy-output': 'data',
     'action': '/submit'
   });
   // 'action' is a payload attribute per Semantic Payload Principle
   // Even 'data' token shouldn't allow modifying it
-  assert_false(el.llmPolicy.isMutable);
+  assert_false(el.wamPolicy.isMutable);
 }, 'action attribute is protected as semantic payload');
 
 // =============================================================================
@@ -232,8 +232,8 @@ test(() => {
 
 test(() => {
   const el = createLLMElement('div', {
-    'llm-policy-license': 'CC-BY-ND',
-    'llm-policy-output': 'content'
+    'wam-policy-license': 'CC-BY-ND',
+    'wam-policy-output': 'content'
   });
   // CC-BY-ND should block content modification
   const violation = el.checkMutationPermission('content');

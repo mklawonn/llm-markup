@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
 <title>LLM Global Policy Delivery</title>
-<link rel="help" href="https://example.org/llm-markup#policy-delivery">
+<link rel="help" href="https://example.org/web-agent-markup#policy-delivery">
 <script src="/resources/testharness.js"></script>
 <script src="/resources/testharnessreport.js"></script>
-<script src="../../resources/llm-markup-helpers.js"></script>
+<script src="../../resources/web-agent-markup-helpers.js"></script>
 
 <div id="test-container"></div>
 
@@ -16,9 +16,9 @@
 // =============================================================================
 
 test(() => {
-  assert_true('llmPolicyResolved' in document);
-  assert_true(typeof document.llmPolicyResolved === 'boolean');
-}, 'document.llmPolicyResolved exists and is boolean');
+  assert_true('wamPolicyResolved' in document);
+  assert_true(typeof document.wamPolicyResolved === 'boolean');
+}, 'document.wamPolicyResolved exists and is boolean');
 
 test(() => {
   assert_true('llmGlobalPolicy' in document);
@@ -27,7 +27,7 @@ test(() => {
 test(() => {
   // By the time this test runs, policy should be resolved
   // (assuming no external policy files that would delay resolution)
-  if (document.llmPolicyResolved) {
+  if (document.wamPolicyResolved) {
     assert_not_equals(document.llmGlobalPolicy, null);
   }
 }, 'llmGlobalPolicy is available when resolved');
@@ -103,7 +103,7 @@ test(() => {
 
 async_test(t => {
   // If policy is already resolved, the event may have already fired
-  if (document.llmPolicyResolved) {
+  if (document.wamPolicyResolved) {
     t.done();
     return;
   }
@@ -143,21 +143,21 @@ test(() => {
 }, 'LLMGlobalPolicyResolvedEvent can be constructed');
 
 // =============================================================================
-// buildLLMContext Timing
+// buildWAMContext Timing
 // =============================================================================
 
 test(() => {
-  if (!document.llmPolicyResolved) {
-    // If policy not resolved, buildLLMContext should throw
+  if (!document.wamPolicyResolved) {
+    // If policy not resolved, buildWAMContext should throw
     assert_throws_dom('InvalidStateError', () => {
-      document.buildLLMContext();
+      document.buildWAMContext();
     });
   } else {
     // If resolved, should succeed
-    const context = document.buildLLMContext();
+    const context = document.buildWAMContext();
     assert_true(typeof context === 'string');
   }
-}, 'buildLLMContext respects policy resolution state');
+}, 'buildWAMContext respects policy resolution state');
 
 // =============================================================================
 // Policy Immutability
@@ -176,8 +176,8 @@ test(() => {
   // Dynamically inserted meta tags should be ignored
   const container = document.getElementById('test-container');
   const meta = document.createElement('meta');
-  meta.name = 'llm-policy';
-  meta.content = '{"defaults":{"llm-policy-output":["mutable"]}}';
+  meta.name = 'wam-policy';
+  meta.content = '{"defaults":{"wam-policy-output":["mutable"]}}';
 
   const policyBefore = document.llmGlobalPolicy;
   container.appendChild(meta);

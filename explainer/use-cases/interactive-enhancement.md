@@ -10,7 +10,7 @@ If the policy is `mutable`, an LLM might accidentally simplify the complex SVG p
 If the policy is `readonly`, the LLM cannot add the necessary event listeners or script tags.
 
 ## The Solution: Interaction Policy
-The agency tags the SVG container with `llm-policy-output="interaction"`.
+The agency tags the SVG container with `wam-policy-output="interaction"`.
 
 ### Policy Definition
 *   **Target:** `<svg id="election-map">`

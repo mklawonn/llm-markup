@@ -1,8 +1,8 @@
 # Standardized Intent Lexicon
 
-This document defines the normative set of **Standardized Intent Categories** for the `llm-intent` namespace. User Agents MUST recognize these terms and apply the corresponding optimized system prompts when constructing the LLM context.
+This document defines the normative set of **Standardized Intent Categories** for the `wam-intent` namespace. User Agents MUST recognize these terms and apply the corresponding optimized system prompts when constructing the LLM context.
 
-Any `llm-intent-category` value NOT listed here MUST be treated as a custom label and wrapped using the fallback template:
+Any `wam-intent-category` value NOT listed here MUST be treated as a custom label and wrapped using the fallback template:
 > "Treat the following content as a(n) [custom-category]."
 
 ## Information Structure

@@ -1,5 +1,5 @@
 /**
- * LLM Markup Test Helpers
+ * Web Agent Markup Test Helpers
  * Shared utilities for WPT conformance tests
  */
 
@@ -67,21 +67,21 @@ function assert_array_equals_unordered(actual, expected, description) {
 function assert_effective_policy(el, expected) {
   if (expected.input !== undefined) {
     assert_array_equals_unordered(
-      el.llmPolicy.effectiveInputTokens,
+      el.wamPolicy.effectiveInputTokens,
       expected.input,
       'Effective input tokens'
     );
   }
   if (expected.output !== undefined) {
     assert_array_equals_unordered(
-      el.llmPolicy.effectiveOutputTokens,
+      el.wamPolicy.effectiveOutputTokens,
       expected.output,
       'Effective output tokens'
     );
   }
   if (expected.memory !== undefined) {
     assert_array_equals_unordered(
-      el.llmPolicy.effectiveMemoryTokens,
+      el.wamPolicy.effectiveMemoryTokens,
       expected.memory,
       'Effective memory tokens'
     );
@@ -380,16 +380,16 @@ const MOCK_GLOBAL_POLICY = {
   'report-to': 'https://api.example.com/llm-reports',
   'report-only': false,
   'defaults': {
-    'llm-policy-input': ['structure', 'text', 'attributes', 'media'],
-    'llm-policy-output': ['readonly'],
-    'llm-policy-memory': ['none']
+    'wam-policy-input': ['structure', 'text', 'attributes', 'media'],
+    'wam-policy-output': ['readonly'],
+    'wam-policy-memory': ['none']
   },
   'constraints': {
     'block-selectors': ['.secret', '[data-private]'],
     'category-rules': {
-      'advertisement': { 'llm-policy-input': ['none'] },
-      'quote': { 'llm-policy-output': ['readonly', 'annotation'] },
-      'user-content': { 'llm-policy-output': ['content', 'annotation'] }
+      'advertisement': { 'wam-policy-input': ['none'] },
+      'quote': { 'wam-policy-output': ['readonly', 'annotation'] },
+      'user-content': { 'wam-policy-output': ['content', 'annotation'] }
     },
     'dependencies': [
       {

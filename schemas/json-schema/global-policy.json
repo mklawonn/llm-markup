@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://example.org/llm-markup/schemas/global-policy.json",
-  "title": "LLM Markup Global Policy Header",
-  "description": "Schema for the LLM Markup Global Policy Header defining site-wide constraints and defaults.",
+  "$id": "https://example.org/web-agent-markup/schemas/global-policy.json",
+  "title": "Web Agent Markup Global Policy Header",
+  "description": "Schema for the Web Agent Markup Global Policy Header defining site-wide constraints and defaults.",
   "type": "object",
   "properties": {
     "report-to": {
@@ -19,17 +19,17 @@
       "type": "object",
       "description": "Default attribute values applied to the entire document unless overridden locally.",
       "properties": {
-        "llm-policy-input": {
+        "wam-policy-input": {
           "type": "array",
           "items": { "enum": ["structure", "text", "attributes", "media", "all", "none"] },
           "default": ["structure", "text", "attributes", "media"]
         },
-        "llm-policy-output": {
+        "wam-policy-output": {
           "type": "array",
           "items": { "enum": ["readonly", "mutable", "style", "interaction", "layout", "annotation", "content", "data", "append"] },
           "default": ["readonly"]
         },
-        "llm-policy-memory": {
+        "wam-policy-memory": {
           "type": "array",
           "items": { "enum": ["none", "session", "user", "training"] },
           "default": ["none"]
@@ -48,20 +48,20 @@
         },
         "category-rules": {
           "type": "object",
-          "description": "Maps 'llm-intent-category' values to policy constraints. These rules override defaults but can be overridden by specific local policy attributes if not strictly enforced.",
+          "description": "Maps 'wam-intent-category' values to policy constraints. These rules override defaults but can be overridden by specific local policy attributes if not strictly enforced.",
           "patternProperties": {
             "^.*$": {
               "type": "object",
               "properties": {
-                "llm-policy-input": {
+                "wam-policy-input": {
                   "type": "array",
                   "items": { "enum": ["structure", "text", "attributes", "media", "all", "none"] }
                 },
-                "llm-policy-output": {
+                "wam-policy-output": {
                   "type": "array",
                   "items": { "enum": ["readonly", "mutable", "style", "interaction", "layout", "annotation", "content", "data", "append"] }
                 },
-                "llm-policy-memory": {
+                "wam-policy-memory": {
                   "type": "array",
                   "items": { "enum": ["none", "session", "user", "training"] }
                 }

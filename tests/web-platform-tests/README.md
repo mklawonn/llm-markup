@@ -1,6 +1,6 @@
-# LLM Markup Web Platform Tests
+# Web Agent Markup Web Platform Tests
 
-This directory contains conformance tests for the LLM Markup (LLMPM) specification.
+This directory contains conformance tests for the Web Agent Markup (WAM) specification.
 
 ## Test Coverage
 
@@ -20,9 +20,9 @@ This directory contains conformance tests for the LLM Markup (LLMPM) specificati
 web-platform-tests/
 ├── index.html              # Test suite index page
 ├── resources/              # Test harness and helper utilities
-│   └── llm-markup-helpers.js
+│   └── web-agent-markup-helpers.js
 │
-├── policy/                 # llm-policy-* namespace tests
+├── policy/                 # wam-policy-* namespace tests
 │   ├── parsing/
 │   │   ├── input-tokens.html      # Visibility token parsing
 │   │   ├── output-tokens.html     # Mutation token parsing
@@ -34,13 +34,13 @@ web-platform-tests/
 │       ├── shadow-dom.html            # Shadow DOM boundaries
 │       └── context-representation.html # Context format
 │
-├── intent/                 # llm-intent-* namespace tests
+├── intent/                 # wam-intent-* namespace tests
 │   ├── parsing/
 │   │   └── attributes.html        # All intent attributes
 │   └── prompt/
 │       └── construction.html      # Prompt generation
 │
-├── provenance/             # llm-provenance-* namespace tests
+├── provenance/             # wam-provenance-* namespace tests
 │   ├── parsing/
 │   │   └── attributes.html        # Provenance attributes
 │   └── integrity/
@@ -67,9 +67,9 @@ web-platform-tests/
 If you have WPT set up:
 
 ```bash
-./wpt run chrome llm-markup/
-./wpt run firefox llm-markup/
-./wpt run safari llm-markup/
+./wpt run chrome web-agent-markup/
+./wpt run firefox web-agent-markup/
+./wpt run safari web-agent-markup/
 ```
 
 ### Local Development
@@ -78,7 +78,7 @@ For local development without full WPT infrastructure:
 
 ```bash
 # Start a local server
-cd /path/to/llm-markup
+cd /path/to/web-agent-markup
 python -m http.server 8000
 
 # Or with Node.js
@@ -96,18 +96,18 @@ You can also load tests directly in a browser DevTools console to debug:
 ```javascript
 // Load helper functions
 const script = document.createElement('script');
-script.src = '/tests/web-platform-tests/resources/llm-markup-helpers.js';
+script.src = '/tests/web-platform-tests/resources/web-agent-markup-helpers.js';
 document.head.appendChild(script);
 
 // Create test elements
 const el = createLLMElement('div', {
-  'llm-policy-input': 'structure text',
-  'llm-policy-output': 'annotation'
+  'wam-policy-input': 'structure text',
+  'wam-policy-output': 'annotation'
 });
 
 // Inspect policy
-console.log(el.llmPolicy.effectiveInputTokens);
-console.log(el.llmPolicy.hasOutputPermission('annotation'));
+console.log(el.wamPolicy.effectiveInputTokens);
+console.log(el.wamPolicy.hasOutputPermission('annotation'));
 ```
 
 ## Test Categories
@@ -161,12 +161,12 @@ Verify document-level policies:
 ```javascript
 test(() => {
   const el = createLLMElement('div', {
-    'llm-policy-output': 'style annotation'
+    'wam-policy-output': 'style annotation'
   });
 
-  assert_true(el.llmPolicy.hasOutputPermission('style'));
-  assert_true(el.llmPolicy.hasOutputPermission('annotation'));
-  assert_false(el.llmPolicy.hasOutputPermission('content'));
+  assert_true(el.wamPolicy.hasOutputPermission('style'));
+  assert_true(el.wamPolicy.hasOutputPermission('annotation'));
+  assert_false(el.wamPolicy.hasOutputPermission('content'));
 }, 'Multiple output tokens are parsed correctly');
 ```
 
@@ -188,13 +188,13 @@ async_test(t => {
 ```javascript
 // Create elements with LLM attributes
 const el = createLLMElement('div', {
-  'llm-policy-input': 'structure text',
-  'llm-intent-category': 'summary'
+  'wam-policy-input': 'structure text',
+  'wam-intent-category': 'summary'
 });
 
 // Create nested structures
 const fragment = createNestedStructure([
-  { tag: 'section', attrs: {'llm-policy-output': 'content'}, children: [
+  { tag: 'section', attrs: {'wam-policy-output': 'content'}, children: [
     { tag: 'p', text: 'Nested content' }
   ]}
 ]);

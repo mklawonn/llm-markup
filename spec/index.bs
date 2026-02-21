@@ -1,10 +1,10 @@
 <pre class='metadata'>
-Title: LLM Markup (LLMPM)
-Shortname: llm-markup
+Title: Web Agent Markup (WAM)
+Shortname: web-agent-markup
 Level: 1
 Status: ED
-Group: LLM Markup Community Group
-URL: https://example.org/llm-markup
+Group: Web Agent Markup Community Group
+URL: https://example.org/web-agent-markup
 Editor: [Your Name/Organization]
 Abstract: A declarative transformation contract embedded in HTML to govern LLM agent behavior.
 Markup Shorthands: markdown yes
@@ -12,101 +12,101 @@ Markup Shorthands: markdown yes
 
 # Namespaces and Attributes
 
-## The LLM-Intent Namespace
+## The WAM-Intent Namespace
 
-The `llm-intent` namespace defines soft constraints and semantic signals that help the User Agent construct a deterministic context for the LLM. Unlike policy attributes, these do not strictly enforce visibility or mutability by default, but provide metadata that can be targeted by policies.
+The `wam-intent` namespace defines soft constraints and semantic signals that help the User Agent construct a deterministic context for the LLM. Unlike policy attributes, these do not strictly enforce visibility or mutability by default, but provide metadata that can be targeted by policies.
 
-### The llm-policy-license attribute
+### The wam-policy-license attribute
 Specifies the usage license for the content, acting as a policy macro that enforces rights and restrictions.
 
-*   **Syntax:** `llm-policy-license="<SPDX-Identifier>"`
-*   **Purpose:** Machine-readable declaration of rights (e.g., `CC-BY-4.0`, `MIT`, `GPL-3.0`). The User Agent MUST enforce the terms associated with the license (e.g., restricting commercial use, requiring `llm-provenance-citation`, or enforcing copyleft on output).
+*   **Syntax:** `wam-policy-license="<SPDX-Identifier>"`
+*   **Purpose:** Machine-readable declaration of rights (e.g., `CC-BY-4.0`, `MIT`, `GPL-3.0`). The User Agent MUST enforce the terms associated with the license (e.g., restricting commercial use, requiring `wam-provenance-citation`, or enforcing copyleft on output).
 
-## The LLM-Provenance Namespace
+## The WAM-Provenance Namespace
 
-The `llm-provenance` namespace functions as an **Internal Ledger** or **Interchange Format** for the User Agent, tracking the origin, reliability, and transformation history of information.
+The `wam-provenance` namespace functions as an **Internal Ledger** or **Interchange Format** for the User Agent, tracking the origin, reliability, and transformation history of information.
 
-### The llm-provenance-source attribute
+### The wam-provenance-source attribute
 Specifies the canonical origin URI of the content chunk.
 
-*   **Syntax:** `llm-provenance-source="<URI>"`
+*   **Syntax:** `wam-provenance-source="<URI>"`
 *   **Purpose:** Tracks where the information came from (e.g., `https://wikipedia.org`, `urn:internal:knowledge-base`). Used for linking citations.
 
-### The llm-provenance-operation attribute
+### The wam-provenance-operation attribute
 A dynamic ledger of transformations applied to the content.
 
-*   **Syntax:** `llm-provenance-operation="<layer>:<explanation> ..."`
+*   **Syntax:** `wam-provenance-operation="<layer>:<explanation> ..."`
 *   **Format:** A space-separated list of pairs, where `<layer>` is one of `content`, `style`, `interaction`, `topology`, `data`, or `intent`, and `<explanation>` is a succinct, hyphenated summary of the rationale.
 *   **Example:** `content:summarized-text style:highlighted-warnings`
 *   **Purpose:** Provides a granular audit trail of *why* and *how* the Agent modified the node.
 
-### The llm-provenance-confidence attribute
+### The wam-provenance-confidence attribute
 Expresses the agent's certainty in the accuracy of the content.
 
-*   **Syntax:** `llm-provenance-confidence="<0.0-1.0>"`
+*   **Syntax:** `wam-provenance-confidence="<0.0-1.0>"`
 *   **Purpose:** Allows the User Agent to flag low-confidence information (e.g., hallucination warnings) or high-confidence facts in the UI.
 
-### The llm-provenance-citation attribute
+### The wam-provenance-citation attribute
 Specifies the human-readable label for the source.
 
-*   **Syntax:** `llm-provenance-citation="<string>"`
-*   **Purpose:** Defines the text to display for attribution (e.g., "[1]", "TechRadar", "Jane Doe"). Replaces the legacy `llm-provenance-attribution` attribute.
+*   **Syntax:** `wam-provenance-citation="<string>"`
+*   **Purpose:** Defines the text to display for attribution (e.g., "[1]", "TechRadar", "Jane Doe"). Replaces the legacy `wam-provenance-attribution` attribute.
 
-## The LLM-Intent Namespace
+## The WAM-Intent Namespace
 
-The `llm-intent` namespace defines soft constraints and semantic signals that help the User Agent construct a deterministic context for the LLM. Unlike policy attributes, these do not strictly enforce visibility or mutability by default, but provide metadata that can be targeted by policies.
+The `wam-intent` namespace defines soft constraints and semantic signals that help the User Agent construct a deterministic context for the LLM. Unlike policy attributes, these do not strictly enforce visibility or mutability by default, but provide metadata that can be targeted by policies.
 
-### The llm-intent-category attribute
+### The wam-intent-category attribute
 Assigns a semantic category to a node, allowing it to be targeted by Global Policy rules or specific LLM instructions.
 
-*   **Syntax:** `llm-intent-category="<string>"`
+*   **Syntax:** `wam-intent-category="<string>"`
 *   **Purpose:** Provides a stable, semantic label (e.g., "quote", "advertisement", "navigation") independent of CSS classes or visual presentation.
 
-### The llm-intent-importance attribute
+### The wam-intent-importance attribute
 Specifies the relative priority of the content within the document topology.
 
-*   **Syntax:** `llm-intent-importance="critical|high|normal|low|background"`
+*   **Syntax:** `wam-intent-importance="critical|high|normal|low|background"`
 *   **Purpose:** Guides the User Agent in prioritizing content for the LLM context. `critical` content MUST be preserved if token limits are reached, while `background` content MAY be discarded.
 
-### The llm-intent-entity attribute
+### The wam-intent-entity attribute
 Links the content to a specific real-world entity for disambiguation.
 
-*   **Syntax:** `llm-intent-entity="<URI>"`
+*   **Syntax:** `wam-intent-entity="<URI>"`
 *   **Purpose:** Provides a canonical reference (e.g., Wikidata ID, Schema.org URL) to ground the LLM's understanding of named entities.
 
-### The llm-intent-instruction attribute
+### The wam-intent-instruction attribute
 Provides explicit, free-form instructions to the LLM for processing the specific node.
 
-*   **Syntax:** `llm-intent-instruction="<string>"`
+*   **Syntax:** `wam-intent-instruction="<string>"`
 *   **Purpose:** Allows developers to bypass standard templates and inject custom prompts. This attribute **overrides** the default prompt generation for Category, Function, and Tone, but preserves semantic identity for Policy enforcement.
 
-### The llm-intent-function attribute
+### The wam-intent-function attribute
 Defines the interactive purpose of an element (Phase 2).
 
-*   **Syntax:** `llm-intent-function="<string>"`
+*   **Syntax:** `wam-intent-function="<string>"`
 *   **Purpose:** Semantic label for interactive controls (e.g., "search", "submit"). See the Standardized Lexicon for normative terms. Custom values are accepted.
 
-### The llm-intent-workflow attribute
+### The wam-intent-workflow attribute
 Defines the role of an element within a multi-step process (Phase 2).
 
-*   **Syntax:** `llm-intent-workflow="<string>"`
+*   **Syntax:** `wam-intent-workflow="<string>"`
 *   **Purpose:** Semantic label for workflow states (e.g., "step", "prerequisite"). See the Standardized Lexicon for normative terms. Custom values are accepted.
 
-### The llm-intent-output attribute
+### The wam-intent-output attribute
 Specifies the desired format for the LLM's response (Phase 3).
 
-*   **Syntax:** `llm-intent-output="<string>"`
+*   **Syntax:** `wam-intent-output="<string>"`
 *   **Purpose:** Instructions for response shaping (e.g., "json", "concise"). See the Standardized Lexicon for normative terms. Custom values are accepted.
 
-### The llm-intent-tone attribute
+### The wam-intent-tone attribute
 Specifies the desired persona or tone for the LLM's response (Phase 3).
 
-*   **Syntax:** `llm-intent-tone="<string>"`
+*   **Syntax:** `wam-intent-tone="<string>"`
 *   **Purpose:** Instructions for stylistic adaptation (e.g., "formal", "empathetic"). See the Standardized Lexicon for normative terms. Custom values are accepted.
 
-The `llm-policy` namespace defines hard constraints that a conforming User Agent MUST enforce. These are split into three primary attributes to govern the flow of information and mutations.
+The `wam-policy` namespace defines hard constraints that a conforming User Agent MUST enforce. These are split into three primary attributes to govern the flow of information and mutations.
 
-### The llm-policy-input attribute
+### The wam-policy-input attribute
 Governs the flow of data from the DOM to the Language Model (Visibility). This attribute accepts a **space-separated list** of allowed information channels. The User Agent MUST construct the context using the union of these channels.
 
 *   **`none` (Default):** The node is completely hidden from the LLM.
@@ -116,9 +116,9 @@ Governs the flow of data from the DOM to the Language Model (Visibility). This a
 *   **`media`:** The LLM may see media content (images, audio, video).
 *   **`all`:** Shorthand for `structure text attributes media`.
 
-**Example:** `llm-policy-input="structure text"` creates a "Masked" view where the structure and text are visible, but attributes (like PII in `data-user-id`) are hidden.
+**Example:** `wam-policy-input="structure text"` creates a "Masked" view where the structure and text are visible, but attributes (like PII in `data-user-id`) are hidden.
 
-### The llm-policy-output attribute
+### The wam-policy-output attribute
 Governs the flow of mutations from the Language Model to the DOM (Enforcement). This attribute accepts a **space-separated list** of permission tokens. The User Agent MUST grant the union of all permissions specified.
 
 *   **`readonly` (Default):** No mutations are permitted.
@@ -131,9 +131,9 @@ Governs the flow of mutations from the Language Model to the DOM (Enforcement). 
 *   **`append`:** Grants permission to append new children.
 *   **`mutable`:** Shorthand for all permissions.
 
-**Example:** `llm-policy-output="style annotation"` allows highlighting and styling but prevents text alteration.
+**Example:** `wam-policy-output="style annotation"` allows highlighting and styling but prevents text alteration.
 
-### The llm-policy-memory attribute
+### The wam-policy-memory attribute
 Governs the persistence of interaction data (Retention). This attribute accepts a **space-separated list** of allowed storage scopes.
 
 *   **`none` (Default):** Ephemeral processing only.
@@ -141,7 +141,7 @@ Governs the persistence of interaction data (Retention). This attribute accepts 
 *   **`user`:** Data may be stored in the user's long-term profile (e.g., "Remember I like dark mode").
 *   **`training`:** Data may be used to train or fine-tune the global model.
 
-**Example:** `llm-policy-memory="session user"` allows personalization but prohibits using the data for model training.
+**Example:** `wam-policy-memory="session user"` allows personalization but prohibits using the data for model training.
 
 # Global Policy
 
@@ -153,12 +153,12 @@ The Global Policy MAY be delivered via HTTP response header, HTML meta tag, or b
 
 ### HTTP Response Header
 
-The server MAY deliver the Global Policy via the `LLM-Policy` HTTP response header.
+The server MAY deliver the Global Policy via the `WAM-Policy` HTTP response header.
 
 **Syntax:**
 
 ```http
-LLM-Policy: <json-policy>
+WAM-Policy: <json-policy>
 ```
 
 **Example:**
@@ -166,15 +166,15 @@ LLM-Policy: <json-policy>
 ```http
 HTTP/1.1 200 OK
 Content-Type: text/html
-LLM-Policy: {"defaults":{"llm-policy-output":["readonly"]},"constraints":{"block-selectors":[".secret"]}}
+WAM-Policy: {"defaults":{"wam-policy-output":["readonly"]},"constraints":{"block-selectors":[".secret"]}}
 ```
 
-For policies exceeding practical header size limits (~8KB), the server SHOULD use the `LLM-Policy-Src` header to reference an external policy file.
+For policies exceeding practical header size limits (~8KB), the server SHOULD use the `WAM-Policy-Src` header to reference an external policy file.
 
 **External Policy Reference:**
 
 ```http
-LLM-Policy-Src: /.well-known/llm-policy.json
+WAM-Policy-Src: /.well-known/wam-policy.json
 ```
 
 The User Agent MUST fetch the referenced policy file before allowing any LLM interaction with the document. The referenced file MUST be same-origin or served with appropriate CORS headers (`Access-Control-Allow-Origin`).
@@ -186,28 +186,28 @@ The document MAY include a Global Policy via a `<meta>` tag in the `<head>` elem
 **Syntax:**
 
 ```html
-<meta name="llm-policy" content="<json-policy>">
+<meta name="wam-policy" content="<json-policy>">
 ```
 
 **Example:**
 
 ```html
 <head>
-  <meta name="llm-policy" content='{"defaults":{"llm-policy-memory":["none"]}}'>
+  <meta name="wam-policy" content='{"defaults":{"wam-policy-memory":["none"]}}'>
 </head>
 ```
 
 For external policy files:
 
 ```html
-<meta name="llm-policy-src" content="/.well-known/llm-policy.json">
+<meta name="wam-policy-src" content="/.well-known/wam-policy.json">
 ```
 
 ### Delivery Precedence
 
 When both HTTP header and meta tag provide policy, the User Agent MUST apply the following precedence rules:
 
-1.  **HTTP Header Authority:** The policy delivered via HTTP header (or `LLM-Policy-Src`) establishes the authoritative baseline. This policy is considered **tamper-proof** as it cannot be modified by page scripts.
+1.  **HTTP Header Authority:** The policy delivered via HTTP header (or `WAM-Policy-Src`) establishes the authoritative baseline. This policy is considered **tamper-proof** as it cannot be modified by page scripts.
 
 2.  **Meta Tag Restrictions:** The policy delivered via meta tag is applied as an **additional restriction** using intersection semantics. The meta tag can only make the policy MORE restrictive, never more permissive.
 
@@ -218,16 +218,16 @@ When both HTTP header and meta tag provide policy, the User Agent MUST apply the
 **Example (Precedence Resolution):**
 
 ```http
-LLM-Policy: {"defaults":{"llm-policy-output":["style","content","annotation"]}}
+WAM-Policy: {"defaults":{"wam-policy-output":["style","content","annotation"]}}
 ```
 
 ```html
-<meta name="llm-policy" content='{"defaults":{"llm-policy-output":["style","annotation"]}}'>
+<meta name="wam-policy" content='{"defaults":{"wam-policy-output":["style","annotation"]}}'>
 ```
 
 **Effective Policy:**
 ```
-defaults.llm-policy-output = [style, content, annotation] ∩ [style, annotation]
+defaults.wam-policy-output = [style, content, annotation] ∩ [style, annotation]
                            = [style, annotation]
 ```
 
@@ -238,20 +238,20 @@ The meta tag removed `content` from the allowed outputs, which is permitted. A m
 The User Agent MUST resolve the Global Policy before initiating any LLM interaction with the document.
 
 *   **HTTP Header:** Available immediately upon response receipt. Does not block HTML parsing.
-*   **External File (via `LLM-Policy-Src` or `llm-policy-src`):** The User Agent MUST fetch and parse the policy file before LLM interaction. This fetch SHOULD be initiated as early as possible (e.g., during HTML preload scanning).
+*   **External File (via `WAM-Policy-Src` or `wam-policy-src`):** The User Agent MUST fetch and parse the policy file before LLM interaction. This fetch SHOULD be initiated as early as possible (e.g., during HTML preload scanning).
 *   **Meta Tag:** Parsed during normal HTML parsing. The User Agent MUST NOT allow LLM interaction with elements that appear before the meta tag until the meta tag is processed.
 
-If the external policy file fails to load (network error, 4xx/5xx response), the User Agent MUST apply **fail-closed** semantics: treat the document as if it had `llm-policy-input="none"` on the root element (no LLM visibility).
+If the external policy file fails to load (network error, 4xx/5xx response), the User Agent MUST apply **fail-closed** semantics: treat the document as if it had `wam-policy-input="none"` on the root element (no LLM visibility).
 
 ### Policy Immutability
 
 Once the Global Policy is resolved (after HTTP headers are received and any external files are fetched), the policy is **immutable** for the lifetime of the document.
 
 *   Page scripts MUST NOT be able to modify the effective Global Policy.
-*   Dynamically inserted `<meta name="llm-policy">` tags MUST be ignored.
+*   Dynamically inserted `<meta name="wam-policy">` tags MUST be ignored.
 *   The policy persists across soft navigations (SPA route changes via `pushState`).
 
-For applications requiring per-route policies, the server SHOULD deliver different policies via HTTP header for each route, or the application SHOULD use local DOM attributes (`llm-policy-*`) on route containers.
+For applications requiring per-route policies, the server SHOULD deliver different policies via HTTP header for each route, or the application SHOULD use local DOM attributes (`wam-policy-*`) on route containers.
 
 ### Error Handling
 
@@ -272,15 +272,15 @@ The global policy is defined as a JSON object. This schema enforces site-wide de
   "report-to": "https://api.example.com/llm-reports",
   "report-only": true,
   "defaults": {
-    "llm-policy-input": ["structure", "text", "attributes", "media"],
-    "llm-policy-output": ["readonly"],
-    "llm-policy-memory": ["none"]
+    "wam-policy-input": ["structure", "text", "attributes", "media"],
+    "wam-policy-output": ["readonly"],
+    "wam-policy-memory": ["none"]
   },
   "constraints": {
     "block-selectors": ["css-selector", "..."],
     "category-rules": {
-      "advertisement": { "llm-policy-input": ["none"] },
-      "quote": { "llm-policy-output": ["readonly"] }
+      "advertisement": { "wam-policy-input": ["none"] },
+      "quote": { "wam-policy-output": ["readonly"] }
     },
     "dependencies": [
       {
@@ -296,7 +296,7 @@ The global policy is defined as a JSON object. This schema enforces site-wide de
 
 ### Constraint Types
 *   **`block-selectors`:** Forcibly removes elements matching the CSS selector from the LLM's view.
-*   **`category-rules`:** Maps an `llm-intent-category` value (e.g., `advertisement`) to specific policy enforcements (e.g., `block`). This allows semantic control over policy without relying on brittle CSS classes.
+*   **`category-rules`:** Maps an `wam-intent-category` value (e.g., `advertisement`) to specific policy enforcements (e.g., `block`). This allows semantic control over policy without relying on brittle CSS classes.
 *   **`dependencies`:** Enforces co-occurrence of elements to maintain context (e.g., requiring a citation for a quote).
 
 ### Policy Reporting
@@ -312,13 +312,13 @@ The effective policy for any element is determined by a layered precedence model
 
 ### Precedence Layers (Highest to Lowest Authority)
 
-1.  **License Profile:** If `llm-policy-license` specifies an SPDX identifier, the license's implicit constraints take highest precedence. See Section 6.
+1.  **License Profile:** If `wam-policy-license` specifies an SPDX identifier, the license's implicit constraints take highest precedence. See Section 6.
 2.  **Global Policy Constraints:** Constraints from `block-selectors`, `category-rules`, and `dependencies` cannot be overridden by any lower layer.
 3.  **Global Policy (HTTP Header):** The policy delivered via HTTP header establishes the authoritative defaults.
 4.  **Global Policy (Meta Tag):** Can only restrict (never expand) the HTTP header policy via intersection.
 5.  **Shadow DOM Boundary:** If the element is within a shadow tree, inheritance from light DOM requires explicit opt-in. See Section 10.
 6.  **Inherited Policy:** Policy inherited from ancestor elements in the DOM tree.
-7.  **Local Attributes:** Policy attributes on the element itself (`llm-policy-input`, `llm-policy-output`, `llm-policy-memory`).
+7.  **Local Attributes:** Policy attributes on the element itself (`wam-policy-input`, `wam-policy-output`, `wam-policy-memory`).
 
 ### Effective Policy Calculation
 
@@ -326,7 +326,7 @@ For any element, the effective policy is computed as:
 
 ```
 EffectivePolicy(element) =
-    LicenseProfile(element)                    // If llm-policy-license present
+    LicenseProfile(element)                    // If wam-policy-license present
   ∩ GlobalConstraints                          // block-selectors, category-rules
   ∩ GlobalDefaults(header ∩ meta)              // Resolved global defaults
   ∩ InheritedPolicy(ancestors)                 // DOM inheritance chain
@@ -336,7 +336,7 @@ EffectivePolicy(element) =
 ### Inheritance Rules
 
 1.  **DOM Inheritance:** Attributes on a node apply to all its descendants unless a descendant specifies its own attribute.
-2.  **Shadow Boundary:** Shadow roots block inheritance by default. Components must opt-in via `llm-policy-inherit`.
+2.  **Shadow Boundary:** Shadow roots block inheritance by default. Components must opt-in via `wam-policy-inherit`.
 3.  **Slotted Content:** Subject to intersection of light DOM policy AND slot container policy.
 4.  **Constraints Are Absolute:** Global Policy constraints (`block-selectors`, `category-rules`) MUST NOT be overridden by any local attribute or inheritance.
 
@@ -345,12 +345,12 @@ EffectivePolicy(element) =
 When computing intersections, the following rules apply:
 
 *   **Token Intersection:** Only tokens present in ALL applicable policies are granted.
-*   **Empty Intersection:** If intersection results in an empty set for `llm-policy-output`, the effective policy is `readonly`.
+*   **Empty Intersection:** If intersection results in an empty set for `wam-policy-output`, the effective policy is `readonly`.
 *   **Conflicting Defaults:** If no explicit policy exists at any layer, specification defaults apply (`input=all`, `output=readonly`, `memory=none`).
 
 # Processing Model
 
-This section defines the normative requirements for User Agents when enforcing mutation policies. The User Agent MUST calculate the **Effective Permission Set** as the union of all tokens present in the `llm-policy-output` attribute.
+This section defines the normative requirements for User Agents when enforcing mutation policies. The User Agent MUST calculate the **Effective Permission Set** as the union of all tokens present in the `wam-policy-output` attribute.
 
 ## 1. The Semantic Payload Principle (Core Constraint)
 
@@ -361,7 +361,7 @@ Regardless of the permission set, the User Agent MUST determine the mutability o
 
 ## 2. Global Policy Resolution (Category Conflicts)
 
-When multiple `llm-intent-category` values apply to a single node, and the Global Policy defines conflicting rules for these categories, the User Agent MUST resolve the conflict using **Intersection Logic** (Restrictive Priority).
+When multiple `wam-intent-category` values apply to a single node, and the Global Policy defines conflicting rules for these categories, the User Agent MUST resolve the conflict using **Intersection Logic** (Restrictive Priority).
 
 *   **Rule:** The effective permission set granted by the Global Policy is the **intersection** of the allowed tokens for each applicable category.
 *   **Implication:** If *any* active category rule forbids a specific action (by omitting the corresponding token), that action is forbidden, even if other categories would allow it.
@@ -415,9 +415,9 @@ The User Agent MUST allow a mutation if and only if it is authorized by at least
 ### `mutable` (Full Access)
 *   **Allowed:** All operations. The User Agent removes all restrictions for this node.
 
-## 4. Enforcement of Visibility (`llm-policy-input`)
+## 4. Enforcement of Visibility (`wam-policy-input`)
 
-The User Agent MUST transform the DOM into a context representation for the LLM by filtering nodes based on the `llm-policy-input` tokens. This section defines the normative requirements for context construction.
+The User Agent MUST transform the DOM into a context representation for the LLM by filtering nodes based on the `wam-policy-input` tokens. This section defines the normative requirements for context construction.
 
 ### 4.1. Context Representation Format
 
@@ -431,7 +431,7 @@ The context representation MUST be an HTML fragment string. The User Agent MAY s
 
 ### 4.2. Visibility Token Processing
 
-The effective visibility for a node is the union of all tokens present in its `llm-policy-input` attribute (after inheritance and constraint resolution). The User Agent MUST process each node according to the following rules:
+The effective visibility for a node is the union of all tokens present in its `wam-policy-input` attribute (after inheritance and constraint resolution). The User Agent MUST process each node according to the following rules:
 
 #### `none` (Omission)
 If the effective token set is empty or contains only `none`, the User Agent MUST omit the node and all its descendants from the context representation. The node appears as if it does not exist in the document.
@@ -549,7 +549,7 @@ When content is redacted or replaced, the following placeholder formats MUST be 
 
 ### 4.7. Importance-Based Prioritization
 
-When constructing context for token-limited LLM interactions, the User Agent SHOULD prioritize content based on `llm-intent-importance`:
+When constructing context for token-limited LLM interactions, the User Agent SHOULD prioritize content based on `wam-intent-importance`:
 
 1.  **`critical`:** MUST be included. If token limits prevent inclusion, the User Agent MUST report an error rather than omit critical content.
 2.  **`high`:** SHOULD be included before `normal` content.
@@ -561,11 +561,11 @@ The specific algorithm for token budgeting and truncation is implementation-defi
 
 ### 4.8. Default Behavior
 
-If no `llm-policy-input` attribute is present on a node and no inherited or global policy applies, the default visibility is `all` (equivalent to `structure text attributes media`), providing full visibility to the LLM.
+If no `wam-policy-input` attribute is present on a node and no inherited or global policy applies, the default visibility is `all` (equivalent to `structure text attributes media`), providing full visibility to the LLM.
 
-## 5. Enforcement of Retention (`llm-policy-memory`)
+## 5. Enforcement of Retention (`wam-policy-memory`)
 
-The User Agent MUST signal and enforce storage limitations based on the `llm-policy-memory` tokens.
+The User Agent MUST signal and enforce storage limitations based on the `wam-policy-memory` tokens.
 
 *   **`none` (Ephemeral):**
     *   **Signal:** The User Agent MUST send a standard HTTP header (e.g., `Cache-Control: no-store`) or an equivalent signal to the LLM service indicating that the context is ephemeral.
@@ -582,9 +582,9 @@ The User Agent MUST signal and enforce storage limitations based on the `llm-pol
 
 **Privacy Default:** If no attribute is present, the default is `none` (Strictly Ephemeral).
 
-## 6. Enforcement of Licensing (`llm-policy-license`)
+## 6. Enforcement of Licensing (`wam-policy-license`)
 
-The User Agent MUST resolve `llm-policy-license` attributes by expanding the license identifier into a set of implicit policy constraints (a **License Profile**). The effective policy for the node is the **intersection** of the explicitly declared `llm-policy-output` tokens and the License Profile's allowed permissions.
+The User Agent MUST resolve `wam-policy-license` attributes by expanding the license identifier into a set of implicit policy constraints (a **License Profile**). The effective policy for the node is the **intersection** of the explicitly declared `wam-policy-output` tokens and the License Profile's allowed permissions.
 
 ### 6.1. License Profile Structure
 
@@ -661,7 +661,7 @@ Copyleft licenses allow modifications but require derivatives to carry compatibl
 | `EPL-2.0` | `mutable` | Yes | Yes | Yes | Eclipse copyleft |
 | `EUPL-1.2` | `mutable` | Yes | Yes | Yes | EU copyleft |
 
-**Copyleft Constraint:** When `isCopyleft` is true, the User Agent MUST ensure that any LLM-generated content derived from this node is marked with a compatible license in `llm-provenance-operation` entries. The User Agent MAY prevent insertion of copyleft content into contexts marked as proprietary or incompatibly licensed.
+**Copyleft Constraint:** When `isCopyleft` is true, the User Agent MUST ensure that any LLM-generated content derived from this node is marked with a compatible license in `wam-provenance-operation` entries. The User Agent MAY prevent insertion of copyleft content into contexts marked as proprietary or incompatibly licensed.
 
 #### 6.2.4. Proprietary and Restricted Licenses
 
@@ -695,13 +695,13 @@ When the User Agent encounters an SPDX identifier not in its supported list:
 1.  **Conservative Default:** The User Agent MUST treat unknown licenses as `readonly` only (most restrictive).
 2.  **Attribution Assumed:** The User Agent MUST assume `requiresAttribution: true`.
 3.  **Warning:** The User Agent SHOULD emit a warning indicating the license is unrecognized.
-4.  **Fallback Override:** Authors MAY provide explicit `llm-policy-output` tokens, but the conservative default still applies via intersection.
+4.  **Fallback Override:** Authors MAY provide explicit `wam-policy-output` tokens, but the conservative default still applies via intersection.
 
 ### 6.5. Attribution Enforcement
 
 When a License Profile has `requiresAttribution: true`:
 
-1.  **Provenance Citation Required:** Any LLM mutation on this node MUST include a `llm-provenance-citation` attribute or entry linking to the original source.
+1.  **Provenance Citation Required:** Any LLM mutation on this node MUST include a `wam-provenance-citation` attribute or entry linking to the original source.
 2.  **Inherited Requirement:** If a child element is modified, the attribution requirement propagates from the licensed ancestor.
 3.  **Validation:** The User Agent MUST validate that mutations include proper attribution; violations SHOULD be reported.
 
@@ -715,10 +715,10 @@ When a License Profile has `commercialUse: false` (e.g., CC-BY-NC variants):
 
 ### 6.7. Conflict Resolution
 
-If an explicit `llm-policy-output` attribute conflicts with the License Profile:
+If an explicit `wam-policy-output` attribute conflicts with the License Profile:
 
 1.  **License Takes Precedence:** The effective output tokens are the **intersection** of the explicit tokens and the License Profile's allowed tokens.
-2.  **Example:** `llm-policy-output="mutable"` with `llm-policy-license="CC-BY-ND-4.0"` results in effective tokens of `readonly`, `annotation` (the ND license restricts to these).
+2.  **Example:** `wam-policy-output="mutable"` with `wam-policy-license="CC-BY-ND-4.0"` results in effective tokens of `readonly`, `annotation` (the ND license restricts to these).
 3.  **Warning:** The User Agent MAY emit a warning when an explicit attribute is overridden by license constraints.
 4.  **No Expansion:** An explicit attribute cannot grant permissions beyond what the license allows.
 
@@ -726,8 +726,8 @@ If an explicit `llm-policy-output` attribute conflicts with the License Profile:
 
 License constraints inherit to descendants unless overridden:
 
-1.  **Downward Propagation:** A `llm-policy-license` attribute applies to all descendants of the element.
-2.  **Local Override:** A descendant MAY specify a different `llm-policy-license`, which applies to that subtree.
+1.  **Downward Propagation:** A `wam-policy-license` attribute applies to all descendants of the element.
+2.  **Local Override:** A descendant MAY specify a different `wam-policy-license`, which applies to that subtree.
 3.  **Restriction Only:** A descendant's license can only further restrict, not expand, permissions (intersection with ancestor license).
 4.  **Mixed Content:** When content from multiple license sources is combined, the most restrictive license applies to the combined output.
 
@@ -746,13 +746,13 @@ When constructing the LLM context, the User Agent MUST enforce dependency constr
 
 ## 8. Intent Processing Model (Prompt Construction)
 
-This section defines how the User Agent translates `llm-intent` attributes into the system prompt or context object provided to the LLM.
+This section defines how the User Agent translates `wam-intent` attributes into the system prompt or context object provided to the LLM.
 
 ### 8.1. Hierarchy of Instruction
 The User Agent MUST determine the final instruction for a node based on the following precedence:
 
-1.  **`llm-intent-instruction` (Highest):** If present, the value of this attribute is used directly as the instruction. It overrides any instructions derived from Category, Function, Workflow, Output, or Tone attributes.
-    *   *Note:* The semantic values of overridden attributes (e.g., `llm-intent-category`) are preserved for **Policy Routing** but ignored for **Prompt Construction**.
+1.  **`wam-intent-instruction` (Highest):** If present, the value of this attribute is used directly as the instruction. It overrides any instructions derived from Category, Function, Workflow, Output, or Tone attributes.
+    *   *Note:* The semantic values of overridden attributes (e.g., `wam-intent-category`) are preserved for **Policy Routing** but ignored for **Prompt Construction**.
 2.  **Standardized Lexicon (Optimized):** If an attribute value matches a term in the **Standardized Intent Lexicon**, the User Agent MUST use the corresponding **Optimized System Prompt** defined in the lexicon.
 3.  **Custom Value (Fallback):** If an attribute value is not found in the lexicon, the User Agent MUST construct the instruction using the **Fallback Template** for that attribute type.
 
@@ -770,9 +770,9 @@ For custom values not in the Standardized Lexicon, the User Agent MUST use the f
 
 These attributes operate independently of the Instruction/Category hierarchy and are appended to the context.
 
-*   **`llm-intent-entity`:** Appends an entity reference anchor.
+*   **`wam-intent-entity`:** Appends an entity reference anchor.
     *   **Template:** `[Content] (Entity Reference: [URI])`
-*   **`llm-intent-importance`:** Maps to specific prioritization instructions.
+*   **`wam-intent-importance`:** Maps to specific prioritization instructions.
     *   **`critical`:** `"Pay maximum attention to the following content. It is essential for the user's task."`
     *   **`high`:** `"Prioritize this content."`
     *   **`normal`:** (No instruction).
@@ -785,7 +785,7 @@ To ensure accountability, the User Agent functions as the **Authority** on prove
 
 ### 9.1. Causal Logging Requirement
 
-Whenever the LLM or User Agent modifies a node (e.g., rewriting text, changing a class), it MUST append a corresponding entry to the `llm-provenance-operation` attribute of that node or its nearest container.
+Whenever the LLM or User Agent modifies a node (e.g., rewriting text, changing a class), it MUST append a corresponding entry to the `wam-provenance-operation` attribute of that node or its nearest container.
 
 *   **Format:** The entry MUST follow the syntax `<layer>:<explanation>`.
 *   **Layer Alignment:** The `<layer>` token MUST match the type of mutation performed (e.g., `content` for text changes, `style` for class changes).
@@ -800,7 +800,7 @@ Whenever the LLM or User Agent modifies a node (e.g., rewriting text, changing a
 | Event handlers, ARIA, form state | `interaction` | Adding onclick, changing aria-expanded |
 | Child node reordering | `topology` | Sorting list items, reordering sections |
 | `data-*` attributes, form values | `data` | Updating data attributes, form autofill |
-| `llm-intent-*` attributes | `intent` | Modifying semantic hints |
+| `wam-intent-*` attributes | `intent` | Modifying semantic hints |
 
 #### Explanation Format
 
@@ -812,7 +812,7 @@ The explanation component MUST be a hyphenated string of lowercase ASCII letters
 
 ### 9.2. Provenance Ledger Structure
 
-The User Agent MUST maintain an internal **Provenance Ledger** that records all LLM-initiated mutations. This ledger is separate from (but correlated with) the `llm-provenance-operation` attribute.
+The User Agent MUST maintain an internal **Provenance Ledger** that records all LLM-initiated mutations. This ledger is separate from (but correlated with) the `wam-provenance-operation` attribute.
 
 #### Ledger Entry Structure
 
@@ -827,7 +827,7 @@ Each ledger entry MUST contain:
 | `explanation` | String | The hyphenated rationale |
 | `originalValue` | Any | Snapshot of the value before mutation |
 | `newValue` | Any | The value after mutation |
-| `hasAttributeEntry` | Boolean | Whether a corresponding `llm-provenance-operation` entry exists |
+| `hasAttributeEntry` | Boolean | Whether a corresponding `wam-provenance-operation` entry exists |
 | `agentId` | String? | Optional identifier of the LLM agent that made the change |
 
 #### Original Value Snapshots
@@ -841,7 +841,7 @@ The `originalValue` field MUST capture sufficient information to reconstruct the
 | `interaction` | Object with relevant attribute values (`aria-*`, `on*`, form state) |
 | `topology` | Ordered array of child node references or identifiers |
 | `data` | Object with `data-*` attribute values and form `value` |
-| `intent` | Object with `llm-intent-*` attribute values |
+| `intent` | Object with `wam-intent-*` attribute values |
 
 ### 9.3. Baseline Snapshot
 
@@ -872,7 +872,7 @@ The snapshot MAY be stored as a serialized representation, a hash-based diff str
 The baseline snapshot MUST cover:
 
 *   All elements in the light DOM.
-*   Shadow DOM content for shadow roots with `llm-provenance-transparent` (see Section 10.7).
+*   Shadow DOM content for shadow roots with `wam-provenance-transparent` (see Section 10.7).
 *   Aggregated mutation tracking for other shadow roots.
 
 ### 9.4. Mutation Detection
@@ -907,7 +907,7 @@ The User Agent MUST periodically validate that the Provenance Ledger accurately 
 Integrity validation MUST occur:
 
 1.  **On Mutation:** After each LLM-initiated mutation is recorded.
-2.  **On Read:** Before returning provenance information via `llmProvenance` or `llmProvenanceLedger` APIs.
+2.  **On Read:** Before returning provenance information via `wamProvenance` or `wamProvenanceLedger` APIs.
 3.  **Periodically:** At User Agent-defined intervals during active LLM sessions.
 4.  **On Navigation:** Before the document is unloaded or navigated away.
 
@@ -918,7 +918,7 @@ For each element with LLM-initiated modifications:
 1.  **Compare Current State:** Compare the element's current state to its baseline snapshot.
 2.  **Identify Layers:** Determine which layers have been modified (content, style, interaction, topology, data, intent).
 3.  **Check Ledger:** For each modified layer, verify that a corresponding ledger entry exists.
-4.  **Check Attribute:** For each ledger entry, verify that a corresponding `llm-provenance-operation` token exists on the element.
+4.  **Check Attribute:** For each ledger entry, verify that a corresponding `wam-provenance-operation` token exists on the element.
 5.  **Flag Violations:** Any mismatch constitutes an integrity violation.
 
 #### Integrity Violation Types
@@ -926,10 +926,10 @@ For each element with LLM-initiated modifications:
 | Violation Type | Description |
 |----------------|-------------|
 | `missing-ledger-entry` | DOM was modified but no ledger entry exists |
-| `missing-attribute-entry` | Ledger entry exists but `llm-provenance-operation` lacks corresponding token |
+| `missing-attribute-entry` | Ledger entry exists but `wam-provenance-operation` lacks corresponding token |
 | `layer-mismatch` | Ledger entry layer does not match the type of detected mutation |
 | `orphaned-entry` | Ledger entry exists but no corresponding DOM change detected |
-| `tampered-attribute` | `llm-provenance-operation` attribute was modified without corresponding ledger entry |
+| `tampered-attribute` | `wam-provenance-operation` attribute was modified without corresponding ledger entry |
 
 ### 9.6. Violation Response
 
@@ -957,7 +957,7 @@ If the User Agent implements reversion:
     *   For `data`: Restore `data-*` attributes and form values.
     *   For `interaction`: Restore event handlers and ARIA states.
 3.  Remove the invalid ledger entry.
-4.  Update `llm-provenance-operation` attribute to remove the invalid token.
+4.  Update `wam-provenance-operation` attribute to remove the invalid token.
 5.  Fire an `llmintegrityviolation` event with `reverted: true`.
 
 #### User Preferences
@@ -972,7 +972,7 @@ The User Agent SHOULD allow users to configure violation response behavior:
 
 #### Persistence
 
-The Provenance Ledger MUST persist for the lifetime of the document. The ledger MUST NOT be persisted across page loads unless explicitly authorized by `llm-policy-memory="session"` or `llm-policy-memory="user"`.
+The Provenance Ledger MUST persist for the lifetime of the document. The ledger MUST NOT be persisted across page loads unless explicitly authorized by `wam-policy-memory="session"` or `wam-policy-memory="user"`.
 
 If memory retention is authorized:
 
@@ -1006,9 +1006,9 @@ The User Agent MUST implement at least one of:
 
 The inspection view MUST display:
 
-*   **Source:** The `llm-provenance-source` URI, if present.
-*   **Confidence:** The `llm-provenance-confidence` score, if present.
-*   **Operations:** The complete `llm-provenance-operation` history as a list.
+*   **Source:** The `wam-provenance-source` URI, if present.
+*   **Confidence:** The `wam-provenance-confidence` score, if present.
+*   **Operations:** The complete `wam-provenance-operation` history as a list.
 *   **Ledger Entries:** All ledger entries associated with the element, including timestamps and original/new values.
 *   **Integrity Status:** Whether the element has any integrity violations.
 
@@ -1016,8 +1016,8 @@ The inspection view MUST display:
 
 The User Agent SHOULD provide optional visual indicators for LLM-modified content:
 
-*   **Modified Indicator:** A subtle visual cue (icon, underline, background) on elements with `llm-provenance-operation` entries.
-*   **Confidence Indicator:** Color-coded indicator based on `llm-provenance-confidence` (green for high, yellow for medium, red for low).
+*   **Modified Indicator:** A subtle visual cue (icon, underline, background) on elements with `wam-provenance-operation` entries.
+*   **Confidence Indicator:** Color-coded indicator based on `wam-provenance-confidence` (green for high, yellow for medium, red for low).
 *   **Violation Indicator:** Prominent visual cue for elements with integrity violations.
 
 These indicators SHOULD be user-configurable (on, off, or hover-to-reveal).
@@ -1058,7 +1058,7 @@ Pages MAY listen to these events for custom logging, analytics, or UI updates. P
 
 ## 10. Shadow DOM Policy Boundaries
 
-This section defines how LLM Markup policies interact with Shadow DOM encapsulation boundaries. The guiding principle is that **component authors have precedence** over page authors for content within their shadow trees, while **intersection semantics** ensure that permissions are only granted when both parties agree.
+This section defines how Web Agent Markup policies interact with Shadow DOM encapsulation boundaries. The guiding principle is that **component authors have precedence** over page authors for content within their shadow trees, while **intersection semantics** ensure that permissions are only granted when both parties agree.
 
 ### 10.1. Core Principles
 
@@ -1069,10 +1069,10 @@ This section defines how LLM Markup policies interact with Shadow DOM encapsulat
 
 ### 10.2. Shadow Root as Policy Boundary
 
-A shadow root creates an encapsulation boundary for LLM Markup policies. By default:
+A shadow root creates an encapsulation boundary for Web Agent Markup policies. By default:
 
-*   `llm-policy-*` attributes on ancestors of the shadow host do NOT apply to nodes within the shadow tree.
-*   `llm-intent-*` attributes on ancestors of the shadow host do NOT propagate into the shadow tree.
+*   `wam-policy-*` attributes on ancestors of the shadow host do NOT apply to nodes within the shadow tree.
+*   `wam-intent-*` attributes on ancestors of the shadow host do NOT propagate into the shadow tree.
 *   Global Policy selectors (e.g., `block-selectors`, `category-rules`) do NOT match elements inside shadow trees.
 
 Nodes within a shadow tree that lack explicit policy attributes fall back to the specification defaults, NOT to inherited values from the light DOM.
@@ -1080,7 +1080,7 @@ Nodes within a shadow tree that lack explicit policy attributes fall back to the
 **Example (Default Behavior - No Inheritance):**
 
 ```html
-<body llm-policy-input="none" llm-policy-output="readonly">
+<body wam-policy-input="none" wam-policy-output="readonly">
   <!-- Light DOM: hidden from LLM, readonly -->
   <my-widget>
     <!-- Shadow boundary blocks inheritance -->
@@ -1095,16 +1095,16 @@ Nodes within a shadow tree that lack explicit policy attributes fall back to the
 
 ### 10.3. Opt-In Policy Inheritance
 
-A shadow root MAY opt into policy inheritance by specifying the `llm-policy-inherit` attribute on the shadow root's template or via the `attachShadow()` options.
+A shadow root MAY opt into policy inheritance by specifying the `wam-policy-inherit` attribute on the shadow root's template or via the `attachShadow()` options.
 
 **Declarative Shadow DOM:**
 
 ```html
-<template shadowrootmode="open" llm-policy-inherit>
+<template shadowrootmode="open" wam-policy-inherit>
   <!-- Inherits all policy namespaces from host context -->
 </template>
 
-<template shadowrootmode="open" llm-policy-inherit="input memory">
+<template shadowrootmode="open" wam-policy-inherit="input memory">
   <!-- Inherits only specified namespaces; others use spec defaults -->
 </template>
 ```
@@ -1114,9 +1114,9 @@ A shadow root MAY opt into policy inheritance by specifying the `llm-policy-inhe
 ```javascript
 element.attachShadow({
   mode: 'open',
-  llmPolicyInherit: true              // Inherit all namespaces
+  wamPolicyInherit: true              // Inherit all namespaces
   // OR
-  llmPolicyInherit: ['input', 'memory']  // Inherit specific namespaces
+  wamPolicyInherit: ['input', 'memory']  // Inherit specific namespaces
 });
 ```
 
@@ -1138,10 +1138,10 @@ When a shadow root opts into inheritance, the effective policy for nodes within 
 **Example (Intersection):**
 
 ```html
-<body llm-policy-output="mutable">
+<body wam-policy-output="mutable">
   <my-widget>
-    #shadow-root llm-policy-inherit
-      <div llm-policy-output="style annotation">
+    #shadow-root wam-policy-inherit
+      <div wam-policy-output="style annotation">
         <!-- Inherited: mutable (all permissions) -->
         <!-- Local: style, annotation -->
         <!-- Effective: mutable ∩ (style annotation) = style annotation -->
@@ -1154,10 +1154,10 @@ When a shadow root opts into inheritance, the effective policy for nodes within 
 **Example (Component Restriction):**
 
 ```html
-<body llm-policy-output="content annotation">
+<body wam-policy-output="content annotation">
   <secure-viewer>
-    #shadow-root llm-policy-inherit
-      <div llm-policy-output="readonly">
+    #shadow-root wam-policy-inherit
+      <div wam-policy-output="readonly">
         <!-- Inherited: content, annotation -->
         <!-- Local: readonly (no permissions) -->
         <!-- Effective: (content annotation) ∩ readonly = readonly -->
@@ -1192,14 +1192,14 @@ EffectivePolicy(slottedElement) =
 ```html
 <!-- Page author's light DOM -->
 <my-secure-viewer>
-  <p slot="content" llm-policy-output="mutable">
+  <p slot="content" wam-policy-output="mutable">
     Page author allows full mutability
   </p>
 </my-secure-viewer>
 
 <!-- Component author's shadow DOM -->
 #shadow-root
-  <div class="viewer-frame" llm-policy-output="readonly annotation">
+  <div class="viewer-frame" wam-policy-output="readonly annotation">
     <slot name="content"></slot>
   </div>
 
@@ -1213,8 +1213,8 @@ EffectivePolicy(slottedElement) =
 
 Global Policy constraints (`block-selectors`, `category-rules`) do NOT pierce shadow boundaries by default. To apply global policies to shadow content:
 
-1.  **Apply categories to the host element:** The page author marks the shadow host with `llm-intent-category`.
-2.  **Component opts into inheritance:** The shadow root includes `llm-policy-inherit`.
+1.  **Apply categories to the host element:** The page author marks the shadow host with `wam-intent-category`.
+2.  **Component opts into inheritance:** The shadow root includes `wam-policy-inherit`.
 3.  **Category rules propagate:** The inherited category triggers Global Policy rules within the shadow tree.
 
 **Example:**
@@ -1224,14 +1224,14 @@ Global Policy constraints (`block-selectors`, `category-rules`) do NOT pierce sh
 {
   "constraints": {
     "category-rules": {
-      "advertisement": { "llm-policy-input": ["none"] }
+      "advertisement": { "wam-policy-input": ["none"] }
     }
   }
 }
 
 <!-- Page author marks host -->
-<ad-component llm-intent-category="advertisement">
-  #shadow-root llm-policy-inherit
+<ad-component wam-intent-category="advertisement">
+  #shadow-root wam-policy-inherit
     <div>
       <!-- Inherits category="advertisement" from host -->
       <!-- Global category-rule applies: input=none -->
@@ -1243,8 +1243,8 @@ Global Policy constraints (`block-selectors`, `category-rules`) do NOT pierce sh
 **Without Inheritance:**
 
 ```html
-<ad-component llm-intent-category="advertisement">
-  #shadow-root  <!-- No llm-policy-inherit -->
+<ad-component wam-intent-category="advertisement">
+  #shadow-root  <!-- No wam-policy-inherit -->
     <div>
       <!-- Category NOT inherited; global rule does NOT apply -->
       <!-- Shadow content uses spec defaults (visible) -->
@@ -1269,7 +1269,7 @@ By default, mutations within shadow roots are reported in **aggregated form** (m
 **Declarative:**
 
 ```html
-<template shadowrootmode="open" llm-provenance-transparent>
+<template shadowrootmode="open" wam-provenance-transparent>
   <!-- Full mutation details reported to document ledger -->
 </template>
 ```
@@ -1279,7 +1279,7 @@ By default, mutations within shadow roots are reported in **aggregated form** (m
 ```javascript
 element.attachShadow({
   mode: 'open',
-  llmProvenanceTransparent: true
+  wamProvenanceTransparent: true
 });
 ```
 
@@ -1311,7 +1311,7 @@ Each shadow boundary requires explicit opt-in for inheritance. Inheritance does 
 
 ```html
 <component-a>
-  #shadow-root llm-policy-inherit        <!-- A inherits from page -->
+  #shadow-root wam-policy-inherit        <!-- A inherits from page -->
     <component-b>
       #shadow-root                       <!-- B does NOT auto-inherit -->
         <div>
@@ -1326,9 +1326,9 @@ Each shadow boundary requires explicit opt-in for inheritance. Inheritance does 
 
 ```html
 <component-a>
-  #shadow-root llm-policy-inherit        <!-- A inherits from page -->
+  #shadow-root wam-policy-inherit        <!-- A inherits from page -->
     <component-b>
-      #shadow-root llm-policy-inherit    <!-- B explicitly inherits from A -->
+      #shadow-root wam-policy-inherit    <!-- B explicitly inherits from A -->
         <div>
           <!-- Inherits A's effective policy -->
           <!-- Which already includes page's policy (intersected) -->
@@ -1348,8 +1348,8 @@ Page policy
 
 ### 10.9. Recommendations for Component Authors
 
-*   **General-purpose components** (date pickers, modals, tooltips) SHOULD opt into policy inheritance (`llm-policy-inherit`) to respect page-level policies.
-*   **Security-sensitive components** (password managers, payment forms, authentication widgets) SHOULD NOT inherit policies and SHOULD enforce `llm-policy-input="none"` or `llm-policy-output="readonly"` explicitly.
+*   **General-purpose components** (date pickers, modals, tooltips) SHOULD opt into policy inheritance (`wam-policy-inherit`) to respect page-level policies.
+*   **Security-sensitive components** (password managers, payment forms, authentication widgets) SHOULD NOT inherit policies and SHOULD enforce `wam-policy-input="none"` or `wam-policy-output="readonly"` explicitly.
 *   **Components displaying user-generated content** SHOULD inherit input policies but MAY enforce output restrictions.
-*   **All components** SHOULD document their LLM Markup behavior for page authors.
+*   **All components** SHOULD document their Web Agent Markup behavior for page authors.
 

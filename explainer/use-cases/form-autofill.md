@@ -11,7 +11,7 @@ If the policy is `interaction` (or `interaction-only` in older drafts), the agen
 If the policy is `content`, the agent could rewrite the `<label>` text ("City" -> "Town"), which is forbidden.
 
 ## The Solution: Data Policy
-The site tags the form container with `llm-policy-output="data"`.
+The site tags the form container with `wam-policy-output="data"`.
 
 ### Policy Definition
 *   **Target:** `<form id="checkout-form">`
@@ -23,6 +23,6 @@ The user asks: *"Fill in my address."*
 1.  **Allowed:** The Agent sets the `value` attribute of `<input name="city">` to "San Francisco".
 2.  **Allowed:** The Agent sets the `value` of `<input name="zip">` to "94105".
 3.  **Blocked:** The Agent attempts to change the "Confirm Purchase" button text to "Buy Now". The Browser Agent enforces the policy and **rejects** this mutation because `data` permission does not grant access to Text Nodes.
-4.  **Blocked:** The Agent attempts to check the "Subscribe to Newsletter" box. This requires `interaction` permission. (If the site wanted both, they would use `llm-policy-output="data interaction"`).
+4.  **Blocked:** The Agent attempts to check the "Subscribe to Newsletter" box. This requires `interaction` permission. (If the site wanted both, they would use `wam-policy-output="data interaction"`).
 
 The result is a form that is correctly populated with user data but structurally and textually identical to the original design.

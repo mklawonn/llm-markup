@@ -12,19 +12,19 @@ Bob's project is configured as **Proprietary / Closed Source**.
 If the agent were to blindly copy and adapt the code, Bob's entire proprietary application could become legally "contaminated" by the copyleft license, forcing his company to release their source code.
 
 ## The Solution: Policy Macros
-The website owner has marked up the code block using the `llm-policy` and `llm-provenance` namespaces.
+The website owner has marked up the code block using the `wam-policy` and `wam-provenance` namespaces.
 
 ```html
 <pre 
-  llm-policy-license="GPL-3.0" 
-  llm-provenance-attribution="Jane Doe, 2024"
+  wam-policy-license="GPL-3.0" 
+  wam-provenance-attribution="Jane Doe, 2024"
 >
   function complexAlgo(x) { ... }
 </pre>
 ```
 
 ### Browser Enforcement
-1.  **Detection:** The Browser Agent identifies the `llm-policy-license="GPL-3.0"` attribute.
+1.  **Detection:** The Browser Agent identifies the `wam-policy-license="GPL-3.0"` attribute.
 2.  **Expansion:** It loads the policy profile for GPL-3.0, which includes the constraint: `output-license-must-be-compatible`.
 3.  **Context Check:** The Agent checks the local project's configuration (defined in `.llm-project.json` or similar). It sees `license: "Proprietary"`.
 4.  **Action:** The Agent detects the incompatibility (GPL is not compatible with Proprietary).

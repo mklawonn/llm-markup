@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
 <title>LLM Global Policy Defaults</title>
-<link rel="help" href="https://example.org/llm-markup#global-policy-header">
+<link rel="help" href="https://example.org/web-agent-markup#global-policy-header">
 <script src="/resources/testharness.js"></script>
 <script src="/resources/testharnessreport.js"></script>
-<script src="../../resources/llm-markup-helpers.js"></script>
+<script src="../../resources/web-agent-markup-helpers.js"></script>
 
 <div id="test-container"></div>
 
@@ -64,11 +64,11 @@ test(() => {
   const el = document.getElementById('no-attr');
 
   // Element should inherit from global defaults
-  const effective = el.llmPolicy.effectiveInputTokens;
+  const effective = el.wamPolicy.effectiveInputTokens;
   assert_true(Array.isArray(effective));
 
   container.innerHTML = '';
-}, 'Elements without llm-policy-input inherit from defaults');
+}, 'Elements without wam-policy-input inherit from defaults');
 
 // =============================================================================
 // Default Output Policy
@@ -80,11 +80,11 @@ test(() => {
   const el = document.getElementById('no-output');
 
   // Should inherit default output (typically readonly)
-  const effective = el.llmPolicy.effectiveOutputTokens;
+  const effective = el.wamPolicy.effectiveOutputTokens;
   assert_true(Array.isArray(effective));
 
   container.innerHTML = '';
-}, 'Elements without llm-policy-output inherit from defaults');
+}, 'Elements without wam-policy-output inherit from defaults');
 
 // =============================================================================
 // Default Memory Policy
@@ -96,11 +96,11 @@ test(() => {
   const el = document.getElementById('no-memory');
 
   // Should inherit default memory (typically none)
-  const effective = el.llmPolicy.effectiveMemoryTokens;
+  const effective = el.wamPolicy.effectiveMemoryTokens;
   assert_true(Array.isArray(effective));
 
   container.innerHTML = '';
-}, 'Elements without llm-policy-memory inherit from defaults');
+}, 'Elements without wam-policy-memory inherit from defaults');
 
 // =============================================================================
 // Local Override of Defaults
@@ -108,11 +108,11 @@ test(() => {
 
 test(() => {
   const container = document.getElementById('test-container');
-  container.innerHTML = '<div id="local-override" llm-policy-output="mutable">Content</div>';
+  container.innerHTML = '<div id="local-override" wam-policy-output="mutable">Content</div>';
   const el = document.getElementById('local-override');
 
   // Local attribute should override defaults
-  assert_true(el.llmPolicy.isMutable);
+  assert_true(el.wamPolicy.isMutable);
 
   container.innerHTML = '';
 }, 'Local attributes override global defaults');
@@ -145,7 +145,7 @@ test(() => {
   if (policy !== null && policy.reportOnly) {
     // In report-only mode, violations should be reported but allowed
     const container = document.getElementById('test-container');
-    container.innerHTML = '<div id="audit-test" llm-policy-output="readonly">Content</div>';
+    container.innerHTML = '<div id="audit-test" wam-policy-output="readonly">Content</div>';
     const el = document.getElementById('audit-test');
 
     // Mutation should be "allowed" in audit mode (even if violating)
@@ -169,8 +169,8 @@ test(() => {
   const el = document.getElementById('no-global');
 
   // Should have some effective policy (spec defaults)
-  assert_true(el.llmPolicy.effectiveInputTokens.length > 0 ||
-              el.llmPolicy.effectiveOutputTokens.length > 0);
+  assert_true(el.wamPolicy.effectiveInputTokens.length > 0 ||
+              el.wamPolicy.effectiveOutputTokens.length > 0);
 
   container.innerHTML = '';
 }, 'Spec defaults apply when no global policy is defined');

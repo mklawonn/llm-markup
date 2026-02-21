@@ -9,7 +9,7 @@ If the policy is `mutable`, an LLM attempting to "highlight" a phrase might rewr
 If the policy is `readonly`, the LLM cannot inject the `<mark>` or `<span>` elements needed for highlighting.
 
 ## The Solution: Annotation Policy
-The database tags the contract body with `llm-policy-output="annotation"`.
+The database tags the contract body with `wam-policy-output="annotation"`.
 
 ### Policy Definition
 *   **Target:** `<div class="contract-clause">`

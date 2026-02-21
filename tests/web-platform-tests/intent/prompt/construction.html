@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
 <title>LLM Intent Prompt Construction</title>
-<link rel="help" href="https://example.org/llm-markup#intent-processing-model">
+<link rel="help" href="https://example.org/web-agent-markup#intent-processing-model">
 <script src="/resources/testharness.js"></script>
 <script src="/resources/testharnessreport.js"></script>
-<script src="../../resources/llm-markup-helpers.js"></script>
+<script src="../../resources/web-agent-markup-helpers.js"></script>
 
 <div id="test-container"></div>
 
@@ -12,75 +12,75 @@
 'use strict';
 
 // =============================================================================
-// Hierarchy of Instruction: llm-intent-instruction (Highest Priority)
+// Hierarchy of Instruction: wam-intent-instruction (Highest Priority)
 // =============================================================================
 
 test(() => {
   const el = createLLMElement('div', {
-    'llm-intent-instruction': 'Custom instruction for this element.'
+    'wam-intent-instruction': 'Custom instruction for this element.'
   });
-  const prompt = el.llmIntent.generatePrompt();
+  const prompt = el.wamIntent.generatePrompt();
   assert_equals(prompt, 'Custom instruction for this element.');
-}, 'llm-intent-instruction is used directly as the prompt');
+}, 'wam-intent-instruction is used directly as the prompt');
 
 test(() => {
   const el = createLLMElement('div', {
-    'llm-intent-category': 'quote',
-    'llm-intent-instruction': 'Override instruction'
+    'wam-intent-category': 'quote',
+    'wam-intent-instruction': 'Override instruction'
   });
-  const prompt = el.llmIntent.generatePrompt();
+  const prompt = el.wamIntent.generatePrompt();
   assert_equals(prompt, 'Override instruction');
-}, 'llm-intent-instruction overrides category');
+}, 'wam-intent-instruction overrides category');
 
 test(() => {
   const el = createLLMElement('div', {
-    'llm-intent-category': 'summary',
-    'llm-intent-tone': 'formal',
-    'llm-intent-instruction': 'Use this exact instruction'
+    'wam-intent-category': 'summary',
+    'wam-intent-tone': 'formal',
+    'wam-intent-instruction': 'Use this exact instruction'
   });
-  const prompt = el.llmIntent.generatePrompt();
+  const prompt = el.wamIntent.generatePrompt();
   assert_equals(prompt, 'Use this exact instruction');
-}, 'llm-intent-instruction overrides all other intent attributes');
+}, 'wam-intent-instruction overrides all other intent attributes');
 
 // =============================================================================
 // Hierarchy of Instruction: Standardized Lexicon
 // =============================================================================
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-intent-category': 'summary' });
-  const prompt = el.llmIntent.generatePrompt();
+  const el = createLLMElement('div', { 'wam-intent-category': 'summary' });
+  const prompt = el.wamIntent.generatePrompt();
   assert_equals(prompt, LEXICON_CATEGORIES['summary']);
 }, "Lexicon category 'summary' generates optimized prompt");
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-intent-category': 'definition' });
-  const prompt = el.llmIntent.generatePrompt();
+  const el = createLLMElement('div', { 'wam-intent-category': 'definition' });
+  const prompt = el.wamIntent.generatePrompt();
   assert_equals(prompt, LEXICON_CATEGORIES['definition']);
 }, "Lexicon category 'definition' generates optimized prompt");
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-intent-category': 'code-block' });
-  const prompt = el.llmIntent.generatePrompt();
+  const el = createLLMElement('div', { 'wam-intent-category': 'code-block' });
+  const prompt = el.wamIntent.generatePrompt();
   assert_equals(prompt, LEXICON_CATEGORIES['code-block']);
 }, "Lexicon category 'code-block' generates optimized prompt");
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-intent-category': 'legal-disclaimer' });
-  const prompt = el.llmIntent.generatePrompt();
+  const el = createLLMElement('div', { 'wam-intent-category': 'legal-disclaimer' });
+  const prompt = el.wamIntent.generatePrompt();
   assert_equals(prompt, LEXICON_CATEGORIES['legal-disclaimer']);
 }, "Lexicon category 'legal-disclaimer' generates optimized prompt");
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-intent-category': 'satire' });
-  const prompt = el.llmIntent.generatePrompt();
+  const el = createLLMElement('div', { 'wam-intent-category': 'satire' });
+  const prompt = el.wamIntent.generatePrompt();
   assert_equals(prompt, LEXICON_CATEGORIES['satire']);
 }, "Lexicon category 'satire' generates optimized prompt");
 
 // Test all lexicon categories
 for (const [category, expectedPrompt] of Object.entries(LEXICON_CATEGORIES)) {
   test(() => {
-    const el = createLLMElement('div', { 'llm-intent-category': category });
-    const prompt = el.llmIntent.generatePrompt();
+    const el = createLLMElement('div', { 'wam-intent-category': category });
+    const prompt = el.wamIntent.generatePrompt();
     assert_equals(prompt, expectedPrompt);
   }, `Lexicon category '${category}' generates correct optimized prompt`);
 }
@@ -90,36 +90,36 @@ for (const [category, expectedPrompt] of Object.entries(LEXICON_CATEGORIES)) {
 // =============================================================================
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-intent-category': 'custom-category' });
-  const prompt = el.llmIntent.generatePrompt();
+  const el = createLLMElement('div', { 'wam-intent-category': 'custom-category' });
+  const prompt = el.wamIntent.generatePrompt();
   const expected = FALLBACK_TEMPLATES.category.replace('[value]', 'custom-category');
   assert_equals(prompt, expected);
 }, 'Custom category uses fallback template');
 
 test(() => {
-  const el = createLLMElement('button', { 'llm-intent-function': 'custom-action' });
-  const prompt = el.llmIntent.generatePrompt();
+  const el = createLLMElement('button', { 'wam-intent-function': 'custom-action' });
+  const prompt = el.wamIntent.generatePrompt();
   const expected = FALLBACK_TEMPLATES.function.replace('[value]', 'custom-action');
   assert_equals(prompt, expected);
 }, 'Custom function uses fallback template');
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-intent-workflow': 'custom-stage' });
-  const prompt = el.llmIntent.generatePrompt();
+  const el = createLLMElement('div', { 'wam-intent-workflow': 'custom-stage' });
+  const prompt = el.wamIntent.generatePrompt();
   const expected = FALLBACK_TEMPLATES.workflow.replace('[value]', 'custom-stage');
   assert_equals(prompt, expected);
 }, 'Custom workflow uses fallback template');
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-intent-output': 'custom-format' });
-  const prompt = el.llmIntent.generatePrompt();
+  const el = createLLMElement('div', { 'wam-intent-output': 'custom-format' });
+  const prompt = el.wamIntent.generatePrompt();
   const expected = FALLBACK_TEMPLATES.output.replace('[value]', 'custom-format');
   assert_equals(prompt, expected);
 }, 'Custom output format uses fallback template');
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-intent-tone': 'custom-tone' });
-  const prompt = el.llmIntent.generatePrompt();
+  const el = createLLMElement('div', { 'wam-intent-tone': 'custom-tone' });
+  const prompt = el.wamIntent.generatePrompt();
   const expected = FALLBACK_TEMPLATES.tone.replace('[value]', 'custom-tone');
   assert_equals(prompt, expected);
 }, 'Custom tone uses fallback template');
@@ -129,32 +129,32 @@ test(() => {
 // =============================================================================
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-intent-importance': 'critical' });
-  const prompt = el.llmIntent.generatePrompt();
+  const el = createLLMElement('div', { 'wam-intent-importance': 'critical' });
+  const prompt = el.wamIntent.generatePrompt();
   assert_equals(prompt, IMPORTANCE_PROMPTS['critical']);
 }, "'critical' importance generates correct prompt");
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-intent-importance': 'high' });
-  const prompt = el.llmIntent.generatePrompt();
+  const el = createLLMElement('div', { 'wam-intent-importance': 'high' });
+  const prompt = el.wamIntent.generatePrompt();
   assert_equals(prompt, IMPORTANCE_PROMPTS['high']);
 }, "'high' importance generates correct prompt");
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-intent-importance': 'normal' });
-  const prompt = el.llmIntent.generatePrompt();
+  const el = createLLMElement('div', { 'wam-intent-importance': 'normal' });
+  const prompt = el.wamIntent.generatePrompt();
   assert_equals(prompt, IMPORTANCE_PROMPTS['normal']);
 }, "'normal' importance generates empty prompt");
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-intent-importance': 'low' });
-  const prompt = el.llmIntent.generatePrompt();
+  const el = createLLMElement('div', { 'wam-intent-importance': 'low' });
+  const prompt = el.wamIntent.generatePrompt();
   assert_equals(prompt, IMPORTANCE_PROMPTS['low']);
 }, "'low' importance generates correct prompt");
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-intent-importance': 'background' });
-  const prompt = el.llmIntent.generatePrompt();
+  const el = createLLMElement('div', { 'wam-intent-importance': 'background' });
+  const prompt = el.wamIntent.generatePrompt();
   assert_equals(prompt, IMPORTANCE_PROMPTS['background']);
 }, "'background' importance generates correct prompt");
 
@@ -164,19 +164,19 @@ test(() => {
 
 test(() => {
   const el = createLLMElement('div', {});
-  const prompt = el.llmIntent.getLexiconPrompt('summary');
+  const prompt = el.wamIntent.getLexiconPrompt('summary');
   assert_equals(prompt, LEXICON_CATEGORIES['summary']);
 }, 'getLexiconPrompt returns optimized prompt for valid term');
 
 test(() => {
   const el = createLLMElement('div', {});
-  const prompt = el.llmIntent.getLexiconPrompt('invalid-term');
+  const prompt = el.wamIntent.getLexiconPrompt('invalid-term');
   assert_equals(prompt, null);
 }, 'getLexiconPrompt returns null for unknown term');
 
 test(() => {
   const el = createLLMElement('div', {});
-  const prompt = el.llmIntent.getLexiconPrompt('');
+  const prompt = el.wamIntent.getLexiconPrompt('');
   assert_equals(prompt, null);
 }, 'getLexiconPrompt returns null for empty string');
 
@@ -186,10 +186,10 @@ test(() => {
 
 test(() => {
   const el = createLLMElement('div', {
-    'llm-intent-category': 'quote',
-    'llm-intent-importance': 'high'
+    'wam-intent-category': 'quote',
+    'wam-intent-importance': 'high'
   });
-  const prompt = el.llmIntent.generatePrompt();
+  const prompt = el.wamIntent.generatePrompt();
   // Should include both category prompt and importance prompt
   assert_true(prompt.includes(LEXICON_CATEGORIES['quote']) ||
               prompt.includes(IMPORTANCE_PROMPTS['high']));
@@ -197,10 +197,10 @@ test(() => {
 
 test(() => {
   const el = createLLMElement('div', {
-    'llm-intent-category': 'code-block',
-    'llm-intent-tone': 'formal'
+    'wam-intent-category': 'code-block',
+    'wam-intent-tone': 'formal'
   });
-  const prompt = el.llmIntent.generatePrompt();
+  const prompt = el.wamIntent.generatePrompt();
   // Should include category prompt (lexicon takes precedence over tone template)
   assert_true(prompt.includes(LEXICON_CATEGORIES['code-block']) ||
               prompt.includes('formal'));
@@ -212,10 +212,10 @@ test(() => {
 
 test(() => {
   const el = createLLMElement('span', {
-    'llm-intent-entity': 'https://www.wikidata.org/wiki/Q42'
+    'wam-intent-entity': 'https://www.wikidata.org/wiki/Q42'
   });
   el.textContent = 'Douglas Adams';
-  const prompt = el.llmIntent.generatePrompt();
+  const prompt = el.wamIntent.generatePrompt();
   // Entity should be appended as reference anchor
   assert_true(prompt.includes('https://www.wikidata.org/wiki/Q42') ||
               prompt.includes('Entity Reference'));
@@ -227,7 +227,7 @@ test(() => {
 
 test(() => {
   const el = createLLMElement('div', {});
-  const prompt = el.llmIntent.generatePrompt();
+  const prompt = el.wamIntent.generatePrompt();
   assert_equals(prompt, '');
 }, 'Element with no intent attributes generates empty prompt');
 
@@ -236,8 +236,8 @@ test(() => {
 // =============================================================================
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-intent-category': '  quote  ' });
-  const prompt = el.llmIntent.generatePrompt();
+  const el = createLLMElement('div', { 'wam-intent-category': '  quote  ' });
+  const prompt = el.wamIntent.generatePrompt();
   // Should normalize whitespace
   assert_true(prompt.length > 0);
 }, 'Category with extra whitespace is normalized');
@@ -247,9 +247,9 @@ test(() => {
 // =============================================================================
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-intent-category': 'SUMMARY' });
+  const el = createLLMElement('div', { 'wam-intent-category': 'SUMMARY' });
   // Lexicon lookup should be case-insensitive
-  const isLexicon = el.llmIntent.isLexiconCategory();
+  const isLexicon = el.wamIntent.isLexiconCategory();
   assert_true(isLexicon);
 }, 'Lexicon lookup is case-insensitive');
 </script>

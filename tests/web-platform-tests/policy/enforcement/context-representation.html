@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
 <title>LLM Policy Context Representation Format</title>
-<link rel="help" href="https://example.org/llm-markup#enforcement-of-visibility">
+<link rel="help" href="https://example.org/web-agent-markup#enforcement-of-visibility">
 <script src="/resources/testharness.js"></script>
 <script src="/resources/testharnessreport.js"></script>
-<script src="../../resources/llm-markup-helpers.js"></script>
+<script src="../../resources/web-agent-markup-helpers.js"></script>
 
 <div id="test-container"></div>
 
@@ -19,19 +19,19 @@ test(() => {
   const container = document.getElementById('test-container');
   container.innerHTML = '<p>Hello World</p>';
 
-  const context = document.buildLLMContext({ root: container });
+  const context = document.buildWAMContext({ root: container });
   assert_true(typeof context === 'string');
   assert_true(context.includes('Hello World'));
   assert_true(context.includes('<p>'));
 
   container.innerHTML = '';
-}, 'buildLLMContext returns HTML string by default');
+}, 'buildWAMContext returns HTML string by default');
 
 test(() => {
   const container = document.getElementById('test-container');
   container.innerHTML = '<div><p>Nested</p></div>';
 
-  const context = document.buildLLMContext({ root: container });
+  const context = document.buildWAMContext({ root: container });
   assert_true(context.includes('<div>'));
   assert_true(context.includes('<p>'));
   assert_true(context.includes('Nested'));
@@ -47,12 +47,12 @@ test(() => {
   const container = document.getElementById('test-container');
   container.innerHTML = `
     <div>
-      <p llm-policy-input="none">Hidden content</p>
+      <p wam-policy-input="none">Hidden content</p>
       <p>Visible content</p>
     </div>
   `;
 
-  const context = document.buildLLMContext({ root: container });
+  const context = document.buildWAMContext({ root: container });
   assert_false(context.includes('Hidden content'));
   assert_true(context.includes('Visible content'));
 
@@ -62,7 +62,7 @@ test(() => {
 test(() => {
   const container = document.getElementById('test-container');
   container.innerHTML = `
-    <div llm-policy-input="none">
+    <div wam-policy-input="none">
       <p>Child of hidden</p>
       <div>
         <span>Deeply nested</span>
@@ -70,7 +70,7 @@ test(() => {
     </div>
   `;
 
-  const context = document.buildLLMContext({ root: container });
+  const context = document.buildWAMContext({ root: container });
   assert_false(context.includes('Child of hidden'));
   assert_false(context.includes('Deeply nested'));
 
@@ -84,10 +84,10 @@ test(() => {
 test(() => {
   const container = document.getElementById('test-container');
   container.innerHTML = `
-    <p llm-policy-input="structure">Secret text here</p>
+    <p wam-policy-input="structure">Secret text here</p>
   `;
 
-  const context = document.buildLLMContext({ root: container });
+  const context = document.buildWAMContext({ root: container });
   assert_true(context.includes('<p'));
   assert_true(context.includes('</p>'));
   assert_false(context.includes('Secret text here'));
@@ -99,13 +99,13 @@ test(() => {
 test(() => {
   const container = document.getElementById('test-container');
   container.innerHTML = `
-    <div llm-policy-input="structure">
+    <div wam-policy-input="structure">
       <p>First paragraph</p>
       <p>Second paragraph</p>
     </div>
   `;
 
-  const context = document.buildLLMContext({ root: container });
+  const context = document.buildWAMContext({ root: container });
   assert_true(context.includes('<div'));
   assert_true(context.includes('<p'));
   assert_false(context.includes('First paragraph'));
@@ -121,12 +121,12 @@ test(() => {
 test(() => {
   const container = document.getElementById('test-container');
   container.innerHTML = `
-    <p llm-policy-input="structure text" data-secret="hidden" class="visible">
+    <p wam-policy-input="structure text" data-secret="hidden" class="visible">
       Text is visible
     </p>
   `;
 
-  const context = document.buildLLMContext({ root: container });
+  const context = document.buildWAMContext({ root: container });
   assert_true(context.includes('Text is visible'));
   assert_true(context.includes('class="visible"'));
   assert_false(context.includes('data-secret'));
@@ -137,12 +137,12 @@ test(() => {
 test(() => {
   const container = document.getElementById('test-container');
   container.innerHTML = `
-    <div llm-policy-input="structure text" id="keep-id" role="main" aria-label="test">
+    <div wam-policy-input="structure text" id="keep-id" role="main" aria-label="test">
       Content
     </div>
   `;
 
-  const context = document.buildLLMContext({ root: container });
+  const context = document.buildWAMContext({ root: container });
   assert_true(context.includes('id="keep-id"'));
   assert_true(context.includes('role="main"'));
   assert_true(context.includes('aria-label'));
@@ -157,10 +157,10 @@ test(() => {
 test(() => {
   const container = document.getElementById('test-container');
   container.innerHTML = `
-    <img llm-policy-input="structure media" src="photo.jpg" alt="A photo">
+    <img wam-policy-input="structure media" src="photo.jpg" alt="A photo">
   `;
 
-  const context = document.buildLLMContext({ root: container });
+  const context = document.buildWAMContext({ root: container });
   assert_true(context.includes('src="photo.jpg"'));
   assert_true(context.includes('alt="A photo"'));
 
@@ -170,10 +170,10 @@ test(() => {
 test(() => {
   const container = document.getElementById('test-container');
   container.innerHTML = `
-    <img llm-policy-input="structure" src="photo.jpg" alt="A photo">
+    <img wam-policy-input="structure" src="photo.jpg" alt="A photo">
   `;
 
-  const context = document.buildLLMContext({ root: container });
+  const context = document.buildWAMContext({ root: container });
   assert_false(context.includes('src="photo.jpg"'));
   assert_true(context.includes('[image]'));
 
@@ -183,10 +183,10 @@ test(() => {
 test(() => {
   const container = document.getElementById('test-container');
   container.innerHTML = `
-    <video llm-policy-input="structure" src="video.mp4">Fallback</video>
+    <video wam-policy-input="structure" src="video.mp4">Fallback</video>
   `;
 
-  const context = document.buildLLMContext({ root: container });
+  const context = document.buildWAMContext({ root: container });
   assert_false(context.includes('src="video.mp4"'));
   assert_true(context.includes('[video content]'));
 
@@ -196,10 +196,10 @@ test(() => {
 test(() => {
   const container = document.getElementById('test-container');
   container.innerHTML = `
-    <audio llm-policy-input="structure" src="audio.mp3">Fallback</audio>
+    <audio wam-policy-input="structure" src="audio.mp3">Fallback</audio>
   `;
 
-  const context = document.buildLLMContext({ root: container });
+  const context = document.buildWAMContext({ root: container });
   assert_false(context.includes('src="audio.mp3"'));
   assert_true(context.includes('[audio content]'));
 
@@ -213,13 +213,13 @@ test(() => {
 test(() => {
   const container = document.getElementById('test-container');
   container.innerHTML = `
-    <div llm-policy-input="all" data-custom="value" class="test">
+    <div wam-policy-input="all" data-custom="value" class="test">
       <img src="img.png" alt="test">
       <p>Full visibility</p>
     </div>
   `;
 
-  const context = document.buildLLMContext({ root: container });
+  const context = document.buildWAMContext({ root: container });
   assert_true(context.includes('data-custom="value"'));
   assert_true(context.includes('class="test"'));
   assert_true(context.includes('src="img.png"'));
@@ -238,7 +238,7 @@ test(() => {
     <p>Multiple    spaces    here</p>
   `;
 
-  const context = document.buildLLMContext({ root: container });
+  const context = document.buildWAMContext({ root: container });
   // Multiple spaces should be collapsed
   assert_false(context.includes('    '));
 
@@ -251,7 +251,7 @@ test(() => {
     <pre>  Preserved   whitespace  </pre>
   `;
 
-  const context = document.buildLLMContext({ root: container });
+  const context = document.buildWAMContext({ root: container });
   // Whitespace in pre should be preserved
   assert_true(context.includes('  Preserved   whitespace  '));
 
@@ -264,7 +264,7 @@ test(() => {
     <code>  code  spaces  </code>
   `;
 
-  const context = document.buildLLMContext({ root: container });
+  const context = document.buildWAMContext({ root: container });
   // Whitespace in code should be preserved
   assert_true(context.includes('code  spaces') || context.includes('code spaces'));
 
@@ -284,7 +284,7 @@ test(() => {
     </div>
   `;
 
-  const context = document.buildLLMContext({ root: container });
+  const context = document.buildWAMContext({ root: container });
   assert_true(context.includes('<script>'));
   assert_true(context.includes('console.log'));
 
@@ -300,7 +300,7 @@ test(() => {
     </div>
   `;
 
-  const context = document.buildLLMContext({ root: container });
+  const context = document.buildWAMContext({ root: container });
   assert_true(context.includes('<style>'));
   assert_true(context.includes('color: red'));
 
@@ -313,7 +313,7 @@ test(() => {
     <script type="application/json">{"key": "value"}</script>
   `;
 
-  const context = document.buildLLMContext({ root: container });
+  const context = document.buildWAMContext({ root: container });
   assert_true(context.includes('application/json'));
   assert_true(context.includes('"key"'));
 
@@ -330,7 +330,7 @@ test(() => {
     <button onclick="alert('xss')">Click</button>
   `;
 
-  const context = document.buildLLMContext({ root: container });
+  const context = document.buildWAMContext({ root: container });
   assert_false(context.includes('onclick'));
   assert_false(context.includes('alert'));
   assert_true(context.includes('<button'));
@@ -344,7 +344,7 @@ test(() => {
     <a href="javascript:alert('xss')">Link</a>
   `;
 
-  const context = document.buildLLMContext({ root: container });
+  const context = document.buildWAMContext({ root: container });
   assert_false(context.includes('javascript:alert'));
   assert_true(context.includes('[javascript]') || !context.includes('href'));
 
@@ -364,7 +364,7 @@ test(() => {
     </div>
   `;
 
-  const context = document.buildLLMContext({ root: container });
+  const context = document.buildWAMContext({ root: container });
   assert_false(context.includes('This is a comment'));
   assert_true(context.includes('Content'));
 
@@ -381,7 +381,7 @@ test(() => {
     <iframe src="https://example.com"></iframe>
   `;
 
-  const context = document.buildLLMContext({ root: container });
+  const context = document.buildWAMContext({ root: container });
   assert_true(context.includes('<iframe'));
   assert_true(context.includes('[cross-origin content]') || !context.includes('example.com'));
 
@@ -397,11 +397,11 @@ test(() => {
   container.innerHTML = `
     <div>
       <p>Visible</p>
-      <p llm-policy-input="none">Hidden</p>
+      <p wam-policy-input="none">Hidden</p>
     </div>
   `;
 
-  const result = document.buildLLMContext({
+  const result = document.buildWAMContext({
     root: container,
     includeMetadata: true
   });
@@ -417,10 +417,10 @@ test(() => {
 test(() => {
   const container = document.getElementById('test-container');
   container.innerHTML = `
-    <p llm-policy-input="structure">Secret</p>
+    <p wam-policy-input="structure">Secret</p>
   `;
 
-  const result = document.buildLLMContext({
+  const result = document.buildWAMContext({
     root: container,
     includeMetadata: true
   });
@@ -449,7 +449,7 @@ test(() => {
 
 test(() => {
   const container = document.getElementById('test-container');
-  container.innerHTML = '<p llm-policy-input="structure text">Hello</p>';
+  container.innerHTML = '<p wam-policy-input="structure text">Hello</p>';
   const p = container.querySelector('p');
 
   const repr = p.getLLMContextRepresentation();
@@ -461,7 +461,7 @@ test(() => {
 
 test(() => {
   const container = document.getElementById('test-container');
-  container.innerHTML = '<p llm-policy-input="none">Hidden</p>';
+  container.innerHTML = '<p wam-policy-input="none">Hidden</p>';
   const p = container.querySelector('p');
 
   const repr = p.getLLMContextRepresentation();
@@ -483,7 +483,7 @@ test(() => {
     </div>
   `;
 
-  const context = document.buildLLMContext({ root: container });
+  const context = document.buildWAMContext({ root: container });
   // Default is "all" - everything visible
   assert_true(context.includes('data-test="value"'));
   assert_true(context.includes('src="test.png"'));

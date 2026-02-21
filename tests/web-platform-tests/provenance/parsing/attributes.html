@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
 <title>LLM Provenance Attribute Parsing</title>
-<link rel="help" href="https://example.org/llm-markup#llm-provenance-namespace">
+<link rel="help" href="https://example.org/web-agent-markup#wam-provenance-namespace">
 <script src="/resources/testharness.js"></script>
 <script src="/resources/testharnessreport.js"></script>
-<script src="../../resources/llm-markup-helpers.js"></script>
+<script src="../../resources/web-agent-markup-helpers.js"></script>
 
 <div id="test-container"></div>
 
@@ -12,108 +12,108 @@
 'use strict';
 
 // =============================================================================
-// llm-provenance-source
+// wam-provenance-source
 // =============================================================================
 
 test(() => {
   const el = createLLMElement('div', {
-    'llm-provenance-source': 'https://wikipedia.org/wiki/Example'
+    'wam-provenance-source': 'https://wikipedia.org/wiki/Example'
   });
-  assert_equals(el.llmProvenance.source, 'https://wikipedia.org/wiki/Example');
-}, 'llm-provenance-source with HTTPS URL is parsed correctly');
+  assert_equals(el.wamProvenance.source, 'https://wikipedia.org/wiki/Example');
+}, 'wam-provenance-source with HTTPS URL is parsed correctly');
 
 test(() => {
   const el = createLLMElement('div', {
-    'llm-provenance-source': 'urn:internal:knowledge-base'
+    'wam-provenance-source': 'urn:internal:knowledge-base'
   });
-  assert_equals(el.llmProvenance.source, 'urn:internal:knowledge-base');
-}, 'llm-provenance-source with URN is parsed correctly');
+  assert_equals(el.wamProvenance.source, 'urn:internal:knowledge-base');
+}, 'wam-provenance-source with URN is parsed correctly');
 
 test(() => {
   const el = createLLMElement('div', {});
-  assert_equals(el.llmProvenance.source, null);
+  assert_equals(el.wamProvenance.source, null);
 }, 'Missing source attribute returns null');
 
 // =============================================================================
-// llm-provenance-citation
+// wam-provenance-citation
 // =============================================================================
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-provenance-citation': '[1]' });
-  assert_equals(el.llmProvenance.citation, '[1]');
-}, 'llm-provenance-citation with numbered reference is parsed correctly');
+  const el = createLLMElement('div', { 'wam-provenance-citation': '[1]' });
+  assert_equals(el.wamProvenance.citation, '[1]');
+}, 'wam-provenance-citation with numbered reference is parsed correctly');
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-provenance-citation': 'TechRadar' });
-  assert_equals(el.llmProvenance.citation, 'TechRadar');
-}, 'llm-provenance-citation with publication name is parsed correctly');
+  const el = createLLMElement('div', { 'wam-provenance-citation': 'TechRadar' });
+  assert_equals(el.wamProvenance.citation, 'TechRadar');
+}, 'wam-provenance-citation with publication name is parsed correctly');
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-provenance-citation': 'Jane Doe, 2024' });
-  assert_equals(el.llmProvenance.citation, 'Jane Doe, 2024');
-}, 'llm-provenance-citation with author and date is parsed correctly');
+  const el = createLLMElement('div', { 'wam-provenance-citation': 'Jane Doe, 2024' });
+  assert_equals(el.wamProvenance.citation, 'Jane Doe, 2024');
+}, 'wam-provenance-citation with author and date is parsed correctly');
 
 test(() => {
   const el = createLLMElement('div', {});
-  assert_equals(el.llmProvenance.citation, null);
+  assert_equals(el.wamProvenance.citation, null);
 }, 'Missing citation attribute returns null');
 
 // =============================================================================
-// llm-provenance-confidence
+// wam-provenance-confidence
 // =============================================================================
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-provenance-confidence': '0.95' });
-  assert_equals(el.llmProvenance.confidence, 0.95);
-}, 'llm-provenance-confidence is parsed as numeric value');
+  const el = createLLMElement('div', { 'wam-provenance-confidence': '0.95' });
+  assert_equals(el.wamProvenance.confidence, 0.95);
+}, 'wam-provenance-confidence is parsed as numeric value');
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-provenance-confidence': '1.0' });
-  assert_equals(el.llmProvenance.confidence, 1.0);
-}, 'llm-provenance-confidence of 1.0 is valid');
+  const el = createLLMElement('div', { 'wam-provenance-confidence': '1.0' });
+  assert_equals(el.wamProvenance.confidence, 1.0);
+}, 'wam-provenance-confidence of 1.0 is valid');
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-provenance-confidence': '0.0' });
-  assert_equals(el.llmProvenance.confidence, 0.0);
-}, 'llm-provenance-confidence of 0.0 is valid');
+  const el = createLLMElement('div', { 'wam-provenance-confidence': '0.0' });
+  assert_equals(el.wamProvenance.confidence, 0.0);
+}, 'wam-provenance-confidence of 0.0 is valid');
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-provenance-confidence': '0.5' });
-  assert_equals(el.llmProvenance.confidence, 0.5);
-}, 'llm-provenance-confidence of 0.5 is valid');
+  const el = createLLMElement('div', { 'wam-provenance-confidence': '0.5' });
+  assert_equals(el.wamProvenance.confidence, 0.5);
+}, 'wam-provenance-confidence of 0.5 is valid');
 
 test(() => {
   const el = createLLMElement('div', {});
-  assert_true(Number.isNaN(el.llmProvenance.confidence));
+  assert_true(Number.isNaN(el.wamProvenance.confidence));
 }, 'Missing confidence attribute returns NaN');
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-provenance-confidence': 'invalid' });
-  assert_true(Number.isNaN(el.llmProvenance.confidence));
+  const el = createLLMElement('div', { 'wam-provenance-confidence': 'invalid' });
+  assert_true(Number.isNaN(el.wamProvenance.confidence));
 }, 'Invalid confidence value returns NaN');
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-provenance-confidence': '1.5' });
+  const el = createLLMElement('div', { 'wam-provenance-confidence': '1.5' });
   // Out of range values might be clamped or return as-is
-  const confidence = el.llmProvenance.confidence;
+  const confidence = el.wamProvenance.confidence;
   assert_true(confidence === 1.5 || confidence === 1.0);
 }, 'Out of range confidence is handled');
 
 test(() => {
-  const el = createLLMElement('div', { 'llm-provenance-confidence': '-0.5' });
-  const confidence = el.llmProvenance.confidence;
+  const el = createLLMElement('div', { 'wam-provenance-confidence': '-0.5' });
+  const confidence = el.wamProvenance.confidence;
   assert_true(confidence === -0.5 || confidence === 0.0 || Number.isNaN(confidence));
 }, 'Negative confidence is handled');
 
 // =============================================================================
-// llm-provenance-operation
+// wam-provenance-operation
 // =============================================================================
 
 test(() => {
   const el = createLLMElement('div', {
-    'llm-provenance-operation': 'content:summarized-text'
+    'wam-provenance-operation': 'content:summarized-text'
   });
-  const operations = el.llmProvenance.getOperations();
+  const operations = el.wamProvenance.getOperations();
   assert_equals(operations.length, 1);
   assert_equals(operations[0].layer, 'content');
   assert_equals(operations[0].explanation, 'summarized-text');
@@ -121,9 +121,9 @@ test(() => {
 
 test(() => {
   const el = createLLMElement('div', {
-    'llm-provenance-operation': 'content:summarized-text style:highlighted-warnings'
+    'wam-provenance-operation': 'content:summarized-text style:highlighted-warnings'
   });
-  const operations = el.llmProvenance.getOperations();
+  const operations = el.wamProvenance.getOperations();
   assert_equals(operations.length, 2);
   assert_equals(operations[0].layer, 'content');
   assert_equals(operations[0].explanation, 'summarized-text');
@@ -133,15 +133,15 @@ test(() => {
 
 test(() => {
   const el = createLLMElement('div', {
-    'llm-provenance-operation': 'content:corrected-fact topology:reordered-sections data:updated-values'
+    'wam-provenance-operation': 'content:corrected-fact topology:reordered-sections data:updated-values'
   });
-  const operations = el.llmProvenance.getOperations();
+  const operations = el.wamProvenance.getOperations();
   assert_equals(operations.length, 3);
 }, 'Three operation entries are parsed correctly');
 
 test(() => {
   const el = createLLMElement('div', {});
-  const operations = el.llmProvenance.getOperations();
+  const operations = el.wamProvenance.getOperations();
   assert_equals(operations.length, 0);
 }, 'Missing operation attribute returns empty array');
 
@@ -152,9 +152,9 @@ test(() => {
 for (const layer of VALID_PROVENANCE_LAYERS) {
   test(() => {
     const el = createLLMElement('div', {
-      'llm-provenance-operation': `${layer}:test-explanation`
+      'wam-provenance-operation': `${layer}:test-explanation`
     });
-    const operations = el.llmProvenance.getOperations();
+    const operations = el.wamProvenance.getOperations();
     assert_equals(operations.length, 1);
     assert_equals(operations[0].layer, layer);
   }, `Valid operation layer '${layer}' is accepted`);
@@ -166,27 +166,27 @@ for (const layer of VALID_PROVENANCE_LAYERS) {
 
 test(() => {
   const el = createLLMElement('div', {
-    'llm-provenance-operation': 'invalid-format-no-colon'
+    'wam-provenance-operation': 'invalid-format-no-colon'
   });
-  const operations = el.llmProvenance.getOperations();
+  const operations = el.wamProvenance.getOperations();
   // Invalid entries should be ignored
   assert_equals(operations.length, 0);
 }, 'Invalid operation format (no colon) is ignored');
 
 test(() => {
   const el = createLLMElement('div', {
-    'llm-provenance-operation': 'unknown-layer:explanation'
+    'wam-provenance-operation': 'unknown-layer:explanation'
   });
-  const operations = el.llmProvenance.getOperations();
+  const operations = el.wamProvenance.getOperations();
   // Unknown layers might be ignored or kept with validation warning
   assert_true(operations.length === 0 || operations[0].layer === 'unknown-layer');
 }, 'Unknown layer is handled gracefully');
 
 test(() => {
   const el = createLLMElement('div', {
-    'llm-provenance-operation': 'content:'
+    'wam-provenance-operation': 'content:'
   });
-  const operations = el.llmProvenance.getOperations();
+  const operations = el.wamProvenance.getOperations();
   // Empty explanation might be valid or ignored
   assert_true(operations.length === 0 ||
               (operations.length === 1 && operations[0].explanation === ''));
@@ -194,9 +194,9 @@ test(() => {
 
 test(() => {
   const el = createLLMElement('div', {
-    'llm-provenance-operation': ':explanation'
+    'wam-provenance-operation': ':explanation'
   });
-  const operations = el.llmProvenance.getOperations();
+  const operations = el.wamProvenance.getOperations();
   // Empty layer should be invalid
   assert_equals(operations.length, 0);
 }, 'Empty layer is invalid');
@@ -207,16 +207,16 @@ test(() => {
 
 test(() => {
   const el = createLLMElement('div', {
-    'llm-provenance-operation': 'content:summarized-text style:highlighted-warnings'
+    'wam-provenance-operation': 'content:summarized-text style:highlighted-warnings'
   });
-  const serialized = el.llmProvenance.serializeOperations();
+  const serialized = el.wamProvenance.serializeOperations();
   assert_true(serialized.includes('content:summarized-text'));
   assert_true(serialized.includes('style:highlighted-warnings'));
 }, 'serializeOperations produces valid attribute format');
 
 test(() => {
   const el = createLLMElement('div', {});
-  const serialized = el.llmProvenance.serializeOperations();
+  const serialized = el.wamProvenance.serializeOperations();
   assert_equals(serialized, '');
 }, 'serializeOperations returns empty string when no operations');
 
@@ -226,9 +226,9 @@ test(() => {
 
 test(() => {
   const el = createLLMElement('div', {
-    'llm-provenance-operation': 'content:first style:second topology:third'
+    'wam-provenance-operation': 'content:first style:second topology:third'
   });
-  const operations = el.llmProvenance.getOperations();
+  const operations = el.wamProvenance.getOperations();
   assert_equals(operations[0].explanation, 'first');
   assert_equals(operations[1].explanation, 'second');
   assert_equals(operations[2].explanation, 'third');
@@ -240,17 +240,17 @@ test(() => {
 
 test(() => {
   const el = createLLMElement('div', {
-    'llm-provenance-operation': '  content:test  style:another  '
+    'wam-provenance-operation': '  content:test  style:another  '
   });
-  const operations = el.llmProvenance.getOperations();
+  const operations = el.wamProvenance.getOperations();
   assert_equals(operations.length, 2);
 }, 'Extra whitespace is normalized');
 
 test(() => {
   const el = createLLMElement('div', {
-    'llm-provenance-operation': 'content:test   style:another'
+    'wam-provenance-operation': 'content:test   style:another'
   });
-  const operations = el.llmProvenance.getOperations();
+  const operations = el.wamProvenance.getOperations();
   assert_equals(operations.length, 2);
 }, 'Multiple spaces between entries are handled');
 
@@ -260,15 +260,15 @@ test(() => {
 
 test(() => {
   const el = createLLMElement('div', {
-    'llm-provenance-source': 'https://example.com',
-    'llm-provenance-citation': 'Example Source',
-    'llm-provenance-confidence': '0.9',
-    'llm-provenance-operation': 'content:summarized'
+    'wam-provenance-source': 'https://example.com',
+    'wam-provenance-citation': 'Example Source',
+    'wam-provenance-confidence': '0.9',
+    'wam-provenance-operation': 'content:summarized'
   });
 
-  assert_equals(el.llmProvenance.source, 'https://example.com');
-  assert_equals(el.llmProvenance.citation, 'Example Source');
-  assert_equals(el.llmProvenance.confidence, 0.9);
-  assert_equals(el.llmProvenance.getOperations().length, 1);
+  assert_equals(el.wamProvenance.source, 'https://example.com');
+  assert_equals(el.wamProvenance.citation, 'Example Source');
+  assert_equals(el.wamProvenance.confidence, 0.9);
+  assert_equals(el.wamProvenance.getOperations().length, 1);
 }, 'All provenance attributes can be combined');
 </script>
