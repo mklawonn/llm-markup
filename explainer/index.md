@@ -219,6 +219,23 @@ See the [use-cases/](./use-cases/) directory for detailed scenarios:
 | CSP | Orthogonal - CSP for script security, LLMPM for AI permissions |
 | robots.txt | Different scope - robots.txt for crawlers, LLMPM for in-page AI |
 | RDFa/JSON-LD | Complementary - structured data + AI policies |
+| MCP (Model Context Protocol) | Complementary - LLMPM defines policy constraints; MCP can serve as the runtime interface through which a conforming UA exposes those constraints to the LLM. See below. |
+
+### Relationship to MCP
+
+[Model Context Protocol (MCP)](https://modelcontextprotocol.io) is an open protocol for connecting LLM applications to external tools and data sources. LLMPM and MCP are complementary and operate at different layers of the stack.
+
+LLMPM is a *content annotation standard*: it provides a declarative vocabulary for web page authors to express access policy, semantic intent, and provenance at the level of HTML elements. MCP is an *infrastructure protocol*: it defines how an LLM application discovers and invokes tools and resources provided by servers.
+
+A conforming User Agent may implement its DOM interaction layer as an internal MCP server, exposing tools such as `read_element` and `mutate_element` that enforce LLMPM policy before executing. In this architecture, the LLM interacts with the page exclusively through MCP tool calls; the UA's MCP server is the policy enforcement point that consults `llm-policy-input` and `llm-policy-output` attributes before returning content or applying mutations. The LLMPM-filtered context window can likewise be delivered as an MCP Resource.
+
+```
+LLM ←→ MCP Client (inside UA) ←→ DOM-access MCP Server (inside UA)
+                                         ↓ checks LLMPM policy
+                                    HTML DOM
+```
+
+MCP does not address — and cannot substitute for — LLMPM's element-level mutation granularity, input visibility controls, content retention policy, license enforcement, or provenance tracking. These remain the domain of this standard.
 
 ## FAQ
 
