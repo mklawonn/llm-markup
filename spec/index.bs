@@ -499,31 +499,37 @@ This section defines the normative requirements for User Agents when enforcing m
 
 ## 1. The Semantic Payload Principle (Core Constraint)
 
-Regardless of the permission set, the User Agent MUST determine the mutability of any specific attribute or node based on its semantic role.
+Regardless of the permission set, the User Agent MUST determine the mutability of any specific attribute or node based on its semantic role. This principle applies within every mutation tool call: even when a tool is offered and its gate conditions are satisfied, individual attributes and nodes within the target element remain subject to these constraints. Token presence exposes a tool; the Semantic Payload Principle constrains what that tool may touch.
 
 *   **Immutable Payload (Identity & Reference):** Attributes defining identity (`id`, `name`), structure (`for`, `headers`), or data source/destination (`src`, `href`, `action`, `data`) are **strictly readonly** unless the `mutable` token is explicitly present.
 *   **Mutable State (Presentation & Interaction):** Attributes defining visual style (`class`, `style`) or transient state (`aria-*`, `checked`, `open`) are subject to specific permission tokens.
 
 ## 2. Global Policy Resolution (Category Conflicts)
 
-When multiple `wam-intent-category` values apply to a single node, and the Global Policy defines conflicting rules for these categories, the User Agent MUST resolve the conflict using **Intersection Logic** (Restrictive Priority).
+When multiple `wam-intent-category` values apply to a single node, and the Global Policy defines conflicting rules for these categories, the User Agent MUST resolve the conflict using **Intersection Logic** (Restrictive Priority). Because tokens map directly to tools (§3, §12.2), narrowing the Effective Permission Set through intersection also narrows the offered tool list for that element.
 
 *   **Rule:** The effective permission set granted by the Global Policy is the **intersection** of the allowed tokens for each applicable category.
-*   **Implication:** If *any* active category rule forbids a specific action (by omitting the corresponding token), that action is forbidden, even if other categories would allow it.
+*   **Implication:** If *any* active category rule forbids a specific action (by omitting the corresponding token), that action is forbidden, even if other categories would allow it. The corresponding mutation tool MUST NOT appear in `tools/list` for that element.
 *   **Example:**
     *   Category A (`user-content`) allows: `content`, `interaction`.
     *   Category B (`archived`) allows: `readonly` (empty set).
-    *   **Result:** `content` AND `interaction` AND `(empty)` = `readonly`.
+    *   **Result:** `content` AND `interaction` AND `(empty)` = `readonly`. Neither `wam_set_content` nor `wam_set_interaction` is offered for this element.
 
 ## 3. Token-Based Enforcement
 
-The User Agent MUST allow a mutation if and only if it is authorized by at least one token in the Effective Permission Set.
+Each `wam-policy-output` token serves two normative purposes: it causes the corresponding **WAM MCP mutation tool** to appear in the `tools/list` response for that element (the Gate phase, §11), and it defines the exact DOM operations that tool is permitted to perform. The User Agent MUST NOT include a mutation tool unless its corresponding token is present in the Effective Permission Set, and MUST NOT permit the tool to perform any operation not listed for its token below.
+
+See §12.2 for the canonical mapping of tokens to tool names.
 
 ### `style` (Presentation Layer)
+
+*   **Exposed tool:** `wam_apply_style`
 *   **Allowed:** Modification of `class` and `style` attributes.
 *   **Blocked:** Everything else.
 
 ### `interaction` (Behavioral Layer)
+
+*   **Exposed tool:** `wam_set_interaction`; also gates `wam_invoke` when `wam-intent-function` is present (§12.3).
 *   **Allowed:**
     *   Modification of `class`, `style`.
     *   Modification of Event Handlers (`on*`) and ARIA states (`aria-*`).
@@ -533,19 +539,27 @@ The User Agent MUST allow a mutation if and only if it is authorized by at least
 *   **Blocked:** Modification of Text Nodes, Payload Attributes (`src`, `href`, `id`), and Data Values (`value`, `data-*`).
 
 ### `layout` (Structural Reordering)
+
+*   **Exposed tool:** `wam_reorder_children`
 *   **Allowed:** Reordering (permuting) of direct child nodes.
 *   **Blocked:** Modification, addition, or removal of child nodes.
 
 ### `annotation` (Non-Destructive Wrapping)
+
+*   **Exposed tool:** `wam_annotate`
 *   **Allowed:** Splitting text nodes and wrapping them in inline elements (e.g., `<span>`, `<mark>`, `<a>`).
 *   **Constraint:** The concatenated `textContent` of the parent element MUST remain identical.
 *   **Blocked:** Changing the text characters themselves.
 
 ### `content` (Text Layer)
+
+*   **Exposed tool:** `wam_set_content`; supports both direct `value` and delegated `instruction` arguments (Scoped LLM Call, §12.4).
 *   **Allowed:** Modification of Text Nodes.
 *   **Blocked:** Changing the DOM structure or attributes of container elements.
 
 ### `data` (Machine-Readable Payload)
+
+*   **Exposed tool:** `wam_set_data`; supports both direct `value` and delegated `instruction` arguments (Scoped LLM Call, §12.4).
 *   **Allowed:**
     *   **Form Values:** Modification of the `value` attribute on form controls.
     *   **Data Attributes:** Modification of custom `data-*` attributes.
@@ -554,19 +568,27 @@ The User Agent MUST allow a mutation if and only if it is authorized by at least
 *   **Blocked:** Modification of Rendered Text Nodes or Document Structure.
 
 ### `append` (Additive Structure)
+
+*   **Exposed tool:** `wam_append_child`; supports both direct `value` and delegated `instruction` arguments (Scoped LLM Call, §12.4).
 *   **Allowed:** Insertion of new child nodes (elements or text) at the end of the child list.
 *   **Blocked:** Modification or removal of existing siblings.
 
 ### `mutable` (Full Access)
-*   **Allowed:** All operations. The User Agent removes all restrictions for this node.
+
+*   **Exposed tools:** All seven mutation tools simultaneously (`wam_apply_style`, `wam_set_interaction`, `wam_reorder_children`, `wam_annotate`, `wam_set_content`, `wam_set_data`, `wam_append_child`).
+*   **Allowed:** All operations. The User Agent removes all output-token restrictions for this node.
 
 ## 4. Enforcement of Visibility (`wam-policy-input`)
+
+`wam-policy-input` governs the **Gate phase** (§11) of the Context Tools `wam_build_context` and `wam_read_element` (§12.1). Unlike `wam-policy-output`, visibility tokens do not expose or suppress individual tools — all Context Tools are always offered. Instead, they control what those tools are permitted to return: an element's visibility tokens determine which channels (text, attributes, media) appear in the tool's response.
+
+Additionally, `wam-policy-input` gates **Scoped LLM Calls** (§12.4): the content passed to an inner LLM invocation MUST be filtered by the same rules as `wam_read_element`. An element with `wam-policy-input="none"` MUST be excluded from scoped LLM calls on that element; the User Agent MUST reject such a call at the Gate phase.
 
 The User Agent MUST transform the DOM into a context representation for the LLM by filtering nodes based on the `wam-policy-input` tokens. This section defines the normative requirements for context construction.
 
 ### 4.1. Context Representation Format
 
-The context representation MUST be an HTML fragment string. The User Agent MAY support additional output formats (plain text, Markdown, accessibility tree) as implementation-defined options, but HTML is the normative default.
+The context representation is the content returned by `wam_build_context` (in its `html_fragment` field) and by `wam_read_element`. It MUST be an HTML fragment string. The User Agent MAY support additional output formats (plain text, Markdown, accessibility tree) as implementation-defined options, but HTML is the normative default.
 
 **Output Requirements:**
 
@@ -710,6 +732,10 @@ If no `wam-policy-input` attribute is present on a node and no inherited or glob
 
 ## 5. Enforcement of Retention (`wam-policy-memory`)
 
+`wam-policy-memory` governs the **Record phase** (§11) across all WAM MCP tool calls: it constrains what any tool may retain after execution completes, whether the tool is a Context Tool reading content or a mutation tool that also received element content for a Scoped LLM Call (§12.4). The retention rules apply to the full content a tool observes, not only to the mutation it produces.
+
+*   **Scoped LLM Calls and memory:** When a mutation tool performs a Scoped LLM Call on an element with `wam-policy-memory="none"`, the User Agent MUST discard the element content passed to the inner LLM and the LLM's response upon completion of the tool call. Neither MAY be written to any persistent store, logged beyond the Provenance Ledger entry, or transmitted to a remote training endpoint.
+
 The User Agent MUST signal and enforce storage limitations based on the `wam-policy-memory` tokens.
 
 *   **`none` (Ephemeral):**
@@ -728,6 +754,8 @@ The User Agent MUST signal and enforce storage limitations based on the `wam-pol
 **Privacy Default:** If no attribute is present, the default is `none` (Strictly Ephemeral).
 
 ## 6. Enforcement of Licensing (`wam-policy-license`)
+
+`wam-policy-license` acts as a ceiling on the Effective Permission Set established by `wam-policy-output`. Because each output token corresponds directly to an exposed mutation tool (§12.2, §3), license restrictions are tool restrictions: reducing the effective token set reduces the offered tool list. The User Agent MUST compute the license-intersected Effective Permission Set **before** populating the `tools/list` response and the Mutable Element Manifest (§12.5), so that tools disallowed by license never appear to the LLM.
 
 The User Agent MUST resolve `wam-policy-license` attributes by expanding the license identifier into a set of implicit policy constraints (a **License Profile**). The effective policy for the node is the **intersection** of the explicitly declared `wam-policy-output` tokens and the License Profile's allowed permissions.
 
