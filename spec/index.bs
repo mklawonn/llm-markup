@@ -24,33 +24,43 @@ Specifies the usage license for the content, acting as a policy macro that enfor
 
 ## The WAM-Provenance Namespace
 
-The `wam-provenance` namespace functions as an **Internal Ledger** or **Interchange Format** for the User Agent, tracking the origin, reliability, and transformation history of information.
+The `wam-provenance` namespace functions as the DOM-visible face of the **Record phase** in the Tool Lifecycle Model (§11). After every successful mutation tool call, the User Agent MUST update the target element's provenance attributes and write a corresponding Provenance Ledger entry as a single atomic operation. The attributes in this namespace serve a dual purpose: they are readable by authors and page scripts as an interchange format, and they are the authoritative input to the `wam_inspect_provenance` MCP tool. The User Agent is always the **append authority** — authors MUST NOT modify these attributes after initial page load; any such modification constitutes a tamper event (§9.5).
+
+See §9 for the full normative Record phase processing model.
 
 ### The wam-provenance-source attribute
 Specifies the canonical origin URI of the content chunk.
 
 *   **Syntax:** `wam-provenance-source="<URI>"`
 *   **Purpose:** Tracks where the information came from (e.g., `https://wikipedia.org`, `urn:internal:knowledge-base`). Used for linking citations.
+*   **Record phase role:** Authors MAY set this attribute on original content to declare its source. For content synthesized by a scoped LLM call (e.g., via `wam_append_child` with `instruction`), the User Agent SHOULD set this attribute to a UA-defined provenance URI identifying the generating model and session. The User Agent MUST NOT overwrite an author-supplied value; it MUST instead append a separate provenance record.
+*   **Tool:** `wam_inspect_provenance` returns this field as `source` in the element's provenance object.
 
 ### The wam-provenance-operation attribute
-A dynamic ledger of transformations applied to the content.
+The primary Record phase output: an append-only DOM ledger of transformations applied to the element.
 
 *   **Syntax:** `wam-provenance-operation="<layer>:<explanation> ..."`
 *   **Format:** A space-separated list of pairs, where `<layer>` is one of `content`, `style`, `interaction`, `topology`, `data`, or `intent`, and `<explanation>` is a succinct, hyphenated summary of the rationale.
 *   **Example:** `content:summarized-text style:highlighted-warnings`
 *   **Purpose:** Provides a granular audit trail of *why* and *how* the Agent modified the node.
+*   **Record phase role:** After every mutation tool call completes, the User Agent MUST atomically append a `<layer>:<explanation>` token to this attribute (see §9.1). Authors MAY pre-populate this attribute on AI-pre-processed content delivered from the server; the UA treats pre-existing entries as baseline provenance and MUST NOT remove them.
+*   **Tool:** `wam_inspect_provenance` returns the full operation history as a parsed list. Each mutation tool's Record phase targets this attribute.
 
 ### The wam-provenance-confidence attribute
-Expresses the agent's certainty in the accuracy of the content.
+Expresses the generating agent's certainty in the accuracy of the content.
 
 *   **Syntax:** `wam-provenance-confidence="<0.0-1.0>"`
 *   **Purpose:** Allows the User Agent to flag low-confidence information (e.g., hallucination warnings) or high-confidence facts in the UI.
+*   **Record phase role:** For direct-value mutations (where the orchestrating LLM supplies `value` directly), the User Agent MAY set this to a default high value (e.g., `1.0`). For scoped LLM calls, the User Agent SHOULD set this to the generating model's expressed confidence if available, or `null` if confidence is not determinable. The value is set once per mutation; subsequent mutations to the same element SHOULD update the attribute only if confidence changes.
+*   **Tool:** `wam_inspect_provenance` returns this field as `confidence`. The UI SHOULD render a visual indicator based on this value (§9.8).
 
 ### The wam-provenance-citation attribute
-Specifies the human-readable label for the source.
+Specifies the human-readable attribution label for the source.
 
 *   **Syntax:** `wam-provenance-citation="<string>"`
 *   **Purpose:** Defines the text to display for attribution (e.g., "[1]", "TechRadar", "Jane Doe"). Replaces the legacy `wam-provenance-attribution` attribute.
+*   **Record phase role:** When an element's effective `wam-policy-license` has `requiresAttribution: true`, the User Agent MUST set or verify this attribute as part of the Record phase for any mutation affecting that element. If no citation is available, the User Agent MUST block the mutation and return a structured error rather than recording an uncited mutation on attributed content (§6.5).
+*   **Tool:** `wam_inspect_provenance` returns this field as `citation`.
 
 ## The WAM-Intent Namespace
 
@@ -1041,15 +1051,23 @@ The `importance` level also maps to hint text appended to the element's manifest
 
 If `wam-intent-entity` is present, the User Agent MUST populate the `intent.entity` field of the element's manifest entry with the URI value. This canonical entity reference allows the orchestrating LLM to reason about entity identity and to de-duplicate or correlate content across elements before deciding which mutation tool to invoke.
 
-## 9. Provenance Processing Model (Trust & Audit)
+## 9. Provenance Processing Model (Record Phase)
 
-To ensure accountability, the User Agent functions as the **Authority** on provenance, strictly enforcing the correlation between DOM mutations and the Causal Ledger. This section defines the normative requirements for tracking, validating, and reporting LLM-initiated changes.
+The Record phase (§11) executes after every successful mutation tool call. The User Agent functions as the **Authority** on provenance: it writes the Provenance Ledger entry, updates the DOM's `wam-provenance-operation` attribute, and enforces the correlation between them. Authors and page scripts MUST NOT be able to suppress, reorder, or forge this sequence. This section defines the normative requirements for executing the Record phase, maintaining ledger integrity, and surfacing provenance data through MCP tools and the user interface.
 
-### 9.1. Causal Logging Requirement
+### 9.1. Record Phase Execution Sequence
 
-Whenever the LLM or User Agent modifies a node (e.g., rewriting text, changing a class), it MUST append a corresponding entry to the `wam-provenance-operation` attribute of that node or its nearest container.
+Every successful mutation tool call MUST trigger the Record phase immediately upon completion of the mutation. The User Agent MUST execute the following steps atomically, exactly in this order, with full rollback on any failure (see also §13.3):
 
-*   **Format:** The entry MUST follow the syntax `<layer>:<explanation>`.
+1.  **Determine layer token:** Map the completed operation to its layer token using the Layer Token Mapping table below.
+2.  **Determine explanation:** Use the `explanation` field from the tool call if provided; otherwise construct a default from the operation type and element role.
+3.  **Write Provenance Ledger entry:** Create a new ledger entry (schema §9.2) and append it to the internal Provenance Ledger.
+4.  **Append to DOM attribute:** Append `<layer>:<explanation>` to the target element's `wam-provenance-operation` attribute, space-separated from any existing tokens.
+5.  **Return result to LLM:** Only after steps 1–4 complete successfully, return the tool result to the orchestrating LLM.
+
+If step 3 or step 4 fails, the User Agent MUST roll back the DOM mutation applied in the tool's execution phase and return a structured error to the LLM. The live DOM and Provenance Ledger MUST remain consistent at all times (fail-closed).
+
+*   **Format:** The appended token MUST follow the syntax `<layer>:<explanation>`.
 *   **Layer Alignment:** The `<layer>` token MUST match the type of mutation performed (e.g., `content` for text changes, `style` for class changes).
 *   **Explanation:** The `<explanation>` SHOULD be a concise, hyphenated rationale generated by the Agent (e.g., `summarized-text`, `corrected-fact`).
 
@@ -1074,7 +1092,7 @@ The explanation component MUST be a hyphenated string of lowercase ASCII letters
 
 ### 9.2. Provenance Ledger Structure
 
-The User Agent MUST maintain an internal **Provenance Ledger** that records all LLM-initiated mutations. This ledger is separate from (but correlated with) the `wam-provenance-operation` attribute.
+The User Agent MUST maintain an internal **Provenance Ledger** that records all LLM-initiated mutations. This ledger is separate from (but correlated with) the `wam-provenance-operation` attribute. It is the authoritative record and the primary data source for `wam_inspect_provenance`.
 
 #### Ledger Entry Structure
 
@@ -1090,7 +1108,11 @@ Each ledger entry MUST contain:
 | `originalValue` | Any | Snapshot of the value before mutation |
 | `newValue` | Any | The value after mutation |
 | `hasAttributeEntry` | Boolean | Whether a corresponding `wam-provenance-operation` entry exists |
-| `agentId` | String? | Optional identifier of the LLM agent that made the change |
+| `orchestratingModelId` | String | Identifier of the LLM that issued the mutation tool call |
+| `generatingModelId` | String? | Identifier of the LLM whose output became the new value; only populated when the mutation resulted from a Scoped LLM Call (§12.4) and the generating model differs from the orchestrating model |
+| `scopedCall` | Boolean | `true` if this entry resulted from a Scoped LLM Call; `false` for direct-value mutations |
+
+**Dual Model ID Requirement:** When `scopedCall` is `true`, both `orchestratingModelId` and `generatingModelId` MUST be populated. The conformance requirement §14.9 mandates this for all scoped call entries.
 
 #### Original Value Snapshots
 
@@ -1255,7 +1277,11 @@ The User Agent MUST NOT discard entries that have not been validated or that rep
 
 To ensure conspicuous disclosure without cluttering the UI, the User Agent MUST provide a mechanism for the user to inspect the raw provenance data for any element.
 
-#### Inspection Mechanism
+#### MCP Interface
+
+The `wam_inspect_provenance` tool (§12.1) is the normative programmatic interface to the Provenance Ledger. It returns the same information that the user-facing inspection UI must display. A conforming UA MUST ensure that the MCP tool and the UI surface identical data: if a ledger entry is visible in `wam_inspect_provenance` output, it MUST also be visible in the user-facing inspection view for that element, and vice versa.
+
+#### User-Facing Inspection Mechanism
 
 The User Agent MUST implement at least one of:
 
@@ -1270,8 +1296,9 @@ The inspection view MUST display:
 
 *   **Source:** The `wam-provenance-source` URI, if present.
 *   **Confidence:** The `wam-provenance-confidence` score, if present.
-*   **Operations:** The complete `wam-provenance-operation` history as a list.
-*   **Ledger Entries:** All ledger entries associated with the element, including timestamps and original/new values.
+*   **Operations:** The complete `wam-provenance-operation` history as a parsed list.
+*   **Ledger Entries:** All ledger entries associated with the element, including timestamps, original/new values, `orchestratingModelId`, and `generatingModelId` where applicable.
+*   **Scoped Call Indicator:** For entries where `scopedCall` is `true`, the inspection view MUST clearly indicate that a subsidiary LLM call generated the value, and MUST display both model identifiers.
 *   **Integrity Status:** Whether the element has any integrity violations.
 
 #### Visual Indicators
@@ -1279,18 +1306,19 @@ The inspection view MUST display:
 The User Agent SHOULD provide optional visual indicators for LLM-modified content:
 
 *   **Modified Indicator:** A subtle visual cue (icon, underline, background) on elements with `wam-provenance-operation` entries.
-*   **Confidence Indicator:** Color-coded indicator based on `wam-provenance-confidence` (green for high, yellow for medium, red for low).
+*   **Confidence Indicator:** Color-coded indicator based on `wam-provenance-confidence` (green for ≥ 0.8, yellow for 0.5–0.8, red for < 0.5).
+*   **Scoped Call Indicator:** A distinct icon or badge on elements where any ledger entry has `scopedCall: true`, signalling that the value was generated by a subsidiary LLM call rather than the orchestrating model directly.
 *   **Violation Indicator:** Prominent visual cue for elements with integrity violations.
 
 These indicators SHOULD be user-configurable (on, off, or hover-to-reveal).
 
 ### 9.9. Provenance Events
 
-The User Agent MUST fire events to allow pages to respond to provenance changes.
+The User Agent MUST fire DOM events to allow pages to observe provenance changes and integrity violations. These events are the DOM-observable counterpart to the MCP tools `wam_inspect_provenance` and `wam_report_violation`: the same Record phase execution that triggers a ledger write and `wam-provenance-operation` append MUST also fire `llmprovenancechange` on the target element. Pages MAY listen to these events for custom logging or UI updates, but MUST NOT be able to suppress or modify integrity violation detection.
 
 #### `llmprovenancechange` Event
 
-Fired when a new entry is added to the Provenance Ledger.
+Fired at the end of the Record phase execution sequence (§9.1), after the Provenance Ledger entry has been written and the `wam-provenance-operation` attribute has been updated.
 
 ```webidl
 interface LLMProvenanceChangeEvent : Event {
@@ -1303,7 +1331,7 @@ interface LLMProvenanceChangeEvent : Event {
 
 #### `llmintegrityviolation` Event
 
-Fired when an integrity violation is detected.
+Fired when an integrity violation is detected (§9.5). The `wam_report_violation` MCP tool (§12.1) is the programmatic equivalent: when the orchestrating LLM calls `wam_report_violation`, the User Agent MUST treat it as equivalent to a self-detected violation and fire this event with the same semantics. The LLM cannot suppress the event by not calling the tool; integrity detection is always UA-driven.
 
 ```webidl
 interface LLMIntegrityViolationEvent : Event {
