@@ -56,53 +56,76 @@ Specifies the human-readable label for the source.
 
 The `wam-intent` namespace defines soft constraints and semantic signals that help the User Agent construct a deterministic context for the LLM. Unlike policy attributes, these do not strictly enforce visibility or mutability by default, but provide metadata that can be targeted by policies.
 
+In the Tool Lifecycle Model (§11), intent attributes serve as inputs to the **Configure phase**: they determine which MCP tools are exposed to the LLM and how those tools construct Scoped LLM Calls. Two groups of attributes drive this:
+
+*   **Group A — Scoped Call Configuration** (`wam-intent-category`, `wam-intent-instruction`, `wam-intent-tone`, `wam-intent-output`): These attributes compose the **Scoped Call Configuration Object** (§8.2), which is passed to any mutation tool that makes an internal LLM call on behalf of the element.
+*   **Group B — Tool Availability Signals** (`wam-intent-function`, `wam-intent-workflow`): These attributes gate the exposure of the `wam_invoke` tool in `tools/list`. Each recognized value causes a distinct `wam_invoke` variant to be offered to the orchestrating LLM.
+
+Additionally, `wam-intent-importance` controls token-budget priority in `wam_build_context`, and `wam-intent-entity` enriches the Mutable Element Manifest with a canonical entity reference. See §8 for the full normative processing model.
+
 ### The wam-intent-category attribute
 Assigns a semantic category to a node, allowing it to be targeted by Global Policy rules or specific LLM instructions.
 
 *   **Syntax:** `wam-intent-category="<string>"`
 *   **Purpose:** Provides a stable, semantic label (e.g., "quote", "advertisement", "navigation") independent of CSS classes or visual presentation.
+*   **Configure phase role (Group A):** Populates the `category` field of the Scoped Call Configuration Object (§8.2). When a mutation tool makes an internal LLM call for this element, the category is used to select the Optimized System Prompt from the Standardized Lexicon.
+*   **Tool availability:** Does not gate any specific MCP tool; acts as a routing key for Standardized Lexicon lookup.
 
 ### The wam-intent-importance attribute
 Specifies the relative priority of the content within the document topology.
 
 *   **Syntax:** `wam-intent-importance="critical|high|normal|low|background"`
 *   **Purpose:** Guides the User Agent in prioritizing content for the LLM context. `critical` content MUST be preserved if token limits are reached, while `background` content MAY be discarded.
+*   **Configure phase role:** Supplies the `priority` field to `wam_build_context`. The tool MUST order elements in the Mutable Element Manifest by importance: `critical` > `high` > `normal` > `low` > `background`. When token limits require truncation, elements are dropped from the tail of this ordering.
+*   **Tool availability:** Does not gate any specific MCP tool.
 
 ### The wam-intent-entity attribute
 Links the content to a specific real-world entity for disambiguation.
 
 *   **Syntax:** `wam-intent-entity="<URI>"`
 *   **Purpose:** Provides a canonical reference (e.g., Wikidata ID, Schema.org URL) to ground the LLM's understanding of named entities.
+*   **Configure phase role:** Populates the `intent.entity` field in the element's entry in the Mutable Element Manifest returned by `wam_build_context`. This allows the orchestrating LLM to reason about entity identity before deciding which mutation tool to call.
+*   **Tool availability:** Does not gate any specific MCP tool.
 
 ### The wam-intent-instruction attribute
 Provides explicit, free-form instructions to the LLM for processing the specific node.
 
 *   **Syntax:** `wam-intent-instruction="<string>"`
 *   **Purpose:** Allows developers to bypass standard templates and inject custom prompts. This attribute **overrides** the default prompt generation for Category, Function, and Tone, but preserves semantic identity for Policy enforcement.
+*   **Configure phase role (Group A):** Populates the `instruction` field of the Scoped Call Configuration Object (§8.2) with the highest precedence. When present, mutation tools MUST use this value directly as the system prompt fragment for any internal LLM call, overriding all other Group A fields.
+*   **Tool availability:** Does not gate any specific MCP tool.
 
 ### The wam-intent-function attribute
-Defines the interactive purpose of an element (Phase 2).
+Defines the interactive purpose of an element.
 
 *   **Syntax:** `wam-intent-function="<string>"`
 *   **Purpose:** Semantic label for interactive controls (e.g., "search", "submit"). See the Standardized Lexicon for normative terms. Custom values are accepted.
+*   **Configure phase role (Group B):** This attribute is a **tool availability signal**. The User Agent MUST expose the `wam_invoke` tool in `tools/list` for this element, with the `action` parameter constrained to the value of this attribute. If the value appears in the Standardized Lexicon, the tool description MUST include the Optimized System Prompt for that action. Multiple space-separated values MAY be specified; each causes a separate `wam_invoke` entry or an `action` enum containing all values.
+*   **Note:** `wam_invoke` is only meaningful when `wam-policy-output` permits `interaction`.
 
 ### The wam-intent-workflow attribute
-Defines the role of an element within a multi-step process (Phase 2).
+Defines the role of an element within a multi-step process.
 
 *   **Syntax:** `wam-intent-workflow="<string>"`
 *   **Purpose:** Semantic label for workflow states (e.g., "step", "prerequisite"). See the Standardized Lexicon for normative terms. Custom values are accepted.
+*   **Configure phase role (Group B):** Like `wam-intent-function`, this is a **tool availability signal**. The User Agent MUST expose the `wam_invoke` tool with the `stage` parameter constrained to the value of this attribute. Workflow values provide the orchestrating LLM with a process-aware interaction surface, enabling it to call `wam_invoke` with awareness of where this element sits in a multi-step flow.
+*   **Note:** `wam_invoke` is only meaningful when `wam-policy-output` permits `interaction`.
 
 ### The wam-intent-output attribute
-Specifies the desired format for the LLM's response (Phase 3).
+Specifies the desired format for the LLM's response.
 
 *   **Syntax:** `wam-intent-output="<string>"`
 *   **Purpose:** Instructions for response shaping (e.g., "json", "concise"). See the Standardized Lexicon for normative terms. Custom values are accepted.
+*   **Configure phase role (Group A):** Populates the `output_format` field of the Scoped Call Configuration Object (§8.2). When a mutation tool makes an internal LLM call, the `output_format` is appended to the system prompt to constrain the response structure.
+*   **Tool availability:** Does not gate any specific MCP tool.
 
 ### The wam-intent-tone attribute
-Specifies the desired persona or tone for the LLM's response (Phase 3).
+Specifies the desired persona or tone for the LLM's response.
 
 *   **Syntax:** `wam-intent-tone="<string>"`
 *   **Purpose:** Instructions for stylistic adaptation (e.g., "formal", "empathetic"). See the Standardized Lexicon for normative terms. Custom values are accepted.
+*   **Configure phase role (Group A):** Populates the `tone` field of the Scoped Call Configuration Object (§8.2). When a mutation tool makes an internal LLM call, the `tone` is appended to the system prompt to constrain stylistic output.
+*   **Tool availability:** Does not gate any specific MCP tool.
 
 The `wam-policy` namespace defines hard constraints that a conforming User Agent MUST enforce. These are split into three primary attributes to govern the flow of information and mutations.
 
@@ -917,40 +940,106 @@ When constructing the LLM context, the User Agent MUST enforce dependency constr
         *   **`omit-trigger` (Default):** The triggering node is **removed** from the Candidate Set. The User Agent then re-evaluates dependency constraints recursively.
         *   **`error`:** The context construction process is halted, and the User Agent reports a dependency violation error.
 
-## 8. Intent Processing Model (Prompt Construction)
+## 8. Intent Attribute Processing (Configure Phase)
 
-This section defines how the User Agent translates `wam-intent` attributes into the system prompt or context object provided to the LLM.
+This section defines how the User Agent translates `wam-intent` attributes into MCP tool exposure and Scoped LLM Call configuration. Intent attributes serve as inputs to the **Configure phase** of the Tool Lifecycle Model (§11) and have two distinct processing roles.
 
-### 8.1. Hierarchy of Instruction
-The User Agent MUST determine the final instruction for a node based on the following precedence:
+### 8.1. Two Roles of Intent Attributes
 
-1.  **`wam-intent-instruction` (Highest):** If present, the value of this attribute is used directly as the instruction. It overrides any instructions derived from Category, Function, Workflow, Output, or Tone attributes.
-    *   *Note:* The semantic values of overridden attributes (e.g., `wam-intent-category`) are preserved for **Policy Routing** but ignored for **Prompt Construction**.
-2.  **Standardized Lexicon (Optimized):** If an attribute value matches a term in the **Standardized Intent Lexicon**, the User Agent MUST use the corresponding **Optimized System Prompt** defined in the lexicon.
-3.  **Custom Value (Fallback):** If an attribute value is not found in the lexicon, the User Agent MUST construct the instruction using the **Fallback Template** for that attribute type.
+Intent attributes are divided into two functional groups based on how they affect MCP tool behavior:
 
-### 8.2. Fallback Templates
+**Group A — Scoped Call Configuration:** Attributes that configure the subsidiary LLM call made internally by a mutation tool when the orchestrating LLM passes `instruction` rather than `value` to that tool. The Group A attributes (`wam-intent-category`, `wam-intent-instruction`, `wam-intent-tone`, `wam-intent-output`) are resolved into a **Scoped Call Configuration Object** (§8.2) at context-build time and included in the element's Mutable Element Manifest entry.
 
-For custom values not in the Standardized Lexicon, the User Agent MUST use the following templates:
+**Group B — Tool Availability Signals:** Attributes that gate whether `wam_invoke` appears in `tools/list` for this element. The Group B attributes (`wam-intent-function`, `wam-intent-workflow`) cause the User Agent to expose `wam_invoke` with parameter constraints that reflect the declared interactive semantics. If neither attribute is present, `wam_invoke` MUST NOT be listed for the element. See §8.5 for the normative rules.
+
+Additionally, `wam-intent-importance` governs token-budget ordering in `wam_build_context` (§8.6), and `wam-intent-entity` enriches the Mutable Element Manifest (§8.6).
+
+### 8.2. Scoped Call Configuration Object
+
+The User Agent MUST resolve the Group A attributes for each element into a Scoped Call Configuration Object at the time `wam_build_context` is called. This object is embedded in the element's Mutable Element Manifest entry and is passed to any mutation tool that makes an internal (scoped) LLM call.
+
+The object has the following fields:
+
+| Field | Source Attribute | Notes |
+|-------|-----------------|-------|
+| `instruction` | `wam-intent-instruction` | Highest precedence; if present, overrides all other fields for prompt assembly |
+| `category` | `wam-intent-category` | Used for Standardized Lexicon lookup when `instruction` is absent |
+| `tone` | `wam-intent-tone` | Appended to the scoped system prompt |
+| `output_format` | `wam-intent-output` | Appended to constrain response structure |
+
+When a mutation tool receives an `instruction` parameter from the orchestrating LLM (instead of a direct `value`), it MUST:
+
+1.  Fetch the element's content, subject to input policy (§4).
+2.  Assemble a scoped system prompt using the Scoped Call Configuration Object according to the instruction resolution rules (§8.3).
+3.  Call the LLM internally with the scoped prompt and the element's content.
+4.  Use the LLM's response as the mutation value.
+5.  Record dual provenance: the orchestrating model ID and the generating model ID (§9, §14).
+
+### 8.3. Instruction Resolution
+
+Within a scoped LLM call, the User Agent MUST assemble the system prompt fragment for the element using the following precedence:
+
+1.  **`instruction` field (Highest):** If the Scoped Call Configuration Object contains a non-empty `instruction` field, use it verbatim as the primary system prompt fragment. All other fields are still appended after it.
+    *   *Note:* The `category` and other semantic values are preserved in the manifest even when overridden, so the orchestrating LLM retains full context.
+2.  **Standardized Lexicon (Optimized):** If the `category` field matches a term in the Standardized Intent Lexicon, use the corresponding **Optimized System Prompt** for that category.
+3.  **Fallback Template (§8.4):** If neither of the above applies, construct the instruction from the fallback template for the relevant attribute type.
+
+After the primary instruction is determined, `tone` and `output_format` fragments are appended unconditionally if present.
+
+### 8.4. Fallback Templates
+
+For custom values not in the Standardized Lexicon, the User Agent MUST use the following templates to assemble the scoped system prompt fragment:
 
 *   **Category:** `"Treat the following content as a(n) [value]."`
-*   **Function:** `"Use this control to [value]."`
-*   **Workflow:** `"(Workflow Stage: [value])"`
-*   **Output:** `"Format your response as [value]."`
 *   **Tone:** `"Adopt a(n) [value] tone."`
+*   **Output format:** `"Format your response as [value]."`
 
-### 8.3. Entity & Importance (Independent Layers)
+### 8.5. Group B — Tool Availability Rules (wam_invoke Gating)
 
-These attributes operate independently of the Instruction/Category hierarchy and are appended to the context.
+The `wam_invoke` tool MUST be included in `tools/list` for an element if and only if at least one of `wam-intent-function` or `wam-intent-workflow` is present and the element's effective output policy permits `interaction` (§3).
 
-*   **`wam-intent-entity`:** Appends an entity reference anchor.
-    *   **Template:** `[Content] (Entity Reference: [URI])`
-*   **`wam-intent-importance`:** Maps to specific prioritization instructions.
-    *   **`critical`:** `"Pay maximum attention to the following content. It is essential for the user's task."`
-    *   **`high`:** `"Prioritize this content."`
-    *   **`normal`:** (No instruction).
-    *   **`low`:** `"This content is supplementary. You may ignore it if context is limited."`
-    *   **`background`:** `"This is background information only. Do not focus on it unless explicitly asked."`
+**Function gating (`wam-intent-function`):**
+
+*   The User Agent MUST expose `wam_invoke` with an `action` parameter.
+*   If the attribute value is in the Standardized Lexicon, the `action` parameter description MUST include the Optimized System Prompt for that action.
+*   If multiple space-separated values are present, the `action` parameter MUST be an enum containing all values.
+*   Custom values produce an unrestricted `action` parameter with the fallback template: `"Use this control to [value]."`
+
+**Workflow gating (`wam-intent-workflow`):**
+
+*   The User Agent MUST expose `wam_invoke` with a `stage` parameter.
+*   The `stage` parameter description MUST include the workflow role: `"(Workflow Stage: [value])"`.
+*   If both `wam-intent-function` and `wam-intent-workflow` are present, `wam_invoke` MUST accept both `action` and `stage` parameters.
+
+**Interaction policy constraint:** If the element's effective output policy does not include `interaction`, the User Agent MUST NOT expose `wam_invoke`, regardless of the presence of Group B attributes. This takes precedence over all Group B rules.
+
+### 8.6. Manifest Integration (importance and entity)
+
+The `wam-intent-importance` and `wam-intent-entity` attributes are processed during `wam_build_context` and populate the Mutable Element Manifest directly.
+
+**Importance — token-budget ordering:**
+
+The User Agent MUST order elements in the Mutable Element Manifest by importance level, with the following hierarchy (highest priority first):
+
+1.  `critical` — MUST be included even if token limits are reached; MAY truncate element content but MUST NOT omit the entry.
+2.  `high` — SHOULD be included before `normal` entries.
+3.  `normal` (default) — included in standard ordering.
+4.  `low` — included if token budget permits; MAY be omitted.
+5.  `background` — included only if token budget is unconstrained; MUST be omitted first when truncating.
+
+When elements are omitted due to token limits, the User Agent MUST include a truncation notice in the manifest indicating how many elements were omitted and at which importance levels.
+
+The `importance` level also maps to hint text appended to the element's manifest entry for the orchestrating LLM:
+
+*   **`critical`:** `"Pay maximum attention to this element. It is essential for the user's task."`
+*   **`high`:** `"Prioritize this element."`
+*   **`normal`:** (No hint appended.)
+*   **`low`:** `"This element is supplementary. You may skip it if context is limited."`
+*   **`background`:** `"This is background information only. Do not focus on it unless explicitly asked."`
+
+**Entity — manifest enrichment:**
+
+If `wam-intent-entity` is present, the User Agent MUST populate the `intent.entity` field of the element's manifest entry with the URI value. This canonical entity reference allows the orchestrating LLM to reason about entity identity and to de-duplicate or correlate content across elements before deciding which mutation tool to invoke.
 
 ## 9. Provenance Processing Model (Trust & Audit)
 
