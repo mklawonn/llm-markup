@@ -1,5 +1,7 @@
 # Web Agent Markup (WAM)
 
+> **Warning:** This standard is under active development and is subject to change.
+
 **A Policy, Intent, and Provenance Overlay for HTML**
 
 [![Status: Alpha](https://img.shields.io/badge/Status-Alpha-orange.svg)]()
