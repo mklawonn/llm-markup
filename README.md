@@ -2,7 +2,7 @@
 
 **A Policy, Intent, and Provenance Overlay for HTML**
 
-[![Status: Beta](https://img.shields.io/badge/Status-Beta-yellow.svg)]()
+[![Status: Alpha](https://img.shields.io/badge/Status-Alpha-orange.svg)]()
 [![License: W3C](https://img.shields.io/badge/License-W3C-blue.svg)](LICENSE)
 
 Web Agent Markup is a declarative contract between web content authors and **LLM-Infused User Agents**. It provides machine-readable attributes to specify:
@@ -148,7 +148,9 @@ WAM-Policy: {
 
 ## Development Status
 
-### Beta Milestone (Current)
+> **This standard is under active development.** The specification, attribute names, and tool interfaces may change without notice. Do not use in production.
+
+### Alpha Milestone (Current)
 
 - [x] Core specification complete
 - [x] WebIDL interface definitions

@@ -33,7 +33,7 @@ Specifies the canonical origin URI of the content chunk.
 
 *   **Syntax:** `wam-provenance-source="<URI>"`
 *   **Purpose:** Tracks where the information came from (e.g., `https://wikipedia.org`, `urn:internal:knowledge-base`). Used for linking citations.
-*   **Record phase role:** Authors MAY set this attribute on original content to declare its source. For content synthesized by a scoped LLM call (e.g., via `wam_append_child` with `instruction`), the User Agent SHOULD set this attribute to a UA-defined provenance URI identifying the generating model and session. The User Agent MUST NOT overwrite an author-supplied value; when the author-supplied value is present and the UA also has a source to record, the UA MUST record its source URI in the Provenance Ledger entry (`generatingModelId` / `orchestratingModelId` fields) rather than in the DOM attribute.
+*   **Record phase role:** Authors MAY set this attribute on original content to declare its source. For content produced by delegated generation (e.g., when the UA calls an external service to produce a value), the User Agent SHOULD set this attribute to a UA-defined provenance URI identifying the generating model and session. The User Agent MUST NOT overwrite an author-supplied value; when the author-supplied value is present and the UA also has a source to record, the UA MUST record its source URI in the Provenance Ledger entry (`generatingModelId` / `orchestratingModelId` fields) rather than in the DOM attribute.
 *   **Tool:** `wam_inspect_provenance` returns this field as `source` in the element's provenance object.
 
 ### The wam-provenance-operation attribute
@@ -51,7 +51,7 @@ Expresses the generating agent's certainty in the accuracy of the content.
 
 *   **Syntax:** `wam-provenance-confidence="<0.0-1.0>"`
 *   **Purpose:** Allows the User Agent to flag low-confidence information (e.g., hallucination warnings) or high-confidence facts in the UI.
-*   **Record phase role:** For direct-value mutations (where the orchestrating LLM supplies `value` directly), the User Agent MAY set this to a default high value (e.g., `1.0`). For scoped LLM calls, the User Agent SHOULD set this to the generating model's expressed confidence if available, or `null` if confidence is not determinable. The value is set once per mutation; subsequent mutations to the same element SHOULD update the attribute only if confidence changes.
+*   **Record phase role:** The User Agent MAY set this to a default high value (e.g., `1.0`) for mutations where the orchestrating LLM supplied the value directly. For mutations produced by delegated generation (where a `generatingModelId` differs from the `orchestratingModelId`), the User Agent SHOULD set this to the generating model's expressed confidence if available, or `null` if not determinable. The value is set once per mutation; subsequent mutations to the same element SHOULD update the attribute only if confidence changes.
 *   **Tool:** `wam_inspect_provenance` returns this field as `confidence`. The UI SHOULD render a visual indicator based on this value (§9.8).
 
 ### The wam-provenance-citation attribute
@@ -66,27 +66,52 @@ Specifies the human-readable attribution label for the source.
 
 The `wam-intent` namespace defines soft constraints and semantic signals that help the User Agent construct a deterministic context for the LLM. Unlike policy attributes, these do not strictly enforce visibility or mutability by default, but provide metadata that can be targeted by policies.
 
-In the Tool Lifecycle Model (§11), intent attributes serve as inputs to the **Configure phase**: they determine which MCP tools are exposed to the LLM and how those tools construct Scoped LLM Calls. Two groups of attributes drive this:
+In the Tool Lifecycle Model (§11), intent attributes are fully resolved during **Phase 1: Initialization** — they populate the Mutable Element Manifest with semantic metadata that the LLM uses when deciding how to interact with each element, and they gate the exposure of `wam_invoke` in `tools/list`. Two roles:
 
-*   **Group A — Scoped Call Configuration** (`wam-intent-category`, `wam-intent-instruction`, `wam-intent-tone`, `wam-intent-output`): These attributes compose the **Scoped Call Configuration Object** (§8.2), which is passed to any mutation tool that makes an internal LLM call on behalf of the element.
-*   **Group B — Tool Availability Signals** (`wam-intent-function`, `wam-intent-workflow`): These attributes gate the exposure of the `wam_invoke` tool in `tools/list`. Each recognized value causes a distinct `wam_invoke` variant to be offered to the orchestrating LLM.
+*   **Tool Availability Signals** (`wam-intent-function`, `wam-intent-workflow`): Gate the exposure of the `wam_invoke` tool in `tools/list`. Each recognized value causes a `wam_invoke` variant to be offered to the orchestrating LLM.
+*   **Manifest Metadata** (`wam-intent-category`, `wam-intent-description`, `wam-intent-importance`, `wam-intent-entity`): Populate the element's Mutable Element Manifest entry with semantic context the LLM reads during session initialization.
 
-Additionally, `wam-intent-importance` controls token-budget priority in `wam_build_context`, and `wam-intent-entity` enriches the Mutable Element Manifest with a canonical entity reference. See §8 for the full normative processing model.
+See §8 for the full normative processing model.
 
 ### The wam-intent-category attribute
 Assigns a semantic category to a node, allowing it to be targeted by Global Policy rules or specific LLM instructions.
 
 *   **Syntax:** `wam-intent-category="<string>"`
 *   **Purpose:** Provides a stable, semantic label (e.g., "quote", "advertisement", "navigation") independent of CSS classes or visual presentation.
-*   **Configure phase role (Group A):** Populates the `category` field of the Scoped Call Configuration Object (§8.2). When a mutation tool makes an internal LLM call for this element, the category is used to select the Optimized System Prompt from the Standardized Lexicon.
-*   **Tool availability:** Does not gate any specific MCP tool; acts as a routing key for Standardized Lexicon lookup.
+*   **Manifest role:** The category value is included in the element's Mutable Element Manifest entry, giving the LLM semantic context about the element's type before deciding how to interact with it.
+*   **Policy role:** Acts as the routing key for Global Policy `category-rules` (§2) and category-based conflict resolution (§2). `wam-intent-category` is the mechanism by which policy rules target element semantics rather than brittle CSS selectors.
+*   **Tool availability:** Does not gate any specific MCP tool.
+
+### The wam-intent-description attribute
+Provides a developer-authored free-form description of an element's purpose or context.
+
+*   **Syntax:** `wam-intent-description="<string>"`
+*   **Purpose:** Allows the page author to communicate to the LLM what an element is, what it is for, or what context is relevant when interacting with it. Unlike `wam-intent-category`, which provides a machine-readable label for policy routing, `wam-intent-description` is prose text intended to be read by the LLM — analogous to `alt` text for images. It describes the element rather than directing the LLM's behaviour; it is not a prompt or instruction.
+*   **Manifest role:** Included in the element's Mutable Element Manifest entry as `intent.description`, delivered to the LLM at session initialization.
+*   **Tool availability:** Does not gate any specific MCP tool.
+
+**Examples:**
+
+```html
+<!-- Content provenance context -->
+<section wam-intent-description="User-submitted comment. Content is unmoderated and may be informal.">
+
+<!-- Business context the LLM needs -->
+<div wam-intent-description="Subscription upgrade offer. The user has already accepted the base plan pricing.">
+
+<!-- Accuracy caveat -->
+<p wam-intent-description="Auto-generated product summary. Not manually reviewed for accuracy.">
+
+<!-- Navigation semantics -->
+<nav wam-intent-description="Primary site navigation. Links lead to top-level sections only.">
+```
 
 ### The wam-intent-importance attribute
 Specifies the relative priority of the content within the document topology.
 
 *   **Syntax:** `wam-intent-importance="critical|high|normal|low|background"`
 *   **Purpose:** Guides the User Agent in prioritizing content for the LLM context. `critical` content MUST be preserved if token limits are reached, while `background` content MAY be discarded.
-*   **Configure phase role:** Supplies the `priority` field to `wam_build_context`. The tool MUST order elements in the Mutable Element Manifest by importance: `critical` > `high` > `normal` > `low` > `background`. When token limits require truncation, elements are dropped from the tail of this ordering.
+*   **Manifest role:** The UA MUST order elements in the Mutable Element Manifest by importance during session initialization: `critical` > `high` > `normal` > `low` > `background`. When token limits require truncation, elements are dropped from the tail of this ordering.
 *   **Tool availability:** Does not gate any specific MCP tool.
 
 ### The wam-intent-entity attribute
@@ -94,15 +119,7 @@ Links the content to a specific real-world entity for disambiguation.
 
 *   **Syntax:** `wam-intent-entity="<URI>"`
 *   **Purpose:** Provides a canonical reference (e.g., Wikidata ID, Schema.org URL) to ground the LLM's understanding of named entities.
-*   **Configure phase role:** Populates the `intent.entity` field in the element's entry in the Mutable Element Manifest returned by `wam_build_context`. This allows the orchestrating LLM to reason about entity identity before deciding which mutation tool to call.
-*   **Tool availability:** Does not gate any specific MCP tool.
-
-### The wam-intent-instruction attribute
-Provides explicit, free-form instructions to the LLM for processing the specific node.
-
-*   **Syntax:** `wam-intent-instruction="<string>"`
-*   **Purpose:** Allows developers to bypass standard templates and inject custom prompts. This attribute **overrides** the default prompt generation for Category, Function, and Tone, but preserves semantic identity for Policy enforcement.
-*   **Configure phase role (Group A):** Populates the `instruction` field of the Scoped Call Configuration Object (§8.2) with the highest precedence. When present, mutation tools MUST use this value directly as the system prompt fragment for any internal LLM call, overriding all other Group A fields.
+*   **Manifest role:** Populates the `intent.entity` field in the element's Mutable Element Manifest entry, allowing the LLM to reason about entity identity and de-duplicate or correlate content across elements.
 *   **Tool availability:** Does not gate any specific MCP tool.
 
 ### The wam-intent-function attribute
@@ -110,7 +127,7 @@ Defines the interactive purpose of an element.
 
 *   **Syntax:** `wam-intent-function="<string>"`
 *   **Purpose:** Semantic label for interactive controls (e.g., "search", "submit"). See the Standardized Lexicon for normative terms. Custom values are accepted.
-*   **Configure phase role (Group B):** This attribute is a **tool availability signal**. The User Agent MUST expose the `wam_invoke` tool in `tools/list` for this element, with the `action` parameter constrained to the value of this attribute. If the value appears in the Standardized Lexicon, the tool description MUST include the Optimized System Prompt for that action. Multiple space-separated values MAY be specified; each causes a separate `wam_invoke` entry or an `action` enum containing all values.
+*   **Tool availability signal:** The User Agent MUST expose the `wam_invoke` tool in `tools/list` for this element, with the `action` parameter constrained to the value of this attribute. If the value appears in the Standardized Lexicon, the tool description MUST include the Optimized System Prompt for that action. Multiple space-separated values MAY be specified; each causes a separate `wam_invoke` entry or an `action` enum containing all values.
 *   **Note:** `wam_invoke` is only meaningful when `wam-policy-output` permits `interaction`.
 
 ### The wam-intent-workflow attribute
@@ -118,24 +135,8 @@ Defines the role of an element within a multi-step process.
 
 *   **Syntax:** `wam-intent-workflow="<string>"`
 *   **Purpose:** Semantic label for workflow states (e.g., "step", "prerequisite"). See the Standardized Lexicon for normative terms. Custom values are accepted.
-*   **Configure phase role (Group B):** Like `wam-intent-function`, this is a **tool availability signal**. The User Agent MUST expose the `wam_invoke` tool with the `stage` parameter constrained to the value of this attribute. Workflow values provide the orchestrating LLM with a process-aware interaction surface, enabling it to call `wam_invoke` with awareness of where this element sits in a multi-step flow.
+*   **Tool availability signal:** The User Agent MUST expose the `wam_invoke` tool with the `stage` parameter constrained to the value of this attribute. Workflow values provide the orchestrating LLM with a process-aware interaction surface, enabling it to call `wam_invoke` with awareness of where this element sits in a multi-step flow.
 *   **Note:** `wam_invoke` is only meaningful when `wam-policy-output` permits `interaction`.
-
-### The wam-intent-output attribute
-Specifies the desired format for the LLM's response.
-
-*   **Syntax:** `wam-intent-output="<string>"`
-*   **Purpose:** Instructions for response shaping (e.g., "json", "concise"). See the Standardized Lexicon for normative terms. Custom values are accepted.
-*   **Configure phase role (Group A):** Populates the `output_format` field of the Scoped Call Configuration Object (§8.2). When a mutation tool makes an internal LLM call, the `output_format` is appended to the system prompt to constrain the response structure.
-*   **Tool availability:** Does not gate any specific MCP tool.
-
-### The wam-intent-tone attribute
-Specifies the desired persona or tone for the LLM's response.
-
-*   **Syntax:** `wam-intent-tone="<string>"`
-*   **Purpose:** Instructions for stylistic adaptation (e.g., "formal", "empathetic"). See the Standardized Lexicon for normative terms. Custom values are accepted.
-*   **Configure phase role (Group A):** Populates the `tone` field of the Scoped Call Configuration Object (§8.2). When a mutation tool makes an internal LLM call, the `tone` is appended to the system prompt to constrain stylistic output.
-*   **Tool availability:** Does not gate any specific MCP tool.
 
 The `wam-policy` namespace defines hard constraints that a conforming User Agent MUST enforce. These are split into three primary attributes to govern the flow of information and mutations.
 
@@ -161,7 +162,8 @@ Governs the flow of mutations from the Language Model to the DOM (Enforcement). 
 *   **`annotation`:** Grants permission to wrap text nodes without changing content.
 *   **`content`:** Grants permission to modify the Content Layer (Text).
 *   **`data`:** Grants permission to modify Machine-Readable Payloads (Values, Data Attributes).
-*   **`append`:** Grants permission to append new children.
+*   **`append`:** Grants permission to insert new nodes.
+*   **`intent`:** Grants permission to set or update the element's `wam-intent-*` metadata attributes via `wam_set_intent`.
 *   **`mutable`:** Shorthand for all permissions.
 
 **Example:** `wam-policy-output="style annotation"` allows highlighting and styling but prevents text alteration.
@@ -385,46 +387,77 @@ When computing intersections, the following rules apply:
 
 This section defines the normative model by which a conforming User Agent mediates all interaction between an LLM and the document. Every LLM action on the document — reading content, applying mutations, invoking controls — MUST occur through a defined **WAM MCP Tool**. The User Agent MUST NOT allow the LLM to observe or modify the document by any other mechanism.
 
-The set of tools offered in any given context is not fixed: it is computed from the document's WAM attributes and the current Global Policy. This computed tool set is the primary enforcement mechanism for WAM policies. An LLM cannot attempt a disallowed mutation if the corresponding tool is absent from the offered tool list.
+The set of tools offered to the LLM is not fixed: it is computed from the document's WAM attributes and the current Global Policy, and it changes over the course of a page session. This computed tool set is the primary enforcement mechanism for WAM policies. An LLM cannot attempt a disallowed mutation if the corresponding tool is absent from the set of tools offered to it.
 
-## 11. The Three-Phase Tool Call
+### Tool Availability Model
 
-Every WAM MCP tool call passes through three mandatory phases, in order:
+The UA presents the LLM with a fully initialized tool set from the start of every page session. Context discovery (§12.1) is performed by the UA before LLM interaction begins — the LLM does not call a tool to trigger it and requires no initial handshake to unlock mutation or interaction tools.
 
-1.  **Gate** — The User Agent evaluates whether the tool may be called at all, given the target element's effective policies. If the gate check fails, the tool MUST NOT be executed, and the User Agent MUST return a structured error to the LLM.
-2.  **Configure** — The User Agent resolves the tool's runtime behaviour from the element's `wam-intent-*` attributes: which system prompt to use for any scoped LLM call, what response format to request, and what entity context to provide.
-3.  **Record** — After successful execution, the User Agent MUST write a Provenance Ledger entry **before** returning the result to the LLM. If ledger entry creation fails, the mutation MUST be rolled back. The live DOM and Provenance Ledger MUST remain consistent at all times (fail-closed).
+The active `tools/list` contains:
 
-The three WAM namespaces map directly onto these phases:
+1.  **Context tools** (§12.2) — global, read-only tools for inspecting elements, querying policies, and checking provenance. These do not require a specific element to be targeted.
 
-| Phase | Namespace | Governs |
+2.  **Per-element tools** — mutation tools (§12.3) and interaction tools (§12.4) that take a `selector` argument identifying the target element. Each per-element tool's `selector` parameter MUST be constrained to an enum of the selectors of elements for which that tool is permitted (see §12.3). A tool with no valid targets MUST be omitted from `tools/list` entirely.
+
+If a dynamic DOM modification invalidates the current tool set, the UA MUST re-run context discovery automatically and deliver the refreshed tool set and context to the LLM before accepting further tool calls (see §13.2).
+
+## 11. The Two-Phase Lifecycle
+
+WAM governs two phases of every LLM session. Both are UA-enforced; the LLM's reasoning between them is outside the scope of this specification.
+
+**Phase 1: Initialization** — Before the LLM session begins, the User Agent runs context discovery (§12.1). Policy and intent attributes are fully resolved at this point: the UA produces the filtered HTML fragment, the Mutable Element Manifest (with intent metadata per element), and a fully populated `tools/list` with enum-constrained selectors. The LLM receives all three before making any call. Policy enforcement is structural and complete at this stage — the LLM cannot target what is not in a tool's enum.
+
+**Phase 2: Record** — Each tool call that modifies the document (mutation tools and `wam_invoke`) is executed atomically with a Provenance Ledger write (§9, §13.3). The DOM is not modified until the ledger entry is written. There is no unrecorded LLM-initiated change to the document.
+
+The WAM namespaces map onto these two phases as follows:
+
+| Concern | Namespace | Phase |
 | :--- | :--- | :--- |
-| Gate | `wam-policy-*` | Which tools are offered; whether a call is permitted |
-| Configure | `wam-intent-*` | How the tool behaves when called |
-| Record | `wam-provenance-*` | What is written to the Provenance Ledger |
+| Which tools are offered; what content is visible | `wam-policy-*` | Phase 1: Initialization (§12.1) |
+| How each element is characterized in the manifest | `wam-intent-*` | Phase 1: Initialization (§12.1) |
+| What is written after each tool call | `wam-provenance-*` | Phase 2: Record (§9, §13.3) |
 
 ## 12. Tool Taxonomy
 
 WAM MCP tools are divided into four categories based on capability class and gating requirements.
 
-### 12.1. Context Tools (Always Available)
+### 12.1. Session Initialization (UA-Internal)
 
-Context tools are offered in every interaction, regardless of element-level policies. They are read-only with respect to the document and generate no Provenance Ledger entries.
+Before initiating LLM interaction with a page, the User Agent MUST perform **context discovery**. This is a UA-internal process — the LLM does not call a tool to trigger it. The UA MUST:
+
+1.  Filter the document's HTML by `wam-policy-input`, producing the **filtered HTML fragment**.
+2.  Compose the **system prompt** from `wam-intent-*` attributes across the page (§8).
+3.  Build the **Mutable Element Manifest** (§12.6).
+4.  Build the initial `tools/list` with enum-constrained selectors (§12.3, §12.4).
+5.  Deliver the filtered HTML fragment, composed system prompt, and Mutable Element Manifest to the LLM as part of session setup — for example, in the initial system prompt or a preceding context message — before any tool use occurs.
+
+The LLM therefore begins the session with full context and a fully populated tool set. No initial tool call is required.
+
+If a dynamic DOM modification invalidates the current tool set (§13.2), the UA MUST re-run context discovery automatically, update `tools/list`, and deliver the refreshed context to the LLM before accepting further tool calls.
+
+### 12.2. Context Tools
+
+Context tools are read-only with respect to the document and generate no Provenance Ledger entries. They are available throughout the page session, regardless of element-level policies.
 
 | Tool | Description |
 | :--- | :--- |
-| `wam_build_context` | Returns the policy-filtered context representation of the page, the composed system prompt, and the Mutable Element Manifest (§12.5). |
 | `wam_read_element` | Returns the policy-filtered content of a single element, identified by selector. |
 | `wam_get_policy` | Returns the computed Effective Permission Set for an element. |
 | `wam_list_mutable_elements` | Returns all elements for which at least one mutation tool is currently available. |
 | `wam_inspect_provenance` | Returns the Provenance Ledger entries for an element. |
 | `wam_report_violation` | Reports an integrity violation observed by the LLM (e.g., unexpected content). The User Agent MUST treat this as equivalent to a UA-detected violation and fire the `llmintegrityviolation` event (§9.9). |
 
-A conforming UA MUST include all six context tools in every `tools/list` response, regardless of page policy.
+A conforming UA MUST include all five context tools in `tools/list`, regardless of page policy.
 
-### 12.2. Mutation Tools (Policy-Gated)
+### 12.3. Mutation Tools (Policy-Gated)
 
-Mutation tools modify the document. Each is unlocked by a specific `wam-policy-output` token on the target element. The User Agent MUST NOT include a mutation tool in the offered tool list unless the target element's Effective Permission Set includes the corresponding token.
+Mutation tools modify the document. Each is unlocked by a specific `wam-policy-output` token. For each mutation tool, the UA MUST:
+
+1.  Collect the selectors of all elements whose Effective Permission Set includes the corresponding token.
+2.  If that set is non-empty, include the tool in `tools/list` with the `selector` parameter's JSON Schema `enum` set to exactly that set of selectors.
+3.  If that set is empty, omit the tool from `tools/list` entirely.
+
+This enum-constrained encoding ensures the LLM cannot form a syntactically valid call targeting an element that does not permit the tool.
 
 | Tool | Required Token | Operation |
 | :--- | :--- | :--- |
@@ -434,49 +467,38 @@ Mutation tools modify the document. Each is unlocked by a specific `wam-policy-o
 | `wam_annotate` | `annotation` | Wraps text runs in inline elements without altering text content. |
 | `wam_set_content` | `content` | Replaces text node content. |
 | `wam_set_data` | `data` | Modifies form values, `data-*` attributes, `<meta>` content, and JSON-LD blocks. |
-| `wam_append_child` | `append` | Inserts new child nodes at the end of an element's child list. |
+| `wam_insert` | `append` | Inserts new nodes relative to an element, according to a `position` parameter: `"before"` (as a preceding sibling), `"after"` (as a following sibling), `"first-child"` (inside, before existing children), or `"last-child"` (inside, after existing children). The `append` token on the reference element grants all four positions. |
+| `wam_set_intent` | `intent` | Sets or updates `wam-intent-category`, `wam-intent-description`, `wam-intent-importance`, and `wam-intent-entity` on the element. |
 
-*Note:* The `mutable` token grants all seven mutation tools simultaneously.
+*Note:* The `mutable` token grants all eight mutation tools simultaneously.
 
-Because tool availability is per-element, the same tool may be offered for one element and absent for another within the same interaction turn. The `wam_list_mutable_elements` tool allows the LLM to survey what is mutable before issuing tool calls that would fail.
+*Note on content sourcing:* `wam_insert` governs the *insertion* of new content into the DOM. WAM takes no position on where that content originates — the LLM may generate it directly or receive it from external tooling outside this specification. A UA MAY provide additional non-WAM tools for fetching external resources (e.g., HTTP requests, search results); such tools are an implementation choice and are out of scope here.
 
-### 12.3. Interaction Tools (Intent-Gated)
+Because the selector enum is per-tool, the same element may appear in the selector enum of some tools but not others within the same `tools/list` response. The Mutable Element Manifest (§12.6) provides the LLM with the same per-element view of available tools for planning purposes.
 
-Interaction tools invoke controls on the page. They are gated by Group B intent attributes (`wam-intent-function` or `wam-intent-workflow`) rather than by output policy tokens, and additionally require `interaction` (or `mutable`) in the element's effective output policy.
+### 12.4. Interaction Tools (Intent-Gated)
+
+Interaction tools invoke controls on the page. They are gated by `wam-intent-function` or `wam-intent-workflow` rather than by output policy tokens, and additionally require `interaction` (or `mutable`) in the element's effective output policy.
 
 | Tool | Gate condition | Action |
 | :--- | :--- | :--- |
 | `wam_invoke` | Element has `wam-intent-function` OR `wam-intent-workflow`, AND `interaction` ∈ Effective Permission Set | Invokes the control's primary action or advances a workflow stage. The `action` argument mirrors the `wam-intent-function` value; the `stage` argument mirrors the `wam-intent-workflow` value. Both parameters are present when both attributes are declared. |
 
-The User Agent MUST expose `wam_invoke` for every element that satisfies both gate conditions (at least one Group B attribute present, and `interaction` permitted). It MUST NOT expose `wam_invoke` for elements that have neither `wam-intent-function` nor `wam-intent-workflow`, even if `interaction` is permitted. See §8.5 for the complete parameter rules.
+The User Agent MUST include `wam_invoke` in `tools/list` if at least one element satisfies both gate conditions, with its `selector` parameter's JSON Schema `enum` set to the selectors of all such elements. If no element satisfies both conditions, `wam_invoke` MUST be omitted from `tools/list` entirely. See §8.1 for the complete parameter rules.
 
-### 12.4. Scoped LLM Calls
-
-A **Scoped LLM Call** is a subsidiary LLM invocation made by the User Agent from within a tool's execution. It allows a tool to generate content — a summary, a translation, an annotation — without requiring the orchestrating LLM to read and reproduce the element's full content itself. The orchestrating LLM directs *what* to do; the scoped call executes *how* to do it for a particular element.
-
-Any mutation tool MAY accept an `instruction` argument in lieu of a direct `value` argument. When `instruction` is present and `value` is absent, the User Agent MUST:
-
-1.  Fetch the element's content, applying `wam-policy-input` filtering exactly as `wam_read_element` would.
-2.  Resolve the Configure phase for the element, producing a system prompt from its `wam-intent-*` attributes (§8).
-3.  Invoke the LLM with: the element's filtered content and the resolved system prompt; the `instruction` value is passed as the user-facing prompt directing what operation to perform.
-4.  Use the LLM's response as the `value` for the mutation.
-5.  Proceed to the Record phase as normal. (The Gate phase has already been validated before this step sequence began; it is not re-entered.)
-
-The model used for a scoped call is implementation-defined and MAY differ from the orchestrating model. The Provenance Ledger entry MUST record both the **orchestrating model** (the model that invoked the tool) and the **generating model** (the model whose output became the new value) as distinct fields.
-
-*Note:* Scoped calls are subject to the same input policy as direct reads. A scoped call on an element with `wam-policy-input="none"` MUST be rejected at the Gate phase, since there is no content to pass to the inner LLM.
+`wam_invoke` calls are subject to the same Record phase atomicity as mutation tools (§13.3). The User Agent MUST write a Provenance Ledger entry for each `wam_invoke` call using layer `interaction` before the invocation is dispatched to the page.
 
 ### 12.5. The Mutable Element Manifest
 
-`wam_build_context` returns, alongside the filtered HTML fragment and composed system prompt, a **Mutable Element Manifest**: a structured enumeration of every element for which at least one mutation tool is currently available.
+The UA delivers, alongside the filtered HTML fragment and composed system prompt, a **Mutable Element Manifest**: a structured enumeration of every element for which at least one mutation tool is currently available AND which is visible in the filtered HTML fragment.
+
+An element MUST NOT appear in the Mutable Element Manifest if its effective `wam-policy-input` is `none`. The manifest is a subset of the filtered context: every element in the manifest MUST also be present in the filtered HTML fragment. This ensures the LLM can always locate and inspect manifest elements within the context it has been given.
 
 Each manifest entry MUST include:
 
 *   **`selector`**: A UA-assigned CSS selector that uniquely identifies the element within the current document.
 *   **`available_tools`**: The list of mutation and interaction tool names available for this element.
-*   **`intent`**: The element's resolved intent metadata, comprising:
-    *   `category`, `importance`, and `entity` if present.
-    *   The resolved **Scoped Call Configuration Object** (§8.2) — `instruction`, `tone`, and `output_format` — if any Group A attribute is present. This object is used by mutation tools that execute Scoped LLM Calls on behalf of this element.
+*   **`intent`**: The element's resolved intent metadata, comprising `category`, `description`, `importance`, and `entity` if present.
 *   **`provenance`**: Any pre-existing provenance metadata on the element: `source`, `citation`, and prior `operations`.
 
 The `wam_id` field (the element's `id` attribute) MUST be included if present.
@@ -485,50 +507,48 @@ A conforming UA MUST keep the manifest consistent with the actual offered tool l
 
 ## 13. Interaction Protocol
 
-### 13.1. Discovery Before Action
+### 13.1. UA-Initiated Context Discovery
 
-A conforming UA MUST structure LLM interaction in two phases:
+A conforming UA MUST perform context discovery (§12.1) before initiating LLM interaction with any page or after any navigation. Discovery is a UA-internal process: the LLM receives the filtered HTML fragment, composed system prompt, and Mutable Element Manifest as part of session initialization — not via a tool call.
 
-**Phase 1 — Discovery:** The LLM MUST call `wam_build_context` as its first tool call on any page or after any navigation. Mutation and interaction tools MUST NOT appear in the `tools/list` response prior to a successful `wam_build_context` call in the current page session.
-
-**Phase 2 — Action:** After `wam_build_context` has been called, mutation and interaction tools are added to subsequent `tools/list` responses for elements that permit them. Tool calls in this phase that would violate the effective output policy MUST return a structured error; the User Agent MUST NOT apply partial mutations.
+The UA MUST NOT initiate LLM interaction until context discovery has completed. The LLM's first available `tools/list` MUST already contain the full set of context tools (§12.2), mutation tools (§12.3) with enum-constrained selectors, and interaction tools (§12.4) computed from the page's WAM attributes.
 
 ### 13.2. Selector Stability
 
-The UA-assigned selectors in the Mutable Element Manifest and in tool call arguments MUST remain stable for the duration of a single page session. If a dynamic DOM modification invalidates a previously issued selector, the User Agent MUST invalidate the current session and require a new `wam_build_context` call before accepting further mutation tool calls.
+The UA-assigned selectors in the Mutable Element Manifest and in tool call arguments MUST remain stable for the duration of a single page session. If a dynamic DOM modification invalidates a previously issued selector, the User Agent MUST re-run context discovery automatically (§12.1), update `tools/list` with the refreshed selector enums, and deliver the updated context to the LLM before accepting further mutation tool calls.
 
 ### 13.3. Atomicity
 
-Each mutation tool call MUST be atomic with respect to the Provenance Ledger. The User Agent MUST execute steps in the following order, with full rollback on any failure:
+Each tool call that modifies the document — mutation tools (§12.3) and `wam_invoke` (§12.4) — MUST be atomic with respect to the Provenance Ledger. The User Agent MUST execute steps in the following order:
 
-1.  Validate gate conditions (Effective Permission Set check).
+1.  Verify the selector resolves to the expected element and that the session has been initialized and not subsequently invalidated (§13.2).
 2.  Execute the mutation in memory (do not yet apply to the live DOM).
-3.  Write the Provenance Ledger entry (Record phase step 3, §9.1).
-4.  Append the `<layer>:<explanation>` token to the element's `wam-provenance-operation` attribute (Record phase step 4, §9.1).
+3.  Write the Provenance Ledger entry (§9.1).
+4.  Append the `<layer>:<explanation>` token to the element's `wam-provenance-operation` attribute (§9.1).
 5.  Apply the mutation to the live DOM.
 6.  Return success to the LLM.
+
+The ledger write (steps 3–4) MUST complete before the DOM is modified (step 5). If either ledger step cannot complete, steps 5 and 6 MUST NOT execute. The live DOM and Provenance Ledger are always consistent.
 
 ### 13.4. Prompt Injection Hardening
 
 The User Agent MUST treat all tool arguments as untrusted input.
 
-*   **Selector arguments** MUST be validated as syntactically well-formed CSS selectors that resolve to nodes within the current document. Selectors containing characters outside the CSS selector grammar MUST be rejected with an error before the Gate phase is entered.
+*   **Selector arguments** MUST be validated as syntactically well-formed CSS selectors that resolve to a node within the current document. This is a defence against prompt-injection attacks that attempt to craft malformed selectors — it is not a policy enforcement check. Policy enforcement is structural: each tool's `selector` enum (§12.3) constrains which elements can be targeted before the call reaches the UA.
 *   **Value arguments** for mutation tools MUST be sanitised before DOM application. Executable content — `<script>` elements, `javascript:` URL schemes, and event handler attributes (`on*`) — MUST be stripped from any HTML value.
-*   **Instruction arguments** for scoped LLM calls MUST be passed to the inner LLM verbatim but MUST NOT be used to override WAM policy attributes. The Effective Permission Set is always resolved from the DOM; LLM-provided instructions cannot elevate permissions.
 
 ## 14. Conformance Requirements (Tool Layer)
 
 A **WAM-conforming User Agent** at the tool layer MUST satisfy all of the following:
 
-1.  **Complete context tool set:** Implement and offer all six tools defined in §12.1 in every interaction.
-2.  **Mutation tool gating:** Never include a mutation tool in `tools/list` for an element whose Effective Permission Set does not contain the corresponding output token.
-3.  **Interaction tool gating:** Expose `wam_invoke` if and only if the element has at least one Group B intent attribute (`wam-intent-function` or `wam-intent-workflow`) and `interaction` ∈ Effective Permission Set (§8.5, §12.3).
-4.  **Discovery-first:** Withhold mutation and interaction tools until `wam_build_context` has been called in the current page session.
-5.  **Atomic mutation with rollback:** Apply the Gate → Execute → Record → Commit sequence for every mutation call, with full rollback on any step failure.
-6.  **Manifest consistency:** The Mutable Element Manifest returned by `wam_build_context` MUST exactly match the offered tool list at all times.
-7.  **Selector sanitisation:** Reject selector arguments that are syntactically invalid or resolve outside the current document.
-8.  **Input policy applied to scoped calls:** Apply `wam-policy-input` filtering to element content before passing it to any scoped LLM call.
-9.  **Dual provenance for scoped calls:** Record both the orchestrating and generating model identifiers in Provenance Ledger entries resulting from scoped calls.
+1.  **UA-initiated discovery:** Run context discovery (§12.1) before initiating LLM interaction with any page or after any navigation. Deliver the filtered HTML fragment, composed system prompt, and Mutable Element Manifest to the LLM as part of session initialization.
+2.  **Complete initial tool set:** The LLM's first `tools/list` MUST contain all context tools (§12.2), plus mutation and interaction tools with enum-constrained selectors computed from WAM attributes.
+3.  **Enum-constrained mutation selectors:** For each mutation tool, include it in `tools/list` with a `selector` enum listing exactly the selectors of elements whose Effective Permission Set includes the corresponding token. Omit the tool entirely if no such elements exist (§12.3).
+4.  **Enum-constrained interaction selectors:** Include `wam_invoke` in `tools/list` with a `selector` enum listing exactly the selectors of elements that satisfy both gate conditions. Omit `wam_invoke` entirely if no such elements exist (§12.4).
+5.  **Atomic tool execution:** Apply the Verify → Execute → Record → Commit sequence for every mutation tool call and every `wam_invoke` call. The ledger write MUST precede the DOM modification; if the ledger write cannot complete, the DOM MUST NOT be modified (§13.3).
+6.  **Manifest consistency:** The Mutable Element Manifest delivered at session initialization MUST exactly match the offered tool list at all times. Every manifest element MUST also be present in the filtered HTML fragment.
+7.  **Visibility prerequisite for mutability:** Never include an element in the Mutable Element Manifest or in any tool's `selector` enum if that element's effective `wam-policy-input` is `none`. An invisible element is undiscoverable and therefore unmutable, regardless of its `wam-policy-output` value.
+8.  **Selector syntax validation:** Reject selector arguments that are syntactically invalid or resolve outside the current document (§13.4). This is a defence against prompt injection, not a policy check.
 
 # Processing Model
 
@@ -543,7 +563,7 @@ Regardless of the permission set, the User Agent MUST determine the mutability o
 
 ## 2. Global Policy Resolution (Category Conflicts)
 
-When multiple `wam-intent-category` values apply to a single node, and the Global Policy defines conflicting rules for these categories, the User Agent MUST resolve the conflict using **Intersection Logic** (Restrictive Priority). Because tokens map directly to tools (§3, §12.2), narrowing the Effective Permission Set through intersection also narrows the offered tool list for that element.
+When multiple `wam-intent-category` values apply to a single node, and the Global Policy defines conflicting rules for these categories, the User Agent MUST resolve the conflict using **Intersection Logic** (Restrictive Priority). Because tokens map directly to tools (§3, §12.3), narrowing the Effective Permission Set through intersection also narrows the offered tool list for that element.
 
 *   **Rule:** The effective permission set granted by the Global Policy is the **intersection** of the allowed tokens for each applicable category.
 *   **Implication:** If *any* active category rule forbids a specific action (by omitting the corresponding token), that action is forbidden, even if other categories would allow it. The corresponding mutation tool MUST NOT appear in `tools/list` for that element.
@@ -554,9 +574,9 @@ When multiple `wam-intent-category` values apply to a single node, and the Globa
 
 ## 3. Token-Based Enforcement
 
-Each `wam-policy-output` token serves two normative purposes: it causes the corresponding **WAM MCP mutation tool** to appear in the `tools/list` response for that element (the Gate phase, §11), and it defines the exact DOM operations that tool is permitted to perform. The User Agent MUST NOT include a mutation tool unless its corresponding token is present in the Effective Permission Set, and MUST NOT permit the tool to perform any operation not listed for its token below.
+Each `wam-policy-output` token serves two normative purposes: it causes the corresponding **WAM MCP mutation tool** to appear in the `tools/list` response for that element (§12.3), and it defines the exact DOM operations that tool is permitted to perform. The User Agent MUST NOT include a mutation tool unless its corresponding token is present in the Effective Permission Set, and MUST NOT permit the tool to perform any operation not listed for its token below.
 
-See §12.2 for the canonical mapping of tokens to tool names.
+See §12.3 for the canonical mapping of tokens to tool names.
 
 ### `style` (Presentation Layer)
 
@@ -566,7 +586,7 @@ See §12.2 for the canonical mapping of tokens to tool names.
 
 ### `interaction` (Behavioral Layer)
 
-*   **Exposed tool:** `wam_set_interaction`; also gates `wam_invoke` when `wam-intent-function` is present (§12.3).
+*   **Exposed tool:** `wam_set_interaction`; also gates `wam_invoke` when `wam-intent-function` is present (§12.4).
 *   **Allowed:**
     *   Modification of `class`, `style`.
     *   Modification of Event Handlers (`on*`) and ARIA states (`aria-*`).
@@ -590,13 +610,13 @@ See §12.2 for the canonical mapping of tokens to tool names.
 
 ### `content` (Text Layer)
 
-*   **Exposed tool:** `wam_set_content`; supports both direct `value` and delegated `instruction` arguments (Scoped LLM Call, §12.4).
+*   **Exposed tool:** `wam_set_content`
 *   **Allowed:** Modification of Text Nodes.
 *   **Blocked:** Changing the DOM structure or attributes of container elements.
 
 ### `data` (Machine-Readable Payload)
 
-*   **Exposed tool:** `wam_set_data`; supports both direct `value` and delegated `instruction` arguments (Scoped LLM Call, §12.4).
+*   **Exposed tool:** `wam_set_data`
 *   **Allowed:**
     *   **Form Values:** Modification of the `value` attribute on form controls.
     *   **Data Attributes:** Modification of custom `data-*` attributes.
@@ -606,26 +626,35 @@ See §12.2 for the canonical mapping of tokens to tool names.
 
 ### `append` (Additive Structure)
 
-*   **Exposed tool:** `wam_append_child`; supports both direct `value` and delegated `instruction` arguments (Scoped LLM Call, §12.4).
-*   **Allowed:** Insertion of new child nodes (elements or text) at the end of the child list.
-*   **Blocked:** Modification or removal of existing siblings.
+*   **Exposed tool:** `wam_insert`
+*   **Allowed:** Insertion of new nodes at any of four positions relative to the element: `"before"` (preceding sibling), `"after"` (following sibling), `"first-child"` (inside, before existing children), `"last-child"` (inside, after existing children).
+*   **Blocked:** Modification or removal of existing nodes.
+
+### `intent` (Semantic Metadata)
+
+*   **Exposed tool:** `wam_set_intent`
+*   **Allowed:** Setting or updating `wam-intent-category`, `wam-intent-description`, `wam-intent-importance`, and `wam-intent-entity` on the element.
+*   **Blocked:** Setting `wam-intent-function` or `wam-intent-workflow`. These are tool availability signals that affect `tools/list` and `wam_invoke` exposure; they are exclusively author-controlled and MUST NOT be writable by the LLM.
+*   **Manifest refresh:** After `wam_set_intent` completes, the User Agent MUST update the affected element's entry in the Mutable Element Manifest to reflect the new intent metadata before delivering any further context to the LLM.
 
 ### `mutable` (Full Access)
 
-*   **Exposed tools:** All seven mutation tools simultaneously (`wam_apply_style`, `wam_set_interaction`, `wam_reorder_children`, `wam_annotate`, `wam_set_content`, `wam_set_data`, `wam_append_child`).
+*   **Exposed tools:** All eight mutation tools simultaneously (`wam_apply_style`, `wam_set_interaction`, `wam_reorder_children`, `wam_annotate`, `wam_set_content`, `wam_set_data`, `wam_insert`, `wam_set_intent`).
 *   **Allowed:** All operations. The User Agent removes all output-token restrictions for this node.
 
 ## 4. Enforcement of Visibility (`wam-policy-input`)
 
-`wam-policy-input` governs the **Gate phase** (§11) of the Context Tools `wam_build_context` and `wam_read_element` (§12.1). Unlike `wam-policy-output`, visibility tokens do not expose or suppress individual tools — all Context Tools are always offered. Instead, they control what those tools are permitted to return: an element's visibility tokens determine which channels (text, attributes, media) appear in the tool's response.
+`wam-policy-input` governs the context filtering performed during session initialization (§12.1) and the context tool `wam_read_element` (§12.2). Unlike `wam-policy-output`, visibility tokens do not expose or suppress individual tools. Instead, they control what content is delivered to the LLM: an element's visibility tokens determine which channels (text, attributes, media) appear in the filtered HTML fragment and in tool responses.
 
-Additionally, `wam-policy-input` gates **Scoped LLM Calls** (§12.4): the content passed to an inner LLM invocation MUST be filtered by the same rules as `wam_read_element`. An element with `wam-policy-input="none"` MUST be excluded from scoped LLM calls on that element; the User Agent MUST reject such a call at the Gate phase.
+**Visibility as a prerequisite for mutability:** An element with `wam-policy-input="none"` is invisible to the LLM — it MUST be omitted from the filtered HTML fragment AND from the Mutable Element Manifest (§12.5). The LLM cannot discover the element's existence and therefore cannot target it with mutation or interaction tools. This holds regardless of the element's `wam-policy-output` value: an element that is invisible cannot be mutable, because mutability requires that the LLM be able to identify and address the element. `wam-policy-output` tokens on an invisible element are inert — they do not cause tools to appear in `tools/list`.
+
+For elements with partial visibility (`wam-policy-input="structure"`, `"structure text"`, etc.), the element is visible in the filtered context and MAY appear in the Mutable Element Manifest if its output policy permits.
 
 The User Agent MUST transform the DOM into a context representation for the LLM by filtering nodes based on the `wam-policy-input` tokens. This section defines the normative requirements for context construction.
 
 ### 4.1. Context Representation Format
 
-The context representation is the content returned by `wam_build_context` (in its `html_fragment` field) and by `wam_read_element`. It MUST be an HTML fragment string. The User Agent MAY support additional output formats (plain text, Markdown, accessibility tree) as implementation-defined options, but HTML is the normative default.
+The context representation is the filtered HTML fragment delivered at session initialization and the content returned by `wam_read_element`. It MUST be an HTML fragment string. The User Agent MAY support additional output formats (plain text, Markdown, accessibility tree) as implementation-defined options, but HTML is the normative default.
 
 **Output Requirements:**
 
@@ -769,9 +798,7 @@ If no `wam-policy-input` attribute is present on a node and no inherited or glob
 
 ## 5. Enforcement of Retention (`wam-policy-memory`)
 
-`wam-policy-memory` governs the **Record phase** (§11) across all WAM MCP tool calls: it constrains what any tool may retain after execution completes, whether the tool is a Context Tool reading content or a mutation tool that also received element content for a Scoped LLM Call (§12.4). The retention rules apply to the full content a tool observes, not only to the mutation it produces.
-
-*   **Scoped LLM Calls and memory:** When a mutation tool performs a Scoped LLM Call on an element with `wam-policy-memory="none"`, the User Agent MUST discard the element content passed to the inner LLM and the LLM's response upon completion of the tool call. Neither MAY be written to any persistent store, logged beyond the Provenance Ledger entry, or transmitted to a remote training endpoint.
+`wam-policy-memory` governs the **Record phase** (§11) across all WAM MCP tool calls: it constrains what any tool may retain after execution completes. The retention rules apply to the full content a tool observes, not only to the mutation it produces.
 
 The User Agent MUST signal and enforce storage limitations based on the `wam-policy-memory` tokens.
 
@@ -954,61 +981,11 @@ When constructing the LLM context, the User Agent MUST enforce dependency constr
         *   **`omit-trigger` (Default):** The triggering node is **removed** from the Candidate Set. The User Agent then re-evaluates dependency constraints recursively.
         *   **`error`:** The context construction process is halted, and the User Agent reports a dependency violation error.
 
-## 8. Intent Attribute Processing (Configure Phase)
+## 8. Intent Attribute Processing (Initialization Phase)
 
-This section defines how the User Agent translates `wam-intent` attributes into MCP tool exposure and Scoped LLM Call configuration. Intent attributes serve as inputs to the **Configure phase** of the Tool Lifecycle Model (§11) and have two distinct processing roles.
+This section defines how the User Agent translates `wam-intent` attributes into MCP tool exposure and Mutable Element Manifest content. Intent attributes are fully resolved during **Phase 1: Initialization** of the Tool Lifecycle Model (§11) and have two processing roles: tool availability signals that gate `wam_invoke` exposure, and manifest metadata that the LLM reads during session initialization.
 
-### 8.1. Two Roles of Intent Attributes
-
-Intent attributes are divided into two functional groups based on how they affect MCP tool behavior:
-
-**Group A — Scoped Call Configuration:** Attributes that configure the subsidiary LLM call made internally by a mutation tool when the orchestrating LLM passes `instruction` rather than `value` to that tool. The Group A attributes (`wam-intent-category`, `wam-intent-instruction`, `wam-intent-tone`, `wam-intent-output`) are resolved into a **Scoped Call Configuration Object** (§8.2) at context-build time and included in the element's Mutable Element Manifest entry.
-
-**Group B — Tool Availability Signals:** Attributes that gate whether `wam_invoke` appears in `tools/list` for this element. The Group B attributes (`wam-intent-function`, `wam-intent-workflow`) cause the User Agent to expose `wam_invoke` with parameter constraints that reflect the declared interactive semantics. If neither attribute is present, `wam_invoke` MUST NOT be listed for the element. See §8.5 for the normative rules.
-
-Additionally, `wam-intent-importance` governs token-budget ordering in `wam_build_context` (§8.6), and `wam-intent-entity` enriches the Mutable Element Manifest (§8.6).
-
-### 8.2. Scoped Call Configuration Object
-
-The User Agent MUST resolve the Group A attributes for each element into a Scoped Call Configuration Object at the time `wam_build_context` is called. This object is embedded in the element's Mutable Element Manifest entry and is passed to any mutation tool that makes an internal (scoped) LLM call.
-
-The object has the following fields:
-
-| Field | Source Attribute | Notes |
-|-------|-----------------|-------|
-| `instruction` | `wam-intent-instruction` | Highest precedence; if present, overrides all other fields for prompt assembly |
-| `category` | `wam-intent-category` | Used for Standardized Lexicon lookup when `instruction` is absent |
-| `tone` | `wam-intent-tone` | Appended to the scoped system prompt |
-| `output_format` | `wam-intent-output` | Appended to constrain response structure |
-
-When a mutation tool receives an `instruction` parameter from the orchestrating LLM (instead of a direct `value`), it MUST:
-
-1.  Fetch the element's content, subject to input policy (§4).
-2.  Assemble a scoped system prompt using the Scoped Call Configuration Object according to the instruction resolution rules (§8.3).
-3.  Call the LLM internally with the scoped prompt and the element's content.
-4.  Use the LLM's response as the mutation value.
-5.  Record dual provenance: the orchestrating model ID and the generating model ID (§9, §14).
-
-### 8.3. Instruction Resolution
-
-Within a scoped LLM call, the User Agent MUST assemble the system prompt fragment for the element using the following precedence:
-
-1.  **`instruction` field (Highest):** If the Scoped Call Configuration Object contains a non-empty `instruction` field, use it verbatim as the primary system prompt fragment. All other fields are still appended after it.
-    *   *Note:* The `category` and other semantic values are preserved in the manifest even when overridden, so the orchestrating LLM retains full context.
-2.  **Standardized Lexicon (Optimized):** If the `category` field matches a term in the Standardized Intent Lexicon, use the corresponding **Optimized System Prompt** for that category.
-3.  **Fallback Template (§8.4):** If neither of the above applies, construct the instruction from the fallback template for the relevant attribute type.
-
-After the primary instruction is determined, `tone` and `output_format` fragments are appended unconditionally if present.
-
-### 8.4. Fallback Templates
-
-For custom values not in the Standardized Lexicon, the User Agent MUST use the following templates to assemble the scoped system prompt fragment:
-
-*   **Category:** `"Treat the following content as a(n) [value]."`
-*   **Tone:** `"Adopt a(n) [value] tone."`
-*   **Output format:** `"Format your response as [value]."`
-
-### 8.5. Group B — Tool Availability Rules (wam_invoke Gating)
+### 8.1. wam_invoke Gating Rules
 
 The `wam_invoke` tool MUST be included in `tools/list` for an element if and only if at least one of `wam-intent-function` or `wam-intent-workflow` is present and the element's effective output policy permits `interaction` (§3).
 
@@ -1025,11 +1002,15 @@ The `wam_invoke` tool MUST be included in `tools/list` for an element if and onl
 *   The `stage` parameter description MUST include the workflow role: `"(Workflow Stage: [value])"`.
 *   If both `wam-intent-function` and `wam-intent-workflow` are present, `wam_invoke` MUST accept both `action` and `stage` parameters.
 
-**Interaction policy constraint:** If the element's effective output policy does not include `interaction`, the User Agent MUST NOT expose `wam_invoke`, regardless of the presence of Group B attributes. This takes precedence over all Group B rules.
+**Interaction policy constraint:** If the element's effective output policy does not include `interaction`, the User Agent MUST NOT expose `wam_invoke`, regardless of the presence of intent attributes. This takes precedence over all gating rules.
 
-### 8.6. Manifest Integration (importance and entity)
+### 8.2. Manifest Integration (description, importance, and entity)
 
-The `wam-intent-importance` and `wam-intent-entity` attributes are processed during `wam_build_context` and populate the Mutable Element Manifest directly.
+The `wam-intent-description`, `wam-intent-importance`, and `wam-intent-entity` attributes are processed during session initialization and populate the Mutable Element Manifest directly.
+
+**Description — prose context:**
+
+If `wam-intent-description` is present, the User Agent MUST populate the `intent.description` field of the element's manifest entry with the attribute value verbatim. The UA MUST NOT interpret, transform, or summarise the value.
 
 **Importance — token-budget ordering:**
 
@@ -1057,7 +1038,7 @@ If `wam-intent-entity` is present, the User Agent MUST populate the `intent.enti
 
 ## 9. Provenance Processing Model (Record Phase)
 
-The Record phase (§11) executes after the in-memory execution of a mutation tool succeeds, but **before** the mutation is applied to the live DOM (see §13.3). The User Agent functions as the **Authority** on provenance: it writes the Provenance Ledger entry, updates the DOM's `wam-provenance-operation` attribute, and enforces the correlation between them before committing the mutation. Authors and page scripts MUST NOT be able to suppress, reorder, or forge this sequence. This section defines the normative requirements for executing the Record phase, maintaining ledger integrity, and surfacing provenance data through MCP tools and the user interface.
+The Record phase (§11) executes as part of the atomicity sequence defined in §13.3: after the in-memory execution of a mutation tool or `wam_invoke` call succeeds, but **before** the change is applied to the live DOM. The User Agent functions as the **Authority** on provenance: it writes the Provenance Ledger entry and updates the DOM's `wam-provenance-operation` attribute before committing the change. Authors and page scripts MUST NOT be able to suppress, reorder, or forge this sequence. This section defines the normative requirements for executing the Record phase, maintaining ledger integrity, and surfacing provenance data through MCP tools and the user interface.
 
 ### 9.1. Record Phase Execution Sequence
 
@@ -1068,7 +1049,7 @@ The Record phase is steps 3–4 of the full atomicity sequence defined in §13.3
 3.  **Write Provenance Ledger entry:** Create a new ledger entry (schema §9.2) and append it to the internal Provenance Ledger. This is §13.3 step 3.
 4.  **Append to DOM attribute:** Append `<layer>:<explanation>` to the target element's `wam-provenance-operation` attribute, space-separated from any existing tokens. This is §13.3 step 4.
 
-If step 3 or step 4 fails, the User Agent MUST abort: do not proceed to §13.3 step 5 (the live DOM apply), roll back the in-memory execution, and return a structured error to the LLM. The live DOM and Provenance Ledger MUST remain consistent at all times (fail-closed).
+Steps 3 and 4 MUST complete before step 5 (the live DOM apply) may proceed. The ledger write and DOM application are atomic: either both occur or neither does. This guarantees the live DOM and Provenance Ledger are always consistent.
 
 *   **Format:** The appended token MUST follow the syntax `<layer>:<explanation>`.
 *   **Layer Alignment:** The `<layer>` token MUST match the type of mutation performed (e.g., `content` for text changes, `style` for class changes).
@@ -1083,7 +1064,7 @@ If step 3 or step 4 fails, the User Agent MUST abort: do not proceed to §13.3 s
 | Event handlers, ARIA, form state | `interaction` | Adding onclick, changing aria-expanded |
 | Child node reordering | `topology` | Sorting list items, reordering sections |
 | `data-*` attributes, form values | `data` | Updating data attributes, form autofill |
-| `wam-intent-*` attributes | `intent` | Modifying semantic hints |
+| `wam-intent-*` attributes (via `wam_set_intent`) | `intent` | Setting or updating semantic metadata |
 
 #### Explanation Format
 
@@ -1112,10 +1093,9 @@ Each ledger entry MUST contain:
 | `newValue` | Any | The value after mutation |
 | `hasAttributeEntry` | Boolean | Whether a corresponding `wam-provenance-operation` entry exists |
 | `orchestratingModelId` | String | Identifier of the LLM that issued the mutation tool call |
-| `generatingModelId` | String? | Identifier of the LLM whose output became the new value; only populated when the mutation resulted from a Scoped LLM Call (§12.4) and the generating model differs from the orchestrating model |
-| `scopedCall` | Boolean | `true` if this entry resulted from a Scoped LLM Call; `false` for direct-value mutations |
+| `generatingModelId` | String? | Identifier of the model that produced the mutation value, when this differs from the orchestrating model (e.g., when the UA delegated content generation to an external service). Omitted when the orchestrating model provided the value directly. |
 
-**Dual Model ID Requirement:** When `scopedCall` is `true`, both `orchestratingModelId` and `generatingModelId` MUST be populated. The conformance requirement §14.9 mandates this for all scoped call entries.
+**Dual Model ID Requirement:** When `generatingModelId` is populated, it MUST identify the model whose output became the new value. Both `orchestratingModelId` and `generatingModelId` MUST be populated whenever the generating model differs from the orchestrating model.
 
 #### Original Value Snapshots
 
@@ -1282,7 +1262,7 @@ To ensure conspicuous disclosure without cluttering the UI, the User Agent MUST 
 
 #### MCP Interface
 
-The `wam_inspect_provenance` tool (§12.1) is the normative programmatic interface to the Provenance Ledger. It returns the same information that the user-facing inspection UI must display. A conforming UA MUST ensure that the MCP tool and the UI surface identical data: if a ledger entry is visible in `wam_inspect_provenance` output, it MUST also be visible in the user-facing inspection view for that element, and vice versa.
+The `wam_inspect_provenance` tool (§12.2) is the normative programmatic interface to the Provenance Ledger. It returns the same information that the user-facing inspection UI must display. A conforming UA MUST ensure that the MCP tool and the UI surface identical data: if a ledger entry is visible in `wam_inspect_provenance` output, it MUST also be visible in the user-facing inspection view for that element, and vice versa.
 
 #### User-Facing Inspection Mechanism
 
@@ -1301,7 +1281,7 @@ The inspection view MUST display:
 *   **Confidence:** The `wam-provenance-confidence` score, if present.
 *   **Operations:** The complete `wam-provenance-operation` history as a parsed list.
 *   **Ledger Entries:** All ledger entries associated with the element, including timestamps, original/new values, `orchestratingModelId`, and `generatingModelId` where applicable.
-*   **Scoped Call Indicator:** For entries where `scopedCall` is `true`, the inspection view MUST clearly indicate that a subsidiary LLM call generated the value, and MUST display both model identifiers.
+*   **Delegated Generation Indicator:** For entries where `generatingModelId` is populated and differs from `orchestratingModelId`, the inspection view MUST clearly indicate that a model other than the orchestrating LLM generated the value, and MUST display both model identifiers.
 *   **Integrity Status:** Whether the element has any integrity violations.
 
 #### Visual Indicators
@@ -1310,7 +1290,7 @@ The User Agent SHOULD provide optional visual indicators for LLM-modified conten
 
 *   **Modified Indicator:** A subtle visual cue (icon, underline, background) on elements with `wam-provenance-operation` entries.
 *   **Confidence Indicator:** Color-coded indicator based on `wam-provenance-confidence` (green for ≥ 0.8, yellow for 0.5–0.8, red for < 0.5).
-*   **Scoped Call Indicator:** A distinct icon or badge on elements where any ledger entry has `scopedCall: true`, signalling that the value was generated by a subsidiary LLM call rather than the orchestrating model directly.
+*   **Delegated Generation Indicator:** A distinct icon or badge on elements where any ledger entry has a populated `generatingModelId` differing from `orchestratingModelId`, signalling that a model other than the orchestrating LLM generated the value.
 *   **Violation Indicator:** Prominent visual cue for elements with integrity violations.
 
 These indicators SHOULD be user-configurable (on, off, or hover-to-reveal).
@@ -1334,7 +1314,7 @@ interface LLMProvenanceChangeEvent : Event {
 
 #### `llmintegrityviolation` Event
 
-Fired when an integrity violation is detected (§9.5). The `wam_report_violation` MCP tool (§12.1) is the programmatic equivalent: when the orchestrating LLM calls `wam_report_violation`, the User Agent MUST treat it as equivalent to a self-detected violation and fire this event with the same semantics. The LLM cannot suppress the event by not calling the tool; integrity detection is always UA-driven.
+Fired when an integrity violation is detected (§9.5). The `wam_report_violation` MCP tool (§12.2) is the programmatic equivalent: when the orchestrating LLM calls `wam_report_violation`, the User Agent MUST treat it as equivalent to a self-detected violation and fire this event with the same semantics. The LLM cannot suppress the event by not calling the tool; integrity detection is always UA-driven.
 
 ```webidl
 interface LLMIntegrityViolationEvent : Event {

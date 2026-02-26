@@ -210,6 +210,7 @@ See the [use-cases/](./use-cases/) directory for detailed scenarios:
 - **Educational**: Interactive examples, explanations appendable
 - **Medical**: Strict readonly for safety-critical information
 - **User-Generated Content**: Moderation policies
+- **Form as Composite Tool**: Describing a multi-field form as a single MCP-style tool for LLM interaction ([use case](./use-cases/form-as-tool.md))
 
 ## Relationship to Other Standards
 
@@ -237,6 +238,12 @@ LLM ←→ MCP Client (inside UA) ←→ DOM-access MCP Server (inside UA)
 
 MCP does not address — and cannot substitute for — WAM's element-level mutation granularity, input visibility controls, content retention policy, license enforcement, or provenance tracking. These remain the domain of this standard.
 
+### Tool Intent Schemas (Exploratory)
+
+Beyond the runtime interface described above, content authors may want to describe interactive surfaces — forms, wizards, stateful widgets — as composite MCP-style tools with named, typed parameters. This would allow LLMs to understand a multi-field form as a single "search flights" or "complete purchase" operation rather than a collection of independent inputs.
+
+This idea is explored in a non-normative appendix: **[MCP Tool Intent](./tool-intent.md)**. The appendix covers advisory tool schemas as intent attributes, the trust asymmetry between site-authored and user-configured tools, adversarial considerations, and User Agent design guidance. A worked example is provided in the [Form as Composite Tool](./use-cases/form-as-tool.md) use case.
+
 ## FAQ
 
 **Q: Does this give LLMs permission to scrape my content?**
@@ -261,3 +268,4 @@ A: Yes. Browsers that don't support Web Agent Markup ignore the attributes. Cont
 2. Explore the [examples](../examples/)
 3. Run the [conformance tests](../tests/web-platform-tests/)
 4. Review the [Security & Privacy questionnaire](./security-privacy.md)
+5. Read the [MCP Tool Intent appendix](./tool-intent.md) for exploratory work on composite tool schemas
